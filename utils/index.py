@@ -18,3 +18,23 @@ def get_path(src_relative_path):
     return f"{get_root_path()}{_path}"
 
 
+def _map(data_list, callback):
+    return list(map(callback, data_list))
+
+
+def _safe_join(data_list, connect_symbol=','):
+    return str(connect_symbol).join(_map(data_list, lambda item: str(item)))
+
+
+def add_single_quotation(value):
+    return f"'{value}'"
+
+
+def add_double_quotation(value):
+    return f'"{value}"'
+
+
+if __name__ == '__main__':
+    print(get_path('/model/tables.json'))
+
+    print(",".join(_map([1, 2, 3], lambda item: str(item))))

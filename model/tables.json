@@ -3,7 +3,7 @@
     "table_name": "stock_basic",
     "columns": [
       "ts_code CHAR(9) PRIMARY KEY",
-      "symbol MEDIUMINT(6) UNSIGNED NOT NULL",
+      "symbol CHAR(6) NOT NULL",
       "name VARCHAR(8) NOT NULL",
       "area VARCHAR(3)",
       "industry VARCHAR(6)",
