@@ -4,7 +4,7 @@ Created on 2023年5月11日
 @author: Harrison
 '''
 
-# import pandas as pd
+
 import pymysql
 
 db = pymysql.connect(host='localhost',
@@ -20,9 +20,13 @@ def sql(sqls):
     cursor.close()
 
 
+def delete_table(table_name):
+    sql([f"DROP TABLE IF EXISTS {table_name}"])
+
+
 def create_table(table_name, columns):
     sql([
-        f"DROP TABLE IF EXISTS {table_name}",
+        # f"DROP TABLE IF EXISTS {table_name}",
         f"CREATE TABLE {table_name} ({','.join(columns)}) CHARSET=utf8"
     ])
 
@@ -43,9 +47,3 @@ def create_table(table_name, columns):
 # db.close()  # 关闭数据库连接
 
 
-if __name__ == '__main__':
-    create_table('stock_basic', [
-        'ts_code CHAR(9) PRIMARY KEY',
-        'symbol MEDIUMINT(6) UNSIGNED NOT NULL',
-        ''
-    ])

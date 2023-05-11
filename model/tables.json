@@ -1,0 +1,17 @@
+{
+  "stock_basic": {
+    "table_name": "stock_basic",
+    "columns": [
+      "ts_code CHAR(9) PRIMARY KEY",
+      "symbol MEDIUMINT(6) UNSIGNED NOT NULL",
+      "name VARCHAR(8) NOT NULL",
+      "area VARCHAR(3)",
+      "industry VARCHAR(6)",
+      "market VARCHAR(3)",
+      "list_status CHAR(1)",
+      "list_date DATE NOT NULL",
+      "delist_date DATE",
+      "is_hs CHAR(1)"
+    ]
+  }
+}
