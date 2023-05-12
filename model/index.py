@@ -1,5 +1,5 @@
 import json
-from utils.index import get_path,_map
+from utils.index import get_path, _map
 
 tables_json_path = get_path('model/tables.json')
 print('tables_json_path: ', tables_json_path)
@@ -15,6 +15,14 @@ def get_columns(table_name):
 def get_column_name_list(columns):
     column_name_list = _map(columns, lambda item: item.split()[0])
     return column_name_list
+
+
+def get_columns_info(table_name):
+    columns = get_columns(table_name)
+    column_name_list = get_column_name_list(columns)
+    column_name_list_str = ','.join(column_name_list)
+
+    return columns, column_name_list, column_name_list_str
 
 
 if __name__ == '__main__':

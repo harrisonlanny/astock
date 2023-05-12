@@ -4,10 +4,10 @@
     "columns": [
       "ts_code CHAR(9) PRIMARY KEY",
       "symbol CHAR(6) NOT NULL",
-      "name VARCHAR(8) NOT NULL",
-      "area VARCHAR(3)",
+      "name VARCHAR(20) NOT NULL",
+      "area VARCHAR(8)",
       "industry VARCHAR(6)",
-      "market VARCHAR(3)",
+      "market VARCHAR(10)",
       "list_status CHAR(1)",
       "list_date DATE NOT NULL",
       "delist_date DATE",

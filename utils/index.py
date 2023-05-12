@@ -1,4 +1,7 @@
 import os
+
+import pandas
+
 from constants import PROJECT_NAME
 
 
@@ -27,11 +30,28 @@ def _safe_join(data_list, connect_symbol=','):
 
 
 def add_single_quotation(value):
-    return f"'{value}'"
+    if isinstance(value, str):
+        return f"'{value}'"
+    return value
 
 
 def add_double_quotation(value):
-    return f'"{value}"'
+    if isinstance(value, str):
+        return f'"{value}"'
+    return value
+
+
+def none_to_null_str(v):
+    if v is None:
+        return "null"
+    return v
+
+
+def parse_dataframe(df: pandas.DataFrame):
+    columns = df.columns.values
+    values = df.to_numpy().tolist()
+
+    return columns,values
 
 
 if __name__ == '__main__':
