@@ -4,11 +4,12 @@ from ts.index import pro_api
 from utils.index import parse_dataframe
 
 
-def refresh_table_stock_basic(table_name='stock_basic'):
+def refresh_table(table_name, df=None):
     # 获取model 表结构
     columns, column_name_list, column_name_list_str = get_columns_info(table_name)
     # 从tushare获取数据
-    df = pro_api.query(table_name,  fields=column_name_list_str)
+    if df is None:
+        df = pro_api.query(table_name, fields=column_name_list_str)
     # 将dataframe转成通用格式
     _columns, data = parse_dataframe(df)
     delete_table(table_name)
