@@ -27,8 +27,20 @@ def _map(data_list, callback):
     return list(map(callback, data_list))
 
 
+def _filter(data_list, callback):
+    return list(filter(callback, data_list))
+
+
 def is_subset(list1, list2):
     return set(list2).issubset(set(list1))
+
+
+def get_diff(list1, list2):
+    return list(set(list1) - set(list2))
+
+
+def get_intersection(list1, list2):
+    return list(set(list1).intersection(set(list2)))
 
 
 def _safe_join(data_list, connect_symbol=','):

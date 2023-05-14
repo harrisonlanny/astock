@@ -8,6 +8,7 @@ import pymysql
 import pandas as pd
 import numpy as np
 from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset
+# from model.index import add_fyh_for_column_name
 
 from constants import DATABASE_NAME
 
@@ -49,10 +50,10 @@ def delete_table(table_name):
     sql([f"DROP TABLE IF EXISTS {table_name}"])
 
 
-def create_table(table_name, columns):
+def create_table(table_name, safe_columns):
     sql([
         # f"DROP TABLE IF EXISTS {table_name}",
-        f"CREATE TABLE {table_name} ({','.join(columns)}) CHARSET=utf8"
+        f"CREATE TABLE {table_name} ({','.join(safe_columns)}) CHARSET=utf8"
     ])
 
 

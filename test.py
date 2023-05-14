@@ -19,27 +19,10 @@ from utils.index import _map
 # print('\n')
 # print(v3)
 
-from db.index import read_table, create_table, clear_table
+from db.index import read_table, create_table, clear_table,show_tables
 from model.index import get_columns_info
 from utils.index import is_iterable
+from service.index import create_new_d_tables
 
-# values = read_table('stock_basic', ('symbol', ))
-# values = _map(values, lambda tuple_item: tuple_item[0])
-#
-# for symbol in values:
-#     table_name = f"d_{symbol}"
-
-# (columns,a,b) = get_columns_info('stock_basic')
-# print(columns)
-
-# clear_table('d_2222')
-from service.index import refresh_table
-from db.index import show_tables, has_tables
-from utils.index import is_subset
-
-# print(is_table_exits('stock_basic'))
-
-# refresh_table('stock_basic')
-
-# print(is_subset([1,2,3,4,5, "a"], [2,3,1,"a"]))
-print(has_tables(['stock_basic']))
+# create_new_d_tables()
+print(show_tables())
