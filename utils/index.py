@@ -2,6 +2,8 @@ import os
 
 import pandas
 
+from collections.abc import Iterable
+
 from constants import PROJECT_NAME
 
 
@@ -23,6 +25,10 @@ def get_path(src_relative_path):
 
 def _map(data_list, callback):
     return list(map(callback, data_list))
+
+
+def is_subset(list1, list2):
+    return set(list2).issubset(set(list1))
 
 
 def _safe_join(data_list, connect_symbol=','):
@@ -51,7 +57,11 @@ def parse_dataframe(df: pandas.DataFrame):
     columns = df.columns.values
     values = df.to_numpy().tolist()
 
-    return columns,values
+    return columns, values
+
+
+def is_iterable(value):
+    return isinstance(value, Iterable)
 
 
 if __name__ == '__main__':

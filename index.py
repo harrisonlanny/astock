@@ -1,3 +1,4 @@
 from service.index import refresh_table
 
-refresh_table('stock_basic')
+# refresh_table('stock_basic')
+

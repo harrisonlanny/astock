@@ -13,5 +13,21 @@
       "delist_date DATE",
       "is_hs CHAR(1)"
     ]
+  },
+  "d": {
+    "table_name": "d_{symbol}",
+    "columns": [
+      "ts_code CHAR(9) PRIMARY KEY",
+      "trade_date DATE NOT NULL",
+      "open FLOAT(10) NOT NULL",
+      "high FLOAT(10) NOT NULL",
+      "low FLOAT(10) NOT NULL",
+      "close FLOAT(10) NOT NULL",
+      "pre_close FLOAT(10) NOT NULL",
+      "change FLOAT(10) NOT NULL",
+      "pct_change FLOAT(10) NOT NULL",
+      "vol FLOAT(10) NOT NULL",
+      "amount FLOAT(10) NOT NULL"
+    ]
   }
 }
