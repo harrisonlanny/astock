@@ -40,6 +40,15 @@ def _find(data_list, callback):
     return result
 
 
+def _find_index(data_list, callback):
+    result = None
+    for index, data in enumerate(data_list):
+        if callback(data):
+            result = index
+            break
+    return result
+
+
 def is_subset(list1, list2):
     return set(list2).issubset(set(list1))
 

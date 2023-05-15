@@ -7,7 +7,8 @@ Created on 2023年5月11日
 import pymysql
 import pandas as pd
 import numpy as np
-from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset
+from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset, _find_index, \
+    get_diff, _filter
 # from model.index import add_fyh_for_column_name
 
 from constants import DATABASE_NAME
@@ -65,6 +66,16 @@ def clear_table(table_name):
     ], lambda cursor: db.commit())
 
 
+def get_table_primary_key(table_name):
+    get_sql = f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'"
+    # print(get_sql)
+    rows = sql([get_sql], lambda cursor: cursor.fetchall())
+    if len(rows) == 0:
+        return None
+    # 4是Column_name的index
+    return rows[0][4]
+
+
 # row_list: [[1,2,3],[4,5,6]] => '(1,2,3)','(4,5,6)'
 # row: [1,2,3] => '1,2,3'
 def insert_table(table_name, column_name_list, row_list):
@@ -78,18 +89,60 @@ def insert_table(table_name, column_name_list, row_list):
     sql([
         insert_sql
     ], lambda cursor: db.commit())
+    return insert_sql
 
 
-def update_table(table_name, column_name_list, row_list, conditions):
-    update_sql = f"UPDATE {table_name} SET A=1,B=2 WHERE {conditions}"
+def column_row_match(column_name_list, row):
+    update_sqls = []
+    for index in range(0, len(column_name_list)):
+        update_fields = f"{column_name_list[index]} = {row[index]}"
+        update_sqls.append(update_fields)
+    return ",".join(update_sqls)
+
+
+def update_table(table_name, column_name_list, row, conditions):
+    update_fields = column_row_match(column_name_list, row)
+    update_sql = f"UPDATE {table_name} SET {update_fields} {conditions}"
     print('update sql', update_sql)
+    # TODO FINISH REAL COMMIT
     # sql([
     #     update_sql
     # ], lambda cursor: db.commit())
+    # return update_sql
 
 
 def insert_update_table(table_name, column_name_list, row_list):
-    return None
+    primary_key = get_table_primary_key(table_name)
+    print(f"{table_name}的主键是：{primary_key}", '\n')
+    if primary_key is None:
+        raise Exception(f"{table_name} 表不存在主键!")
+    if primary_key not in column_name_list:
+        raise Exception(f"column_name_list中必须包含主键{primary_key}!")
+
+    # 从表中读取所有的主键values
+    # 以stock_basic表为例，pk_values = ['000001.SZ','000002.SZ',....]
+    # 因为我们只取[primary_key]，所以row[0]即能拿到primary_key对应的value
+    old_ids: list[str] = _map(read_table(table_name, [primary_key]), lambda row: row[0])
+    pk_index: int = _find_index(column_name_list, lambda cname: cname == primary_key)
+    new_ids: list[str] = _map(row_list, lambda row: row[pk_index])
+
+    # new_ids: [1,2,5]
+    # old_ids: [1,2,3,4]
+    # insert_ids: [5]  update_ids: [1,2]
+    insert_ids = get_diff(new_ids, old_ids)
+    update_ids = get_diff(new_ids, insert_ids)
+
+    print('insert_ids', insert_ids)
+    print('update_ids', update_ids)
+
+    if len(insert_ids):
+        insert_values = _filter(row_list, lambda row: row[pk_index] in insert_ids)
+        insert_table(table_name, column_name_list, insert_values)
+
+    if len(update_ids):
+        update_values = _filter(row_list, lambda row: row[pk_index] in update_ids)
+        for row in update_values:
+            update_table(table_name, column_name_list, row, f"WHERE {primary_key} = {row[pk_index]}")
 
 
 def read_table(table_name: str, read_columns: list = None):
