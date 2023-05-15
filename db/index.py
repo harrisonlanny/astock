@@ -80,7 +80,7 @@ def insert_table(table_name, column_name_list, row_list):
     ], lambda cursor: db.commit())
 
 
-def read_table(table_name: str, read_columns=None):
+def read_table(table_name: str, read_columns: list = None):
     read_columns_str = '*'
     if is_iterable(read_columns) and len(read_columns) > 0:
         read_columns_str = ','.join(read_columns)

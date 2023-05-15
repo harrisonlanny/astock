@@ -48,6 +48,31 @@ def get_diff(list1, list2):
     return list(set(list1) - set(list2))
 
 
+# list1: [1,[2],3]
+# list2: [4,[2],5,6]
+# result: [1,3]
+def get_diff2(list1, list2, is_same_callback=lambda v1, v2: v1 == v2):
+    result = []
+    for v1 in list1:
+        is_in = _in(list2, v1, is_same_callback)
+        if not is_in:
+            result.append(v1)
+    return result
+
+
+def _in(data_list, value, is_same_callback=lambda v1, v2: v1 == v2):
+    if is_same_callback is None:
+        return value in data_list
+    one = _find(data_list, lambda item: is_same_callback(item, value))
+    return one is not None
+
+
+def _set(v):
+    if is_iterable(v):
+        return set(v)
+    return v
+
+
 def get_intersection(list1, list2):
     return list(set(list1).intersection(set(list2)))
 
