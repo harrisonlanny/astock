@@ -59,17 +59,15 @@ def describe_table(table_name):
     # return sql([f"describe {table_name}"], lambda cursor: cursor.fetchall())
     # (('stock_basic', 'CREATE TABLE `stock_basic` (\n  `ts_code` char(9) NOT NULL,\n  `symbol` char(6) NO ....
     describe: str = sql([f"SHOW CREATE TABLE {table_name}"], lambda cursor: cursor.fetchall())[0][1]
-    print('describe:', describe)
     return TableModel(describe)
 
 
 def copy_table(from_name, to_name):
-    return None
-    # safe_columns, column_name_list, name_str, safe_name_str = get_columns_info(from_name)
-    # describe = describe_table(from_name)
-    # delete_table(to_name)
-    # sql([f"CREATE TABLE {describe}"])
-    # insert_table(to_name, column_name_list, read_table(from_name))
+    describe = describe_table(from_name)
+
+    delete_table(to_name)
+    create_table(to_name, describe.safe_columns)
+    insert_table(to_name, describe.safe_column_names, read_table(from_name))
 
 
 def create_table(table_name, safe_columns):
@@ -106,12 +104,12 @@ def format_insert_value(value):
 
 # row_list: [[1,2,3],[4,5,6]] => '(1,2,3)','(4,5,6)'
 # row: [1,2,3] => '1,2,3'
-def insert_table(table_name, column_name_list, row_list):
+def insert_table(table_name, safe_column_names, row_list):
     row_list_str = ','.join(
         _map(row_list,
              lambda row: f'({_safe_join(_map(row, lambda col_v: format_insert_value(col_v)))})'))
 
-    insert_sql = f"INSERT INTO {table_name} ({','.join(column_name_list)}) VALUES {row_list_str}"
+    insert_sql = f"INSERT INTO {table_name} ({','.join(safe_column_names)}) VALUES {row_list_str}"
     print('insert sql', insert_sql)
 
     sql([
