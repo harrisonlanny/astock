@@ -4,6 +4,15 @@ from ts.index import pro_api
 from utils.index import parse_dataframe, _filter, get_diff, _map
 
 
+def api_query(api_name, fields='', fields_name='', **kwargs):
+    if fields_name is None:
+        fields_name = api_name
+    if fields is None:
+        safe_columns, column_names, names_str, safe_name_str = get_columns_info(fields_name)
+        fields = names_str
+    df = pro_api.query(api_name, fields, **kwargs)
+    return parse_dataframe(df)
+
 def refresh_table(table_name, df=None):
     # 获取model 表结构
     safe_columns, column_names, names_str, safe_name_str = get_columns_info(table_name)
@@ -17,9 +26,22 @@ def refresh_table(table_name, df=None):
     insert_table(table_name, column_names, data)
 
 
+def refresh_table_stock_basic():
+    table_name = 'stock_basic'
+    live_stocks = api_query(table_name, list_status='L')
+    dead_stocks = api_query(table_name, list_status='D')
+    pause_stocks = api_query(table_name, list_status='P')
+
+
+
+
+def get_current_d_tables():
+    return _filter(show_tables(), lambda item: item.startswith('d_'))
+
+
 def get_new_symbols():
     # 现在已经存在的日线表
-    d_tables = _filter(show_tables(), lambda item: item.startswith('d_'))
+    d_tables = get_current_d_tables()
     # print(d_tables)
     # stock_basic表里所有stock
     symbols = _map(read_table('stock_basic', ['symbol']), lambda item: f"d_{item[0]}")
@@ -36,4 +58,3 @@ def create_new_d_tables():
         d_table_name = f"d_{new_symbol}"
         create_table(d_table_name, safe_columns)
         print('create_table', d_table_name)
-

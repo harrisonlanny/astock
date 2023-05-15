@@ -31,6 +31,15 @@ def _filter(data_list, callback):
     return list(filter(callback, data_list))
 
 
+def _find(data_list, callback):
+    result = None
+    for data in data_list:
+        if callback(data):
+            result = data
+            break
+    return result
+
+
 def is_subset(list1, list2):
     return set(list2).issubset(set(list1))
 
