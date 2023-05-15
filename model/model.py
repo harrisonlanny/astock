@@ -79,7 +79,6 @@ class TableModel:
     def get_safe_columns(columns):
         return _map(columns, lambda column_str: TableModel.add_fyh_for_column_name(column_str))
 
-
     @staticmethod
     def get_column_names(columns):
         return _map(columns, lambda item: item.split()[0])
