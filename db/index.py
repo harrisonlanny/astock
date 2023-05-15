@@ -3,15 +3,19 @@ Created on 2023年5月11日
 
 @author: Harrison
 '''
+import datetime
+import re
 
 import pymysql
 import pandas as pd
 import numpy as np
 from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset, _find_index, \
-    get_diff, _filter
+    get_diff, _filter, _find
+from model.model import TableModel
+
 # from model.index import add_fyh_for_column_name
 
-from constants import DATABASE_NAME
+from constants import DATABASE_NAME, DATE_FORMAT
 
 db = pymysql.connect(host='localhost',
                      user='root',
@@ -51,6 +55,23 @@ def delete_table(table_name):
     sql([f"DROP TABLE IF EXISTS {table_name}"])
 
 
+def describe_table(table_name):
+    # return sql([f"describe {table_name}"], lambda cursor: cursor.fetchall())
+    # (('stock_basic', 'CREATE TABLE `stock_basic` (\n  `ts_code` char(9) NOT NULL,\n  `symbol` char(6) NO ....
+    describe: str = sql([f"SHOW CREATE TABLE {table_name}"], lambda cursor: cursor.fetchall())[0][1]
+    print('describe:', describe)
+    return TableModel(describe)
+
+
+def copy_table(from_name, to_name):
+    return None
+    # safe_columns, column_name_list, name_str, safe_name_str = get_columns_info(from_name)
+    # describe = describe_table(from_name)
+    # delete_table(to_name)
+    # sql([f"CREATE TABLE {describe}"])
+    # insert_table(to_name, column_name_list, read_table(from_name))
+
+
 def create_table(table_name, safe_columns):
     sql([
         # f"DROP TABLE IF EXISTS {table_name}",
@@ -76,12 +97,19 @@ def get_table_primary_key(table_name):
     return rows[0][4]
 
 
+def format_insert_value(value):
+    if isinstance(value, datetime.date):
+        value = value.strftime('%Y-%m-%d')
+    value = none_to_null_str(add_single_quotation(value))
+    return value
+
+
 # row_list: [[1,2,3],[4,5,6]] => '(1,2,3)','(4,5,6)'
 # row: [1,2,3] => '1,2,3'
 def insert_table(table_name, column_name_list, row_list):
     row_list_str = ','.join(
         _map(row_list,
-             lambda row: f'({_safe_join(_map(row, lambda col_v: none_to_null_str(add_single_quotation(col_v))))})'))
+             lambda row: f'({_safe_join(_map(row, lambda col_v: format_insert_value(col_v)))})'))
 
     insert_sql = f"INSERT INTO {table_name} ({','.join(column_name_list)}) VALUES {row_list_str}"
     print('insert sql', insert_sql)

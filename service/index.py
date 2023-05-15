@@ -3,6 +3,7 @@ from model.index import get_columns_info
 from ts.index import pro_api
 from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index
 import datetime
+from constants import DATE_FORMAT
 
 
 def api_query(api_name, fields=None, fields_name=None, **kwargs):
@@ -31,7 +32,7 @@ def refresh_table(table_name, df=None):
 
 def format_table_value(value):
     if isinstance(value, datetime.date):
-        return value.strftime('%Y%m%d')
+        return value.strftime(DATE_FORMAT)
     return value
 
 

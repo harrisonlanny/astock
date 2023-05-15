@@ -5,6 +5,8 @@ tables_json_path = get_path('model/tables.json')
 print('tables_json_path: ', tables_json_path)
 
 
+
+
 def get_columns(table_name):
     with open(tables_json_path, 'r') as f:
         tables = json.load(f)
