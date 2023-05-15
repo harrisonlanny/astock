@@ -80,6 +80,18 @@ def insert_table(table_name, column_name_list, row_list):
     ], lambda cursor: db.commit())
 
 
+def update_table(table_name, column_name_list, row_list, conditions):
+    update_sql = f"UPDATE {table_name} SET A=1,B=2 WHERE {conditions}"
+    print('update sql', update_sql)
+    # sql([
+    #     update_sql
+    # ], lambda cursor: db.commit())
+
+
+def insert_update_table(table_name, column_name_list, row_list):
+    return None
+
+
 def read_table(table_name: str, read_columns: list = None):
     read_columns_str = '*'
     if is_iterable(read_columns) and len(read_columns) > 0:

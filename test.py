@@ -28,12 +28,12 @@ from db.index import read_table
 #
 # print(get_diff2(new_stocks, old_stocks, lambda v1, v2: _set(v1) == _set(v2)))
 
-# refresh_table_stock_basic()
+refresh_table_stock_basic()
 
-table_name = 'stock_basic'
+# table_name = 'stock_basic'
 # new_stocks = [api_query(table_name, list_status='L')[1][0]]
-target = _find(read_table(table_name), lambda item: item[0] == '838837.BJ')
-print(target)
+# target = _find(read_table(table_name), lambda item: item[0] == '838837.BJ')
+# print(target)
 # old_format_stocks = _map(old_stocks, lambda row: format_table_row(row))
 # print('new_stocks', len(new_stocks), new_stocks, '\n')
 # print('old_stocks', len(old_stocks), old_stocks, '\n')

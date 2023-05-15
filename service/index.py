@@ -41,26 +41,38 @@ def format_table_row(row: list | tuple):
 
 def refresh_table_stock_basic():
     table_name = 'stock_basic'
-    # [[1]] [[2]] [[3]] => [[1],[2],[3]]
     live_stocks = api_query(table_name, list_status='L')[1]
-    print('live_stocks', len(live_stocks), '\n')
     dead_stocks = api_query(table_name, list_status='D')[1]
-    print('dead_stocks', len(dead_stocks), '\n')
     pause_stocks = api_query(table_name, list_status='P')[1]
-    print('pause_stocks', len(pause_stocks), '\n')
 
     new_stocks = live_stocks + dead_stocks + pause_stocks
     print('new_stocks', len(new_stocks), '\n')
-    old_stocks = _map(read_table(table_name), lambda row: format_table_row(row))
+    # old_stocks = _map(read_table(table_name), lambda row: format_table_row(row))
+    old_stocks = read_table(table_name)
     print('old_stocks', len(old_stocks), '\n')
 
-    # new_stocks: ["平安", "D"]
-    # old_stocks: ["平安", "L"]
-    need_insert_stocks = get_diff2(new_stocks, old_stocks, lambda v1, v2: _set(v1) == _set(v2))
-    print('need_insert_stocks: ', len(need_insert_stocks), need_insert_stocks)
+    # id = "{ts_code}__{list_status}"
+    generate_id = lambda row: f"{row[0]}__{row[6]}"
+    new_ids = _map(new_stocks, generate_id)
+    old_ids = _map(old_stocks, generate_id)
 
-    target = _find(need_insert_stocks, lambda item: item[0] == '838837.BJ')
-    print('target', target)
+    diff_ids = get_diff(new_ids, old_ids)
+    diff_ts_codes = _map(diff_ids, lambda id:id.split('__')[0])
+    print('diff_ts_codes', diff_ts_codes)
+
+    need_insert_stocks = _map(diff_ts_codes, lambda ts_code: _find(new_stocks, lambda item: item[0] == ts_code))
+    print('need_insert_stocks', need_insert_stocks)
+
+
+
+
+
+
+    # need_insert_stocks = get_diff2(new_stocks, old_stocks, lambda v1, v2: _set(v1) == _set(v2))
+    # print('need_insert_stocks: ', len(need_insert_stocks), need_insert_stocks)
+    #
+    # target = _find(need_insert_stocks, lambda item: item[0] == '838837.BJ')
+    # print('target', target)
 
 
 def get_current_d_tables():
