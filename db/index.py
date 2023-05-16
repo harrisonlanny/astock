@@ -89,7 +89,9 @@ def format_insert_value(value):
 
 # row_list: [[1,2,3],[4,5,6]] => '(1,2,3)','(4,5,6)'
 # row: [1,2,3] => '1,2,3'
-def insert_table(table_name, safe_column_names, row_list):
+def insert_table(table_name, column_names: list[str], row_list):
+    safe_column_names = _map(column_names, lambda cname: f"`{cname.replace('`', '')}`")
+
     row_list_str = ','.join(
         _map(row_list,
              lambda row: f'({_safe_join(_map(row, lambda col_v: format_insert_value(col_v)))})'))
@@ -115,26 +117,29 @@ def update_table(table_name, column_name_list, row, conditions):
     update_fields = column_row_match(column_name_list, row)
     update_sql = f"UPDATE {table_name} SET {update_fields} {conditions}"
     print('update sql', update_sql)
+
     # TODO FINISH REAL COMMIT
+
     # sql([
     #     update_sql
     # ], lambda cursor: db.commit())
     # return update_sql
 
 
-def insert_update_table(table_name, column_name_list, row_list):
-    primary_key = get_table_primary_key(table_name)
-    print(f"{table_name}的主键是：{primary_key}", '\n')
-    if primary_key is None:
+def insert_update_table(table_name, column_names, row_list):
+    describe = describe_table(table_name)
+    # primary_key = get_table_primary_key(table_name)
+    print(f"{table_name}的主键是：{describe.primary_key}", '\n')
+    if describe.primary_key is None:
         raise Exception(f"{table_name} 表不存在主键!")
-    if primary_key not in column_name_list:
-        raise Exception(f"column_name_list中必须包含主键{primary_key}!")
+    if describe.primary_key not in column_names:
+        raise Exception(f"column_name_list中必须包含主键{describe.primary_key}!")
 
     # 从表中读取所有的主键values
     # 以stock_basic表为例，pk_values = ['000001.SZ','000002.SZ',....]
     # 因为我们只取[primary_key]，所以row[0]即能拿到primary_key对应的value
-    old_ids: list[str] = _map(read_table(table_name, [primary_key]), lambda row: row[0])
-    pk_index: int = _find_index(column_name_list, lambda cname: cname == primary_key)
+    old_ids: list[str] = _map(read_table(table_name, [describe.primary_key]), lambda row: row[0])
+    pk_index: int = _find_index(column_names, lambda cname: cname == describe.primary_key)
     new_ids: list[str] = _map(row_list, lambda row: row[pk_index])
 
     # new_ids: [1,2,5]
@@ -148,12 +153,12 @@ def insert_update_table(table_name, column_name_list, row_list):
 
     if len(insert_ids):
         insert_values = _filter(row_list, lambda row: row[pk_index] in insert_ids)
-        insert_table(table_name, column_name_list, insert_values)
+        insert_table(table_name, column_names, insert_values)
 
     if len(update_ids):
         update_values = _filter(row_list, lambda row: row[pk_index] in update_ids)
         for row in update_values:
-            update_table(table_name, column_name_list, row, f"WHERE {primary_key} = {row[pk_index]}")
+            update_table(table_name, column_names, row, f"WHERE {describe.primary_key} = {row[pk_index]}")
 
 
 def read_table(table_name: str, read_columns: list = None):

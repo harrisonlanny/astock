@@ -1,8 +1,8 @@
 from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table
-from model.index import get_columns_info
 from ts.index import pro_api
 from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index
 import datetime
+from model.index import describe_json
 from constants import DATE_FORMAT
 
 
@@ -10,8 +10,8 @@ def api_query(api_name, fields=None, fields_name=None, **kwargs):
     if fields_name is None:
         fields_name = api_name
     if fields is None:
-        safe_columns, column_names, names_str, safe_name_str = get_columns_info(fields_name)
-        fields = names_str
+        describe = describe_json(fields_name)
+        fields = ','.join(describe.column_names)
     print('query fields:', fields)
     df = pro_api.query(api_name, fields, **kwargs)
     return parse_dataframe(df)
@@ -19,15 +19,16 @@ def api_query(api_name, fields=None, fields_name=None, **kwargs):
 
 def refresh_table(table_name, df=None):
     # 获取model 表结构
-    safe_columns, column_names, names_str, safe_name_str = get_columns_info(table_name)
+    describe = describe_json(table_name)
+    fields = ','.join(describe.column_names)
     # 从tushare获取数据
     if df is None:
-        df = pro_api.query(table_name, fields=names_str)
+        df = pro_api.query(table_name, fields=fields)
     # 将dataframe转成通用格式
     _columns, data = parse_dataframe(df)
     delete_table(table_name)
-    create_table(table_name, safe_columns)
-    insert_table(table_name, column_names, data)
+    create_table(table_name, describe.safe_columns)
+    insert_table(table_name, describe.safe_column_names, data)
 
 
 def format_table_value(value):
@@ -50,13 +51,14 @@ def refresh_table_stock_basic(fast: bool = True):
     print('new_stocks', len(new_stocks), '\n')
     old_stocks = read_table(table_name)
     print('old_stocks', len(old_stocks), '\n')
-    column_name_list = get_columns_info(table_name)[1]
+    # column_name_list = get_columns_info(table_name)[1]
+    describe = describe_json(table_name)
     if fast:
         print('fast model to refresh stock_basic', 'only check ts_code & list_status')
         # column_name_list = get_columns_info(table_name)[1]
         # id = "{ts_code}__{list_status}"
-        ts_code_index = _find_index(column_name_list, lambda cname: cname == 'ts_code')
-        list_status_index = _find_index(column_name_list, lambda cname: cname == 'list_status')
+        ts_code_index = _find_index(describe.column_names, lambda cname: cname == 'ts_code')
+        list_status_index = _find_index(describe.column_names, lambda cname: cname == 'list_status')
         generate_id = lambda row: f"{row[ts_code_index]}__{row[list_status_index]}"
         new_ids = _map(new_stocks, generate_id)
         old_ids = _map(old_stocks, generate_id)
@@ -72,7 +74,7 @@ def refresh_table_stock_basic(fast: bool = True):
     print('need_insert_stocks: ', len(need_insert_stocks), need_insert_stocks)
 
     # 调用db方法，插入或更新数据
-    insert_update_table(table_name, column_name_list, need_insert_stocks)
+    insert_update_table(table_name, describe.column_names, need_insert_stocks)
 
 
 def get_current_d_tables():
@@ -92,9 +94,10 @@ def get_new_symbols():
 
 
 def create_new_d_tables():
-    safe_columns, column_names, column_names_str, safe_column_names_str = get_columns_info('d')
+    # safe_columns, column_names, column_names_str, safe_column_names_str = get_columns_info('d')
+    describe = describe_json('d')
     new_symbols = get_new_symbols()
     for new_symbol in new_symbols:
         d_table_name = f"d_{new_symbol}"
-        create_table(d_table_name, safe_columns)
+        create_table(d_table_name, describe.safe_columns)
         print('create_table', d_table_name)

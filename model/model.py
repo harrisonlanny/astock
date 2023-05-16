@@ -24,10 +24,16 @@ class TableModel:
             self.columns = parsed_result['columns']
             self.column_names = TableModel.get_column_names(self.columns)
             self.safe_columns = TableModel.get_safe_columns(self.columns)
-            self.safe_column_names = _map(self.column_names, lambda item: f"`{item}`")
+            self.safe_column_names = TableModel.get_safe_column_names(self.column_names)
         elif columns is not None:
-            print('TODO')
-            # 目标是：入参columns (参考tables.json) 出参：columns、column_names 、safe_columns、safe_column_names
+            self.columns = columns
+            self.column_names = TableModel.get_column_names(self.columns)
+            self.safe_columns = TableModel.get_safe_columns(self.columns)
+            self.safe_column_names = TableModel.get_safe_column_names(self.column_names)
+            pk_index = _find_index(self.columns, lambda item: "PRIMARY KEY" in item)
+            self.primary_key = self.column_names[pk_index]
+
+        # 目标是：入参columns (参考tables.json) 出参：columns、column_names 、safe_columns、safe_column_names
 
     @staticmethod
     def parse_describe(describe: str):
@@ -83,3 +89,7 @@ class TableModel:
     @staticmethod
     def get_column_names(columns):
         return _map(columns, lambda item: item.split()[0])
+
+    @staticmethod
+    def get_safe_column_names(column_names):
+        return _map(column_names, lambda item: f"`{item}`")
