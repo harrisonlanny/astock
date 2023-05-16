@@ -4,17 +4,11 @@ Created on 2023年5月11日
 @author: Harrison
 '''
 import datetime
-import re
 
 import pymysql
-import pandas as pd
-import numpy as np
 from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset, _find_index, \
     get_diff, _filter, _find
 from model.model import TableModel
-
-# from model.index import add_fyh_for_column_name
-
 from constants import DATABASE_NAME, DATE_FORMAT
 
 db = pymysql.connect(host='localhost',
@@ -33,14 +27,6 @@ def sql(sqls, callback_after_execute=None):
     cursor.close()
     return result
 
-
-# def is_table_exits(table_name):
-#     result = sql(
-#         [
-#             f"SELECT TABLE_NAME  FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{DATABASE_NAME}' AND TABLE_NAME = '{table_name}'"],
-#         lambda cursor: cursor.fetchall()
-#     )
-#     return len(result) > 0
 
 def show_tables():
     return _map(sql([f"show tables"], lambda cursor: cursor.fetchall()), lambda tuple_item: tuple_item[0])
@@ -64,7 +50,6 @@ def describe_table(table_name):
 
 def copy_table(from_name, to_name):
     describe = describe_table(from_name)
-
     delete_table(to_name)
     create_table(to_name, describe.safe_columns)
     insert_table(to_name, describe.safe_column_names, read_table(from_name))

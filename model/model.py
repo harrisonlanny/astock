@@ -14,7 +14,7 @@ class TableModel:
     safe_column_names: list[str]
 
     def __init__(self, describe: str = None, columns: list[str] = None):
-        if describe is not None:
+        if describe:
             self.describe = describe
             parsed_result = TableModel.parse_describe(describe)
             self.table_name = parsed_result['table_name']
@@ -27,6 +27,7 @@ class TableModel:
             self.safe_column_names = _map(self.column_names, lambda item: f"`{item}`")
         elif columns is not None:
             print('TODO')
+            # 目标是：入参columns (参考tables.json) 出参：columns、column_names 、safe_columns、safe_column_names
 
     @staticmethod
     def parse_describe(describe: str):
@@ -69,8 +70,8 @@ class TableModel:
         return result
 
     @staticmethod
-    def add_fyh_for_column_name(column_str: str):
-        arr = column_str.split(' ')
+    def add_fyh_for_column_name(column: str):
+        arr = column.split(' ')
         arr[0] = f"`{arr[0]}`"
         result = " ".join(arr)
         return result
