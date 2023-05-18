@@ -1,8 +1,11 @@
 import os
+from decimal import Decimal
 
 import pandas
 
 from collections.abc import Iterable
+
+from pandas import DataFrame
 
 from constants import PROJECT_NAME
 
@@ -117,6 +120,22 @@ def parse_dataframe(df: pandas.DataFrame):
 
 def is_iterable(value):
     return isinstance(value, Iterable)
+
+
+def print_dataframe(df: DataFrame):
+    column_names, rows = parse_dataframe(df)
+    print(column_names, '\n')
+    for row in rows:
+        kvs = {}
+        for index, value in enumerate(row):
+            kvs[column_names[index]] = value
+        print(kvs, '\n')
+
+def bunch_decimal(df: DataFrame, column_names: list[str]):
+    for column_name in column_names:
+        df[column_name] = df[column_name].apply(str)
+        df[column_name] = df[column_name].apply(Decimal)
+    return df
 
 
 if __name__ == '__main__':

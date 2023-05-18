@@ -101,3 +101,23 @@ def create_new_d_tables():
         d_table_name = f"d_{new_symbol}"
         create_table(d_table_name, describe.safe_columns)
         print('create_table', d_table_name)
+
+
+# def update_d_table(table_name):
+#
+#     # 1. 判断是全量更新还是增量更新（如果除权，需要将所有日线数据都更新的，我们只获取前除权日线）
+#     #      方法：取该股票上市第一天的开盘价 （从数据库和tushare两个源），然后对比这两个源拿到的数据是否一致，
+#     #      如果一致，认为没有除权，则增量更新即可；反之 全量更新
+#     first_day_open_from_table = read_table(table_name, )
+#     first_day_open_from_api =
+#     should_full_update = first_day_open_from_table != first_day_open_from_api
+#
+#     # 2. 如果是全量更新，就将能请求到的所有日线数据都insert
+#     if should_full_update:
+#         all_values =
+#         insert_table(table_name, )
+#     # 3. 如果是增量更新，就拿表中最后一条数据的日期到最新的日期的数据
+#     else:
+#         latest_date = read_table()
+#         api(latest_date, now)
+#         insert_table(table_name)

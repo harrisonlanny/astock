@@ -161,13 +161,15 @@ def insert_update_table(table_name, column_names, row_list):
             update_table(table_name, column_names, row, f"WHERE {describe.primary_key} = {row[pk_index]}")
 
 
-def read_table(table_name: str, read_columns: list = None):
+def read_table(table_name: str, read_columns: list = None, filter_str=''):
     read_columns_str = '*'
     if is_iterable(read_columns) and len(read_columns) > 0:
         read_columns_str = ','.join(read_columns)
-
-    read_sql = f"SELECT {read_columns_str} FROM {table_name}"
+    read_sql = f"SELECT {read_columns_str} FROM {table_name} {filter_str}"
     return sql([read_sql], lambda cursor: cursor.fetchall())
+
+
+# def read_table_filter(table_name: str, read_columns: list = None, filter):
 
 
 if __name__ == '__main__':
