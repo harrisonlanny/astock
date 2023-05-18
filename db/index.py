@@ -97,7 +97,7 @@ def insert_table(table_name, column_names: list[str], row_list):
              lambda row: f'({_safe_join(_map(row, lambda col_v: format_insert_value(col_v)))})'))
 
     insert_sql = f"INSERT INTO {table_name} ({','.join(safe_column_names)}) VALUES {row_list_str}"
-    print('insert sql', insert_sql)
+    # print('insert sql', insert_sql)
 
     sql([
         insert_sql

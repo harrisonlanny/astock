@@ -103,6 +103,11 @@ def create_new_d_tables():
         print('create_table', d_table_name)
 
 
+def delete_d_tables():
+    d_tables = get_current_d_tables()
+    for d_name in d_tables:
+        delete_table(d_name)
+
 # def update_d_table(table_name):
 #
 #     # 1. 判断是全量更新还是增量更新（如果除权，需要将所有日线数据都更新的，我们只获取前除权日线）
