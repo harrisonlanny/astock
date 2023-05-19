@@ -28,7 +28,6 @@ def fq2(df: DataFrame):
     # bunch_decimal(df, ['close', 'pre_close', 'open', 'high', 'low'])
     # getcontext().prec = 40
     df["pct_chg_fq"] = df['close'] / df['pre_close'] - 1
-    # df["pct_chg_fq"] = df['pct_chg']
     df["adj_factor"] = (1 + df["pct_chg_fq"]).cumprod()
     latest = df.iloc[-1]
     df["close_qfq"] = df['adj_factor'] * (

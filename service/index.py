@@ -108,6 +108,24 @@ def delete_d_tables():
     for d_name in d_tables:
         delete_table(d_name)
 
+
+# 如果表为空，返回None
+def get_latest_trade_date_from_d_table(table_name: str):
+    # TODO
+    return ''
+
+
+def update_d_tables():
+    # 0. 调用read_table('stock_basic')，方便接下来根据table_name拿到ts_code
+    # 1. 遍历所有的d_tables
+    # 2. 调用get_latest_trade_date_from_d_table(table_name)
+    # 3. 如果返回的为空，调用fetch_daily(ts_code)填充该表
+    # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
+    # 5. 得到 如: [('latest_trade_date1', ts_codes),('latest_trade_date2', ts_codes)...]
+    # 6. 根据5的分类，如果ts_codes为单条，fetch_daily(ts_code, start_date, end_date)
+    #               如果ts_codes为多条，因为根据逻辑，大概率是几千条，所以直接fetch_daily(start_date, end_date)
+    return None
+
 # def update_d_table(table_name):
 #
 #     # 1. 判断是全量更新还是增量更新（如果除权，需要将所有日线数据都更新的，我们只获取前除权日线）

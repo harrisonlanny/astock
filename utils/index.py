@@ -27,10 +27,14 @@ def get_path(src_relative_path):
 
 
 def _map(data_list, callback):
+    if data_list is None:
+        return []
     return list(map(callback, data_list))
 
 
 def _filter(data_list, callback):
+    if data_list is None:
+        return []
     return list(filter(callback, data_list))
 
 
@@ -131,11 +135,20 @@ def print_dataframe(df: DataFrame):
             kvs[column_names[index]] = value
         print(kvs, '\n')
 
+
 def bunch_decimal(df: DataFrame, column_names: list[str]):
     for column_name in column_names:
         df[column_name] = df[column_name].apply(str)
         df[column_name] = df[column_name].apply(Decimal)
     return df
+
+
+def dict_kv_convert(data: dict):
+    result = {}
+    for k in data:
+        v = data[k]
+        result[v] = k
+    return result
 
 
 if __name__ == '__main__':

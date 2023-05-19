@@ -1,13 +1,47 @@
 import tushare as ts
-from pandas import DataFrame,concat
+from pandas import DataFrame, concat
 from datetime import datetime, date, timedelta
 
 from constants import PAGE_SIZE
+from utils.index import dict_kv_convert, _map
 
 ts.set_token('f3d6e975a07792eeb2978aed05fc7c4b31d408287d74ab0daf6a4464')
 
 pro_api = ts.pro_api()
 pro_bar = ts.pro_bar
+
+# bs_ts_map = {
+#     "date": "trade_date",
+#     "code": "ts_code",
+#     "preclose": "pre_close",
+#     "volume": "vol",
+#     "adjustflag": "adj_factor",
+#     "pctChg": "pct_chg"
+# }
+# ts_bs_map = dict_kv_convert(bs_ts_map)
+
+fields_map_df = DataFrame(columns=['ts', 'bs'], data=[
+    ['trade_date', 'date'],
+    ['ts_code', 'code'],
+    ['pre_close', 'preclose'],
+    ['vol', 'volume'],
+    ['adj_factor', 'adjustflag'],
+    ['pct_chg', 'pctChg'],
+    ['open', 'open'],
+    ['close', 'close'],
+    ['high', 'high'],
+    ['low', 'low'],
+    ['amount', 'amount']
+])
+
+
+def format_fields(fields: list[str], _from: str, _to: str):
+    result = []
+    for field in fields:
+        query_result = fields_map_df.query(f"{_from}=='{field}'")
+        if len(query_result) > 0:
+            result.append(query_result[_to].iloc[0])
+    return result
 
 
 def fetch_daily(ts_code: str, start_date: str = '', end_date: str = '', **kwargs):

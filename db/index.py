@@ -6,10 +6,12 @@ Created on 2023年5月11日
 import datetime
 
 import pymysql
+
+from db.str import safe_column, safe_field, safe_field_define, is_field_define, get_field_desc_from_define
 from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset, _find_index, \
     get_diff, _filter, _find
 from model.model import TableModel
-from constants import DATABASE_NAME, DATE_FORMAT
+from constants import DATABASE_NAME, DATE_FORMAT, FIELDS_DDL
 
 db = pymysql.connect(host='localhost',
                      user='root',
@@ -41,6 +43,12 @@ def delete_table(table_name):
     sql([f"DROP TABLE IF EXISTS {table_name}"])
 
 
+def clear_table(table_name):
+    delete_sql = f"DELETE FROM {table_name}"
+    print(delete_sql)
+    sql([delete_sql], lambda cursor: db.commit())
+
+
 def describe_table(table_name):
     # return sql([f"describe {table_name}"], lambda cursor: cursor.fetchall())
     # (('stock_basic', 'CREATE TABLE `stock_basic` (\n  `ts_code` char(9) NOT NULL,\n  `symbol` char(6) NO ....
@@ -60,14 +68,6 @@ def create_table(table_name, safe_columns):
         # f"DROP TABLE IF EXISTS {table_name}",
         f"CREATE TABLE {table_name} ({','.join(safe_columns)}) CHARSET=utf8"
     ])
-
-
-def clear_table(table_name):
-    delete_sql = f"DELETE FROM {table_name}"
-    print(delete_sql)
-    sql([
-        delete_sql
-    ], lambda cursor: db.commit())
 
 
 def get_table_primary_key(table_name):
@@ -124,6 +124,46 @@ def update_table(table_name, column_name_list, row, conditions):
     #     update_sql
     # ], lambda cursor: db.commit())
     # return update_sql
+
+
+# 'ts_code' field
+# 'ts_code CHAR(9) PRIMARY KEY' field_define
+
+# 1. add fields
+# 2. update fields
+# 3. delete fields
+
+# action: 'ADD' | 'update' | 'DELETE'
+def update_table_fields(
+        table_name: str,
+        add_field_defines: list[str] = None,
+        update_field_defines: dict[str, str] = None,
+        delete_fields: list[str] = None,
+):
+    add_field_sqls = _map(add_field_defines,
+                          lambda field_define: f"ALTER TABLE {table_name} ADD COLUMN {safe_field_define(field_define)}")
+    delete_field_sqls = _map(delete_fields, lambda field: f"ALTER TABLE {table_name} DROP COLUMN {safe_field(field)}")
+
+    desc = None
+    real_update_field_defines = {}
+    for from_field in update_field_defines:
+        to_field_define = update_field_defines.get(from_field)
+        if not is_field_define(to_field_define):
+            if desc is None:
+                desc = describe_table(table_name)
+            from_field_define = _find(desc.columns, lambda field_define: field_define.split(' ')[0] == from_field)
+            field_desc = get_field_desc_from_define(from_field_define)
+            update_field_define = safe_field(to_field_define) + " " + field_desc
+        else:
+            update_field_define = safe_field_define(to_field_define)
+        real_update_field_defines[from_field] = update_field_define
+
+    update_field_sqls = _map(real_update_field_defines, lambda
+        field: f"ALTER TABLE {table_name} CHANGE {safe_field(field)} {safe_field_define(real_update_field_defines.get(field))}")
+
+    sql_list = add_field_sqls + delete_field_sqls + update_field_sqls
+    print(sql_list)
+    sql(sql_list)
 
 
 def insert_update_table(table_name, column_names, row_list):
