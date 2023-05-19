@@ -6,7 +6,7 @@ from datetime import date, timedelta, datetime
 from db.str import safe_column, safe_field, safe_field_define
 from ts.index import pro_bar, pro_api, fetch_daily, format_fields, fields_map_df
 from db.index import show_tables, delete_table, create_table, insert_table, read_table, describe_table, copy_table, \
-    clear_table, update_table_fields
+    clear_table, update_table_fields, get_last_row
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe
@@ -131,13 +131,13 @@ import baostock as bs
 # df_bs.to_csv("./history_A_stock_k_data_qfq_bs.csv", index=False)
 # df_ts.to_csv("./history_A_stock_k_data_qfq_ts.csv", index=False)
 # update_table_fields("d_000002", "trade_date")
-
-update_table_fields(
-    "d_000001",
-    # add_field_defines=["shareholder CHAR(10) NOT NULL", "hold_per FLOAT(10) NOT NULL"],
-    # delete_fields=["close_qfq", "low_qfq"],
-    update_field_defines={"shareholder": "share_holder"}
-)
+#
+# update_table_fields(
+# "d_000001",
+# add_field_defines=["shareholder CHAR(10) NOT NULL", "hold_per FLOAT(10) NOT NULL"],
+# delete_fields=["close_qfq", "low_qfq"],
+# update_field_defines={"shareholder": "share_holder"}
+# )
 
 # d = {"a":1, "b":2, "c": 3}
 # r = _map(d, lambda item: d.get(item))
@@ -146,3 +146,6 @@ update_table_fields(
 # print(len(arr))
 
 # print(safe_field_define("`share_holder` char(10) NOT NULL"))
+
+result = get_last_row('d_000002', fields=['trade_date'], order_by='trade_date')
+print(result[0])

@@ -1,4 +1,4 @@
-from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table
+from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table, sql
 from ts.index import pro_api
 from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index
 import datetime
@@ -110,9 +110,12 @@ def delete_d_tables():
 
 
 # 如果表为空，返回None
-def get_latest_trade_date_from_d_table(table_name: str):
-    # TODO
-    return ''
+# PS: harrison写给lanny：受你启发，写出了db.index.get_latest_row()，因为已经足够方便，故不需要此service方法了
+# def get_latest_row_from_d_table(table_name: str):
+#     result = read_table(table_name, ['trade_date'], "ORDER BY trade_date DESC LIMIT 1")
+#     if len(result):
+#         return result[0]
+#     return None
 
 
 def update_d_tables():

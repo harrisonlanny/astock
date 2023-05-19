@@ -201,16 +201,19 @@ def insert_update_table(table_name, column_names, row_list):
             update_table(table_name, column_names, row, f"WHERE {describe.primary_key} = {row[pk_index]}")
 
 
-def read_table(table_name: str, read_columns: list = None, filter_str=''):
+def read_table(table_name: str, fields: list[str] = None, filter_str=''):
     read_columns_str = '*'
-    if is_iterable(read_columns) and len(read_columns) > 0:
-        read_columns_str = ','.join(read_columns)
+    if is_iterable(fields) and len(fields) > 0:
+        read_columns_str = ','.join(fields)
     read_sql = f"SELECT {read_columns_str} FROM {table_name} {filter_str}"
     return sql([read_sql], lambda cursor: cursor.fetchall())
 
 
-# def read_table_filter(table_name: str, read_columns: list = None, filter):
-
+def get_last_row(table_name: str, fields: list[str] = None, order_by: str = ''):
+    result = read_table(table_name, fields, f"ORDER BY {order_by} DESC LIMIT 1")
+    if len(result):
+        return result[0]
+    return None
 
 if __name__ == '__main__':
     table_name = 'haha'
