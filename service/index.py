@@ -1,7 +1,7 @@
 from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table, sql, \
     get_last_row, clear_table
 from ts.index import pro_api, fetch_daily
-from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index
+from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index, add_date
 import datetime
 from model.index import describe_json
 from constants import DATE_FORMAT
@@ -133,12 +133,13 @@ def update_d_tables():
     d_tables = ["d_000001", "d_000002"]
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
     desc = describe_json("d")
+    date_code_map = {}
     for d_table in d_tables:
         last_row = get_last_row(d_table, fields=['trade_date'], order_by='trade_date')
-    # 3. 如果返回的为空，调用fetch_daily(ts_code)填充该表
+        symbol = d_table[2:]
+        ts_code = get_ts_code_from_symbol(symbol)
+        # 3. 如果返回的为空，调用fetch_daily(ts_code)填充该表
         if last_row is None:
-            symbol = d_table[2:]
-            ts_code = get_ts_code_from_symbol(symbol)
             print(f"{d_table}表为空，调用fetch_daily({ts_code})")
             daily_df = fetch_daily(ts_code)
             daily_df = add_adj_factor(daily_df)
@@ -150,11 +151,28 @@ def update_d_tables():
             clear_table(d_table)
             insert_table(d_table, sort_fields, values)
             print('insert_table完成!')
-    # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
+        # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
+        else:
+            last_trade_date = last_row['trade_date']
+            if date_code_map.get(last_trade_date) is None:
+                date_code_map[last_trade_date] = []
+            date_code_map[last_trade_date].append(ts_code)
 
-    # 5. 得到 如: [('latest_trade_date1', ts_codes),('latest_trade_date2', ts_codes)...]
+    print('date_code_map', date_code_map)
+    # 5. 得到 如: {'latest_trade_date1': [ts_code1, ts_code2],'latest_trade_date2': [ts_code3, ts_code4]...}
+    for last_trade_date in date_code_map:
+        ts_codes = date_code_map[last_trade_date]
+        start_date_str = add_date(last_trade_date, add_days=1, result_type='str')
+        if len(ts_codes) > len(d_tables)/2:
+            # TODO 直接fetch_daily(start_date=last_trade_date + 1)
+            df = fetch_daily(start_date=start_date_str)
+
+        # else:
+        #     # TODO 遍历ts_codes，逐条发送fetch_daliy(ts_code, start_date=last_trade_date + 1)
+
     # 6. 根据5的分类，如果ts_codes为单条，fetch_daily(ts_code, start_date, end_date)
-    #               如果ts_codes为多条，因为根据逻辑，大概率是几千条，所以直接fetch_daily(start_date, end_date)
+    #               如果ts_codes为多条，因为根据逻辑(大于一半），大概率是几千条，所以直接fetch_daily(start_date, end_date)
+
     return None
 
 # def update_d_table(table_name):

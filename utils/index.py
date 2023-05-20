@@ -1,10 +1,9 @@
 import os
+from collections.abc import Iterable
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 
 import pandas
-
-from collections.abc import Iterable
-
 from pandas import DataFrame
 
 from constants import PROJECT_NAME
@@ -167,6 +166,20 @@ def list2dict(keys: list, values: list):
         value = values[index]
         result[key] = value
     return result
+
+
+def add_date(d: date, add_days: int, result_type: str = 'date', str_format: str = '%Y%m%d'):
+    result = d + timedelta(days=add_days)
+    if result_type == 'date':
+        return result
+    return date.strftime(result, str_format)
+
+
+def add_date_str(date_str: str, add_days: int, str_format: str = '%Y%m%d'):
+    _date = datetime.strptime(date_str, str_format).date()
+    new_date = add_date(_date, add_days)
+    return date.strftime(new_date, str_format)
+
 
 if __name__ == '__main__':
     print(get_path('/model/tables.json'))
