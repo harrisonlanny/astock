@@ -5,7 +5,8 @@ from pandas import DataFrame
 from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table, sql, \
     get_last_row, clear_table
 from ts.index import pro_api, fetch_daily
-from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index, add_date
+from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index, add_date, \
+    str2date, get_current_date
 import datetime
 from model.index import describe_json
 from constants import DATE_FORMAT
@@ -149,12 +150,13 @@ def update_d_tables():
             time.sleep(1.5)
             daily_df = add_adj_factor(daily_df)
             # 从djson中拿到真正会被用到的字段（即非open_qfq、close_qfq...）
-            sort_fields = _filter(desc.column_names, lambda field: not field.endswith('_qfq'))
-            print('api返回字段排序后：', sort_fields)
-            daily_df = daily_df[sort_fields]
+            # sort_fields = _filter(desc.column_names, lambda field: not field.endswith('_qfq'))
+            # print('api返回字段排序后：', sort_fields)
+            # daily_df = daily_df[sort_fields]
             fields, values = parse_dataframe(daily_df)
+            print('fields:', fields)
             clear_table(d_table)
-            insert_table(d_table, sort_fields, values)
+            insert_table(d_table, fields, values)
             print('insert_table完成!')
         # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
         else:
@@ -165,7 +167,15 @@ def update_d_tables():
 
     print('date_code_map', date_code_map)
     # 5. 得到 如: {'latest_trade_date1': [ts_code1, ts_code2],'latest_trade_date2': [ts_code3, ts_code4]...}
+    current_date = get_current_date()
     for last_trade_date in date_code_map:
+        # 判断这个日期是周五 并且今天距离这个日期不超过2天（说明间隔的日期都是周末，没必要去请求）
+        ltd = str2date(last_trade_date)
+        gap_days = (current_date - ltd).days
+        if ltd.isoweekday() == 5 and gap_days <= 2:
+            print(f'{last_trade_date}是周五 并且今天距离这个日期不超过2天', '所以直接跳过没必要去请求')
+            continue
+
         ts_codes = date_code_map[last_trade_date]
         start_date_str = add_date(last_trade_date, add_days=1, result_type='str')
         if len(ts_codes) > len(d_tables) / 2:

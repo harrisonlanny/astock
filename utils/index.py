@@ -181,6 +181,14 @@ def add_date_str(date_str: str, add_days: int, str_format: str = '%Y%m%d'):
     return date.strftime(new_date, str_format)
 
 
+def str2date(date_str: str, str_format: str = '%Y%m%d'):
+    return datetime.strptime(date_str, str_format).date()
+
+
+def get_current_date():
+    return datetime.now().date()
+
+
 if __name__ == '__main__':
     print(get_path('/model/tables.json'))
 
