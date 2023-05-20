@@ -9,7 +9,7 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
     clear_table, update_table_fields, get_last_row, get_first_row
 from model.index import describe_json
 from model.model import TableModel
-from utils.index import _map, parse_dataframe, print_dataframe
+from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict
 from utils.stock import fq, _filter, fq2
 from service.index import api_query, get_current_d_tables
 
@@ -146,6 +146,9 @@ import baostock as bs
 # print(len(arr))
 
 # print(safe_field_define("`share_holder` char(10) NOT NULL"))
+# 
+# result = get_first_row('d_000002', fields=['trade_date'], order_by='trade_date')
+# print(result['trade_date'])
 
-result = get_first_row('d_000002', fields=['trade_date'], order_by='trade_date')
-print(result[0])
+
+

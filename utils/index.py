@@ -32,6 +32,16 @@ def _map(data_list, callback):
     return list(map(callback, data_list))
 
 
+def _map2(data_list, callback):
+    if data_list is None:
+        return []
+    result = []
+    for index, item in enumerate(data_list):
+        new_item = callback(item, index)
+        result.append(new_item)
+    return result
+
+
 def _filter(data_list, callback):
     if data_list is None:
         return []
@@ -150,6 +160,13 @@ def dict_kv_convert(data: dict):
         result[v] = k
     return result
 
+
+def list2dict(keys: list, values: list):
+    result = {}
+    for index, key in enumerate(keys):
+        value = values[index]
+        result[key] = value
+    return result
 
 if __name__ == '__main__':
     print(get_path('/model/tables.json'))

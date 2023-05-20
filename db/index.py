@@ -9,7 +9,7 @@ import pymysql
 
 from db.str import safe_column, safe_field, safe_field_define, is_field_define, get_field_desc_from_define
 from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset, _find_index, \
-    get_diff, _filter, _find
+    get_diff, _filter, _find, _map2, list2dict
 from model.model import TableModel
 from constants import DATABASE_NAME, DATE_FORMAT, FIELDS_DDL
 
@@ -201,23 +201,31 @@ def insert_update_table(table_name, column_names, row_list):
             update_table(table_name, column_names, row, f"WHERE {describe.primary_key} = {row[pk_index]}")
 
 
-def read_table(table_name: str, fields: list[str] = None, filter_str=''):
+def read_table(table_name: str, fields: list[str] = None, filter_str='', result_type: str = 'list'):
     read_columns_str = '*'
     if is_iterable(fields) and len(fields) > 0:
         read_columns_str = ','.join(fields)
     read_sql = f"SELECT {read_columns_str} FROM {table_name} {filter_str}"
-    return sql([read_sql], lambda cursor: cursor.fetchall())
+    row_list = sql([read_sql], lambda cursor: cursor.fetchall())
+    if result_type == 'dict':
+        if read_columns_str == '*':
+            desc = describe_table(table_name)
+            fields = desc.column_names
+        return _map(row_list, lambda row: list2dict(fields, row))
+    # TODO elif result_type == 'df':
+
+    return row_list
 
 
-def get_first_row(table_name: str, fields: list[str] = None, order_by: str = ''):
-    result = read_table(table_name, fields, f"ORDER BY {order_by} LIMIT 1")
+def get_first_row(table_name: str, fields: list[str] = None, order_by: str = '', result_type: str = 'dict'):
+    result = read_table(table_name, fields, filter_str=f"ORDER BY {order_by} LIMIT 1", result_type=result_type)
     if len(result):
         return result[0]
     return None
 
 
-def get_last_row(table_name: str, fields: list[str] = None, order_by: str = ''):
-    result = read_table(table_name, fields, f"ORDER BY {order_by} DESC LIMIT 1")
+def get_last_row(table_name: str, fields: list[str] = None, order_by: str = '', result_type: str = 'dict'):
+    result = read_table(table_name, fields, filter_str=f"ORDER BY {order_by} DESC LIMIT 1", result_type=result_type)
     if len(result):
         return result[0]
     return None
