@@ -133,8 +133,8 @@ def delete_d_tables():
 
 def update_d_tables():
     # 1. 遍历所有的d_tables
-    # d_tables = get_current_d_tables()
-    d_tables = ["d_000001", "d_000002"]
+    d_tables = get_current_d_tables()
+    # d_tables = ["d_000001", "d_000002"]
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
     desc = describe_json("d")
     date_code_map = {}
