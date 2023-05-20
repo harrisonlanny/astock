@@ -1,3 +1,4 @@
+import csv
 import time
 
 from pandas import DataFrame
@@ -6,7 +7,7 @@ from db.index import delete_table, create_table, insert_table, read_table, show_
     get_last_row, clear_table
 from ts.index import pro_api, fetch_daily
 from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index, add_date, \
-    str2date, get_current_date
+    str2date, get_current_date, get_path
 import datetime
 from model.index import describe_json
 from constants import DATE_FORMAT
@@ -131,6 +132,13 @@ def delete_d_tables():
 #         return result[0]
 #     return None
 
+def write_log(row_list):
+    csv_path = get_path('/update_d_log.csv')
+    f = open(csv_path, 'a', encoding='utf8', newline='')
+    csv_writer = csv.writer(f)
+
+    csv_writer.writerows(row_list)
+
 
 def update_d_tables():
     # 1. 遍历所有的d_tables
@@ -156,8 +164,15 @@ def update_d_tables():
             fields, values = parse_dataframe(daily_df)
             print('fields:', fields)
             clear_table(d_table)
-            insert_table(d_table, fields, values)
-            print('insert_table完成!')
+            try:
+                insert_table(d_table, fields, values)
+
+            except Exception as e:
+                print("插入报错：", e)
+                write_log([
+                    [ts_code, symbol, table_index+1, e]
+                ])
+                continue
         # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
         else:
             last_trade_date = last_row['trade_date']
@@ -234,4 +249,3 @@ def update_d_tables():
                 _fields, _values = parse_dataframe(df)
                 print(f"小众，{table_name}表插入数据：", _fields, '\n', _values)
                 insert_table(table_name, _fields, _values)
-

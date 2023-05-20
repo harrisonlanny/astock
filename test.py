@@ -15,7 +15,7 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
-    get_current_date, replace_nan_from_dataframe, _is_nan
+    get_current_date, replace_nan_from_dataframe, _is_nan, get_path
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
 
@@ -196,5 +196,12 @@ import baostock as bs
 # print('check_nan', check_nan)
 # print(df.isnull())
 
-value = np.nan
-print(_is_nan(value))
+import csv
+csv_path = get_path('/update_d_log.csv')
+f = open(csv_path, 'a', encoding='utf8', newline='')
+csv_writer = csv.writer(f)
+
+csv_writer.writerows([
+    # ['name', 'age'],
+    ['harrison', 3],
+])

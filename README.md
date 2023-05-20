@@ -15,3 +15,12 @@ query daily from  to 19940809
 169
 api返回字段排序后： ['ts_code', 'trade_date', 'open', 'high', 'low', 'close', 'pre_close', 'change', 'pct_chg', 'vol', 'amount', 'adj_factor']
 DELETE FROM d_000536
+
+
+d_001324表为空，调用fetch_daily(001324.SZ) 566/5383
+query daily from  to 
+0
+fields: ['ts_code' 'trade_date' 'open' 'high' 'low' 'close' 'pre_close' 'change'
+ 'pct_chg' 'vol' 'amount' 'adj_factor']
+DELETE FROM d_001324
+pymysql.err.ProgrammingError: (1064, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1")
