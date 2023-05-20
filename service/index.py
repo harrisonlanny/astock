@@ -169,11 +169,15 @@ def update_d_tables():
     # 5. 得到 如: {'latest_trade_date1': [ts_code1, ts_code2],'latest_trade_date2': [ts_code3, ts_code4]...}
     current_date = get_current_date()
     for last_trade_date in date_code_map:
-        # 判断这个日期是周五 并且今天距离这个日期不超过2天（说明间隔的日期都是周末，没必要去请求）
+        # 1. 判断这个日期是周五 并且今天距离这个日期不超过2天（说明间隔的日期都是周末，没必要去请求）
         ltd = str2date(last_trade_date)
         gap_days = (current_date - ltd).days
         if ltd.isoweekday() == 5 and gap_days <= 2:
-            print(f'{last_trade_date}是周五 并且今天距离这个日期不超过2天', '所以直接跳过没必要去请求')
+            print(f'{last_trade_date}是周五 并且今天距离这个日期不超过2天', '所以直接跳过 没必要去请求')
+            continue
+        # 2. 判断这个日期是否是今天，如果是，也没必要再去请求了
+        if gap_days == 0:
+            print(f'{last_trade_date}是今天', '所以直接跳过 没必要去请求')
             continue
 
         ts_codes = date_code_map[last_trade_date]

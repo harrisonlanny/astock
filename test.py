@@ -11,7 +11,8 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
     clear_table, update_table_fields, get_last_row, get_first_row
 from model.index import describe_json
 from model.model import TableModel
-from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date
+from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
+    get_current_date
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
 
@@ -168,12 +169,9 @@ import baostock as bs
 # test_data = fetch_daily(start_date="20230512", end_date="")
 # test_data.to_csv("./test.csv", index=False)
 
-# current_date = datetime.now().date()
+current_date = get_current_date()
+test_date = str2date("20230520")
+gap_days = (current_date - test_date).days
+print(gap_days)
 # print(current_date,current_date.isoweekday())
-data_list = ['a', 'b', 'c']
 
-for index, data in enumerate(data_list):
-    if index == 1:
-        print(f'{data}跳过')
-        continue
-    print(f"{data} 执行咯")
