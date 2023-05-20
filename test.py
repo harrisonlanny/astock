@@ -1,5 +1,6 @@
 import time
 
+import numpy
 import pandas
 import numpy as np
 import pandas as pd
@@ -180,17 +181,20 @@ import baostock as bs
 # df = replace_nan_from_dataframe(df)
 # df.to_csv("./test.csv", index=False)
 
-num = {'rose': [None, 'abc', np.nan],
-       'jack': ['x', np.nan, 2],
-       }
-
-# Create the dataframe
-df = DataFrame(num, columns=['rose', 'jack'])
-print(df)
-# print('\n')
-df = replace_nan_from_dataframe(df)
-print(df)
+# num = {'rose': [None, 'abc', np.nan],
+#        'jack': ['x', np.nan, 2],
+#        }
+#
+# # Create the dataframe
+# df = DataFrame(num, columns=['rose', 'jack'])
+# print(df)
+# # print('\n')
+# df = replace_nan_from_dataframe(df)
+# print(df)
 # Applying the method
 # check_nan = df['Integers'].isnull().values.any()
 # print('check_nan', check_nan)
 # print(df.isnull())
+
+value = np.nan
+print(np.isnan(value))

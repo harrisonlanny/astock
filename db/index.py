@@ -84,7 +84,7 @@ def get_table_primary_key(table_name):
 def format_insert_value(value):
     if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
-    if isinstance(value, numpy.nan):
+    if numpy.isnan(value):
         value = None
     value = none_to_null_str(add_single_quotation(value))
     return value
