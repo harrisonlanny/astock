@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 
+import numpy
 import pandas
 from pandas import DataFrame
 
@@ -23,6 +24,16 @@ def get_path(src_relative_path):
     str_path = str(src_relative_path)
     _path = str_path if str_path.startswith('/') else '/' + str_path
     return f"{get_root_path()}{_path}"
+
+
+def _is_number(value):
+    return isinstance(value, (int, float))
+
+
+def _is_nan(value):
+    if _is_number(value):
+        return numpy.isnan(value)
+    return False
 
 
 def _map(data_list, callback):

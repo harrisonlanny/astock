@@ -15,7 +15,7 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
-    get_current_date, replace_nan_from_dataframe
+    get_current_date, replace_nan_from_dataframe, _is_nan
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
 
@@ -197,4 +197,4 @@ import baostock as bs
 # print(df.isnull())
 
 value = np.nan
-print(np.isnan(value))
+print(_is_nan(value))

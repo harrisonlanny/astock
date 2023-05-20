@@ -10,7 +10,7 @@ import pymysql
 
 from db.str import safe_column, safe_field, safe_field_define, is_field_define, get_field_desc_from_define
 from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset, _find_index, \
-    get_diff, _filter, _find, _map2, list2dict
+    get_diff, _filter, _find, _map2, list2dict, _is_nan
 from model.model import TableModel
 from constants import DATABASE_NAME, DATE_FORMAT, FIELDS_DDL
 
@@ -84,7 +84,7 @@ def get_table_primary_key(table_name):
 def format_insert_value(value):
     if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
-    if numpy.isnan(value):
+    if _is_nan(value):
         value = None
     value = none_to_null_str(add_single_quotation(value))
     return value
