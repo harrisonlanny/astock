@@ -5,6 +5,7 @@ Created on 2023年5月11日
 '''
 import datetime
 
+import numpy
 import pymysql
 
 from db.str import safe_column, safe_field, safe_field_define, is_field_define, get_field_desc_from_define
@@ -83,6 +84,8 @@ def get_table_primary_key(table_name):
 def format_insert_value(value):
     if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
+    if isinstance(value, numpy.nan):
+        value = None
     value = none_to_null_str(add_single_quotation(value))
     return value
 

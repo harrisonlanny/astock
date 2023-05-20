@@ -1,6 +1,8 @@
 import time
 
 import pandas
+import numpy as np
+import pandas as pd
 from pandas import DataFrame, concat
 from decimal import Decimal, getcontext
 from datetime import date, timedelta, datetime
@@ -12,7 +14,7 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
-    get_current_date
+    get_current_date, replace_nan_from_dataframe
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
 
@@ -169,9 +171,26 @@ import baostock as bs
 # test_data = fetch_daily(start_date="20230512", end_date="")
 # test_data.to_csv("./test.csv", index=False)
 
-current_date = get_current_date()
-test_date = str2date("20230520")
-gap_days = (current_date - test_date).days
-print(gap_days)
-# print(current_date,current_date.isoweekday())
 
+# (('000536.SZ', '000536', '华映科技', '福建', '元器件', '主板', 'L', datetime.date(1993, 11, 26), None, 'S'),)
+# ts_code = '000536.SZ'
+# # stock_info = read_table('stock_basic', filter_str=f"WHERE `ts_code`='{ts_code}'")
+# # print(stock_info)
+# df = fetch_daily(ts_code)
+# df = replace_nan_from_dataframe(df)
+# df.to_csv("./test.csv", index=False)
+
+num = {'rose': [None, 'abc', np.nan],
+       'jack': ['x', np.nan, 2],
+       }
+
+# Create the dataframe
+df = DataFrame(num, columns=['rose', 'jack'])
+print(df)
+# print('\n')
+df = replace_nan_from_dataframe(df)
+print(df)
+# Applying the method
+# check_nan = df['Integers'].isnull().values.any()
+# print('check_nan', check_nan)
+# print(df.isnull())

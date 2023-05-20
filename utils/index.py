@@ -124,6 +124,11 @@ def none_to_null_str(v):
     return v
 
 
+def replace_nan_from_dataframe(df: pandas.DataFrame, replace=None):
+    print('check_nan', df.isnull())
+    return df.astype(object).where(pandas.notnull(df), replace)
+
+
 def parse_dataframe(df: pandas.DataFrame):
     columns = df.columns.values
     values = df.to_numpy().tolist()
