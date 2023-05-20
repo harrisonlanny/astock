@@ -24,9 +24,9 @@ def fq(df: DataFrame):
     return df
 
 
-def add_adj_factor(df: DataFrame):
+def add_adj_factor(df: DataFrame, init_adj_factor=1):
     df["pct_chg_fq"] = df['close'] / df['pre_close'] - 1
-    df["adj_factor"] = (1 + df["pct_chg_fq"]).cumprod()
+    df["adj_factor"] = (1 + df["pct_chg_fq"]).cumprod() * init_adj_factor
     df.pop("pct_chg_fq")
     return df
 

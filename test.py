@@ -1,3 +1,5 @@
+import time
+
 import pandas
 from pandas import DataFrame, concat
 from decimal import Decimal, getcontext
@@ -156,9 +158,16 @@ import baostock as bs
 # df = df.sort_index(ascending=False)
 # print(df)
 
-# df = DataFrame(columns=['name', 'age'], data=[['harrison', 29], ['lanny', 31], ['boyu', 0.1], ['orange', 5], ['pizi', 4]])
-# new_df = df[df['age'] >= 10]
+# df = DataFrame(columns=['name', 'age'], data=[['harrison', 1.5], ['lanny', 2], ['boyu', 3], ['orange', 4], ['pizi', 5]])
+# new_df = df[~df['name'].isin(['orange', 'pizi'])]
 # print(new_df)
 
-test_data = fetch_daily(start_date="20230512", end_date="")
-test_data.to_csv("./test.csv", index=False)
+# df['age'] = (df['age'] + 1).cumprod() * 2
+# print(df)
+
+# test_data = fetch_daily(start_date="20230512", end_date="")
+# test_data.to_csv("./test.csv", index=False)
+
+print('1')
+time.sleep(2)
+print('2')

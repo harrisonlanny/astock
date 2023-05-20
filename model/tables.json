@@ -28,7 +28,7 @@
       "pct_chg FLOAT(10)",
       "vol FLOAT(10)",
       "amount FLOAT(10)",
-      "adj_factor FLOAT(10)",
+      "adj_factor DOUBLE",
       "open_qfq FLOAT(10)",
       "high_qfq FLOAT(10)",
       "low_qfq FLOAT(10)",

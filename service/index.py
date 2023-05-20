@@ -1,3 +1,7 @@
+import time
+
+from pandas import DataFrame
+
 from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table, sql, \
     get_last_row, clear_table
 from ts.index import pro_api, fetch_daily
@@ -134,14 +138,15 @@ def update_d_tables():
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
     desc = describe_json("d")
     date_code_map = {}
-    for d_table in d_tables:
+    for table_index, d_table in enumerate(d_tables):
         last_row = get_last_row(d_table, fields=['trade_date'], order_by='trade_date')
         symbol = d_table[2:]
         ts_code = get_ts_code_from_symbol(symbol)
         # 3. 如果返回的为空，调用fetch_daily(ts_code)填充该表
         if last_row is None:
-            print(f"{d_table}表为空，调用fetch_daily({ts_code})")
+            print(f"{d_table}表为空，调用fetch_daily({ts_code})", f"{table_index + 1}/{len(d_tables)}")
             daily_df = fetch_daily(ts_code)
+            time.sleep(1.5)
             daily_df = add_adj_factor(daily_df)
             # 从djson中拿到真正会被用到的字段（即非open_qfq、close_qfq...）
             sort_fields = _filter(desc.column_names, lambda field: not field.endswith('_qfq'))
@@ -163,33 +168,56 @@ def update_d_tables():
     for last_trade_date in date_code_map:
         ts_codes = date_code_map[last_trade_date]
         start_date_str = add_date(last_trade_date, add_days=1, result_type='str')
-        if len(ts_codes) > len(d_tables)/2:
-            # TODO 直接fetch_daily(start_date=last_trade_date + 1)
+        if len(ts_codes) > len(d_tables) / 2:
             df = fetch_daily(start_date=start_date_str)
+            df = df[df['ts_code'].isin(ts_codes)]
+            fields, values = parse_dataframe(df)
+            # [
+            # ['000001.SZ', '20230101', 1],
+            # ['000002.SZ', '20230101', 1],
+            # ['000001.SZ', '20230102', 1],
+            # ['000002.SZ', '20230102', 1],
+            # ]
 
-        # else:
-        #     # TODO 遍历ts_codes，逐条发送fetch_daliy(ts_code, start_date=last_trade_date + 1)
+            # {
+            #   '000001.SZ': [['000001.SZ', '20230101', 1], ['000001.SZ', '20230101', 1]]
+            #   '000002.SZ': [['000002.SZ', '20230101', 1],['000002.SZ', '20230101', 1]]
+            #  }
+            code_values_map = {}
+            for value in values:
+                ts_code = value[0]
+                if code_values_map[ts_code] is None:
+                    code_values_map[ts_code] = []
+                code_values_map[ts_code].append(value)
 
-    # 6. 根据5的分类，如果ts_codes为单条，fetch_daily(ts_code, start_date, end_date)
-    #               如果ts_codes为多条，因为根据逻辑(大于一半），大概率是几千条，所以直接fetch_daily(start_date, end_date)
+            for ts_code in code_values_map:
+                table_name = f"d_{ts_code.split('.')[0]}"
+                values = code_values_map[ts_code]
+                _df = DataFrame(columns=fields, data=values)
+                # 从数据库取最后一条数据，取出它的adj_factor做初始值
+                last_row = get_last_row(table_name, fields=['adj_factor'], order_by='trade_date')
+                init_adj_factor = last_row['adj_factor']
+                # 为新增加的数据计算出adj_factor
+                _df = add_adj_factor(_df, init_adj_factor=init_adj_factor)
+                _fields, _values = parse_dataframe(_df)
+                print(f"大众，{table_name}表插入数据：", _fields, '\n', _values)
+                insert_table(table_name, _fields, _values)
+        else:
+            # [
+            # ['000001.SZ', '20230101', 1],
+            # ['000001.SZ', '20230102', 1],
+            # ]
+            for ts_code in ts_codes:
+                df = fetch_daily(ts_code, start_date=start_date_str)
+                time.sleep(1.5)
+                fields, values = parse_dataframe(df)
+                table_name = f"d_{ts_code.split('.')[0]}"
+                # 从数据库取最后一条数据，取出它的adj_factor做初始值
+                last_row = get_last_row(table_name, fields=['adj_factor'], order_by='trade_date')
+                init_adj_factor = last_row['adj_factor']
+                # 为新增加的数据计算出adj_factor
+                df = add_adj_factor(df, init_adj_factor=init_adj_factor)
+                _fields, _values = parse_dataframe(df)
+                print(f"小众，{table_name}表插入数据：", _fields, '\n', _values)
+                insert_table(table_name, _fields, _values)
 
-    return None
-
-# def update_d_table(table_name):
-#
-#     # 1. 判断是全量更新还是增量更新（如果除权，需要将所有日线数据都更新的，我们只获取前除权日线）
-#     #      方法：取该股票上市第一天的开盘价 （从数据库和tushare两个源），然后对比这两个源拿到的数据是否一致，
-#     #      如果一致，认为没有除权，则增量更新即可；反之 全量更新
-#     first_day_open_from_table = read_table(table_name, )
-#     first_day_open_from_api =
-#     should_full_update = first_day_open_from_table != first_day_open_from_api
-#
-#     # 2. 如果是全量更新，就将能请求到的所有日线数据都insert
-#     if should_full_update:
-#         all_values =
-#         insert_table(table_name, )
-#     # 3. 如果是增量更新，就拿表中最后一条数据的日期到最新的日期的数据
-#     else:
-#         latest_date = read_table()
-#         api(latest_date, now)
-#         insert_table(table_name)
