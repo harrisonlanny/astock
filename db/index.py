@@ -209,11 +209,19 @@ def read_table(table_name: str, fields: list[str] = None, filter_str=''):
     return sql([read_sql], lambda cursor: cursor.fetchall())
 
 
+def get_first_row(table_name: str, fields: list[str] = None, order_by: str = ''):
+    result = read_table(table_name, fields, f"ORDER BY {order_by} LIMIT 1")
+    if len(result):
+        return result[0]
+    return None
+
+
 def get_last_row(table_name: str, fields: list[str] = None, order_by: str = ''):
     result = read_table(table_name, fields, f"ORDER BY {order_by} DESC LIMIT 1")
     if len(result):
         return result[0]
     return None
+
 
 if __name__ == '__main__':
     table_name = 'haha'

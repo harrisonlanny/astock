@@ -6,7 +6,7 @@ from datetime import date, timedelta, datetime
 from db.str import safe_column, safe_field, safe_field_define
 from ts.index import pro_bar, pro_api, fetch_daily, format_fields, fields_map_df
 from db.index import show_tables, delete_table, create_table, insert_table, read_table, describe_table, copy_table, \
-    clear_table, update_table_fields, get_last_row
+    clear_table, update_table_fields, get_last_row, get_first_row
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe
@@ -147,5 +147,5 @@ import baostock as bs
 
 # print(safe_field_define("`share_holder` char(10) NOT NULL"))
 
-result = get_last_row('d_000002', fields=['trade_date'], order_by='trade_date')
+result = get_first_row('d_000002', fields=['trade_date'], order_by='trade_date')
 print(result[0])

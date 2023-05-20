@@ -110,7 +110,7 @@ def delete_d_tables():
 
 
 # 如果表为空，返回None
-# PS: harrison写给lanny：受你启发，写出了db.index.get_latest_row()，因为已经足够方便，故不需要此service方法了
+# PS: harrison写给lanny：受你启发，写出了db.index.get_latest_row()
 # def get_latest_row_from_d_table(table_name: str):
 #     result = read_table(table_name, ['trade_date'], "ORDER BY trade_date DESC LIMIT 1")
 #     if len(result):
