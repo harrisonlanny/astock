@@ -1,9 +1,11 @@
-from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table, sql
-from ts.index import pro_api
+from db.index import delete_table, create_table, insert_table, read_table, show_tables, insert_update_table, sql, \
+    get_last_row, clear_table
+from ts.index import pro_api, fetch_daily
 from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index
 import datetime
 from model.index import describe_json
 from constants import DATE_FORMAT
+from utils.stock import add_adj_factor
 
 
 def api_query(api_name, fields=None, fields_name=None, **kwargs):
@@ -93,6 +95,13 @@ def get_new_symbols():
     return _map(new_symbols, lambda symbol: symbol[2:])
 
 
+def get_ts_code_from_symbol(symbol):
+    result = read_table("stock_basic", ["ts_code"], filter_str=f"WHERE `symbol`='{symbol}'")
+    if len(result):
+        return result[0][0]
+    return None
+
+
 def create_new_d_tables():
     # safe_columns, column_names, column_names_str, safe_column_names_str = get_columns_info('d')
     describe = describe_json('d')
@@ -119,11 +128,30 @@ def delete_d_tables():
 
 
 def update_d_tables():
-    # 0. 调用read_table('stock_basic')，方便接下来根据table_name拿到ts_code
     # 1. 遍历所有的d_tables
+    # d_tables = get_current_d_tables()
+    d_tables = ["d_000001", "d_000002"]
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
+    desc = describe_json("d")
+    for d_table in d_tables:
+        last_row = get_last_row(d_table, fields=['trade_date'], order_by='trade_date')
     # 3. 如果返回的为空，调用fetch_daily(ts_code)填充该表
+        if last_row is None:
+            symbol = d_table[2:]
+            ts_code = get_ts_code_from_symbol(symbol)
+            print(f"{d_table}表为空，调用fetch_daily({ts_code})")
+            daily_df = fetch_daily(ts_code)
+            daily_df = add_adj_factor(daily_df)
+            # 从djson中拿到真正会被用到的字段（即非open_qfq、close_qfq...）
+            sort_fields = _filter(desc.column_names, lambda field: not field.endswith('_qfq'))
+            print('api返回字段排序后：', sort_fields)
+            daily_df = daily_df[sort_fields]
+            fields, values = parse_dataframe(daily_df)
+            clear_table(d_table)
+            insert_table(d_table, sort_fields, values)
+            print('insert_table完成!')
     # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
+
     # 5. 得到 如: [('latest_trade_date1', ts_codes),('latest_trade_date2', ts_codes)...]
     # 6. 根据5的分类，如果ts_codes为单条，fetch_daily(ts_code, start_date, end_date)
     #               如果ts_codes为多条，因为根据逻辑，大概率是几千条，所以直接fetch_daily(start_date, end_date)
