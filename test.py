@@ -196,12 +196,20 @@ import baostock as bs
 # print('check_nan', check_nan)
 # print(df.isnull())
 
-import csv
-csv_path = get_path('/update_d_log.csv')
-f = open(csv_path, 'a', encoding='utf8', newline='')
-csv_writer = csv.writer(f)
+# import csv
+# csv_path = get_path('/update_d_log.csv')
+# f = open(csv_path, 'a', encoding='utf8', newline='')
+# csv_writer = csv.writer(f)
+#
+# csv_writer.writerows([
+#     # ['name', 'age'],
+#     ['harrison', 3],
+# ])
 
-csv_writer.writerows([
-    # ['name', 'age'],
-    ['harrison', 3],
-])
+# fetch_daily(ts_code='001324.SZ')
+# result = read_table('stock_basic',filter_str="WHERE ts_code = '001324.SZ'",result_type='dict')
+# print(result)
+
+test_date = str2date("20230522")
+current_date = get_current_date()
+print(test_date > current_date)

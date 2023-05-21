@@ -143,14 +143,25 @@ def write_log(row_list):
 def update_d_tables():
     # 1. 遍历所有的d_tables
     d_tables = get_current_d_tables()
-    # d_tables = ["d_000001", "d_000002"]
+    # d_tables = ["d_001324"]
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
     desc = describe_json("d")
     date_code_map = {}
+    current_date = get_current_date()
     for table_index, d_table in enumerate(d_tables):
-        last_row = get_last_row(d_table, fields=['trade_date'], order_by='trade_date')
         symbol = d_table[2:]
         ts_code = get_ts_code_from_symbol(symbol)
+        # [{'ts_code': '001324.SZ', 'symbol': '001324', 'name': '长青科技', 'area': '江苏', 'industry': '运输设备',
+        #   'market': '主板', 'list_status': 'L', 'list_date': datetime.date(2023, 5, 22), 'delist_date': None,
+        #   'is_hs': 'N'}]
+        stock_info = read_table("stock_basic", filter_str=f"WHERE ts_code = '{ts_code}'", result_type="dict")[0]
+        print("\n", f"现在进行到{stock_info['name']},{symbol},{ts_code},{table_index+1}/{len(d_tables)}")
+        if stock_info['list_date'] > current_date:
+            print(f"{d_table}上市日期：{stock_info['list_date']},还未上市")
+            continue
+
+        last_row = get_last_row(d_table, fields=['trade_date'], order_by='trade_date')
+
         # 3. 如果返回的为空，调用fetch_daily(ts_code)填充该表
         if last_row is None:
             print(f"{d_table}表为空，调用fetch_daily({ts_code})", f"{table_index + 1}/{len(d_tables)}")
@@ -170,7 +181,7 @@ def update_d_tables():
             except Exception as e:
                 print("插入报错：", e)
                 write_log([
-                    [ts_code, symbol, table_index+1, e]
+                    [ts_code, symbol, table_index + 1, e]
                 ])
                 continue
         # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
@@ -182,7 +193,7 @@ def update_d_tables():
 
     print('date_code_map', date_code_map)
     # 5. 得到 如: {'latest_trade_date1': [ts_code1, ts_code2],'latest_trade_date2': [ts_code3, ts_code4]...}
-    current_date = get_current_date()
+
     for last_trade_date in date_code_map:
         # 1. 判断这个日期是周五 并且今天距离这个日期不超过2天（说明间隔的日期都是周末，没必要去请求）
         ltd = str2date(last_trade_date)

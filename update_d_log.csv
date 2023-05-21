@@ -1,2 +1,5 @@
 ts_code,symbol,index,error
-harrison,3
+832317.BJ,832317,5240,"(1064, ""You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1"")"
+833874.BJ,833874,5266,"(1064, ""You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1"")"
+833994.BJ,833994,5269,"(1064, ""You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1"")"
+T00018.SH,T00018,5383,"(1064, ""You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1"")"
