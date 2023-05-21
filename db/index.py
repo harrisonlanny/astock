@@ -10,7 +10,7 @@ import pymysql
 
 from db.str import safe_column, safe_field, safe_field_define, is_field_define, get_field_desc_from_define
 from utils.index import _map, _safe_join, add_single_quotation, none_to_null_str, is_iterable, is_subset, _find_index, \
-    get_diff, _filter, _find, _map2, list2dict, _is_nan
+    get_diff, _filter, _find, _map2, list2dict, _is_nan, _is_empty
 from model.model import TableModel
 from constants import DATABASE_NAME, DATE_FORMAT, FIELDS_DDL
 
@@ -93,6 +93,11 @@ def format_insert_value(value):
 # row_list: [[1,2,3],[4,5,6]] => '(1,2,3)','(4,5,6)'
 # row: [1,2,3] => '1,2,3'
 def insert_table(table_name, column_names: list[str], row_list):
+
+    if _is_empty(row_list):
+        print(f"insert into {table_name}, but values empty!!")
+        return
+
     safe_column_names = _map(column_names, lambda cname: f"`{cname.replace('`', '')}`")
 
     row_list_str = ','.join(

@@ -7,7 +7,7 @@ from db.index import delete_table, create_table, insert_table, read_table, show_
     get_last_row, clear_table
 from ts.index import pro_api, fetch_daily
 from utils.index import parse_dataframe, _filter, get_diff, _map, get_diff2, _set, _find, _find_index, add_date, \
-    str2date, get_current_date, get_path
+    str2date, get_current_date, get_path, _is_empty
 import datetime
 from model.index import describe_json
 from constants import DATE_FORMAT
@@ -140,22 +140,46 @@ def write_log(row_list):
     csv_writer.writerows(row_list)
 
 
-def update_d_tables():
+def _insert_table(table_name, fields, values):
+    if _is_empty(values):
+        return False
+    clear_table(table_name)
+    try:
+        insert_table(table_name, fields, values)
+        return True
+    except Exception as e:
+        print("插入报错：", e)
+        symbol = table_name[2:]
+        ts_code = get_ts_code_from_symbol(symbol)
+        stock_info = read_table("stock_basic", filter_str=f"WHERE ts_code = '{ts_code}'", result_type="dict")[0]
+        write_log([
+            [stock_info['name'], ts_code, symbol, e]
+        ])
+        return False
+
+
+def update_d_tables(sleep_time: float = 1.5):
     # 1. 遍历所有的d_tables
     d_tables = get_current_d_tables()
-    # d_tables = ["d_001324"]
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
     desc = describe_json("d")
     date_code_map = {}
     current_date = get_current_date()
+    stock_info_list = read_table("stock_basic", result_type="dict")
+    stock_info_map = {}
+    for stock_info in stock_info_list:
+        ts_code = stock_info['ts_code']
+        stock_info_map[ts_code] = stock_info
+
     for table_index, d_table in enumerate(d_tables):
         symbol = d_table[2:]
         ts_code = get_ts_code_from_symbol(symbol)
         # [{'ts_code': '001324.SZ', 'symbol': '001324', 'name': '长青科技', 'area': '江苏', 'industry': '运输设备',
         #   'market': '主板', 'list_status': 'L', 'list_date': datetime.date(2023, 5, 22), 'delist_date': None,
         #   'is_hs': 'N'}]
-        stock_info = read_table("stock_basic", filter_str=f"WHERE ts_code = '{ts_code}'", result_type="dict")[0]
-        print("\n", f"现在进行到{stock_info['name']},{symbol},{ts_code},{table_index+1}/{len(d_tables)}")
+        # stock_info = read_table("stock_basic", filter_str=f"WHERE ts_code = '{ts_code}'", result_type="dict")[0]
+        stock_info = stock_info_map[ts_code]
+        print("\n", f"现在进行到{stock_info['name']},{symbol},{ts_code},{table_index + 1}/{len(d_tables)}")
         if stock_info['list_date'] > current_date:
             print(f"{d_table}上市日期：{stock_info['list_date']},还未上市")
             continue
@@ -166,7 +190,7 @@ def update_d_tables():
         if last_row is None:
             print(f"{d_table}表为空，调用fetch_daily({ts_code})", f"{table_index + 1}/{len(d_tables)}")
             daily_df = fetch_daily(ts_code)
-            time.sleep(1.5)
+            time.sleep(sleep_time)
             daily_df = add_adj_factor(daily_df)
             # 从djson中拿到真正会被用到的字段（即非open_qfq、close_qfq...）
             # sort_fields = _filter(desc.column_names, lambda field: not field.endswith('_qfq'))
@@ -174,24 +198,42 @@ def update_d_tables():
             # daily_df = daily_df[sort_fields]
             fields, values = parse_dataframe(daily_df)
             print('fields:', fields)
-            clear_table(d_table)
-            try:
-                insert_table(d_table, fields, values)
-
-            except Exception as e:
-                print("插入报错：", e)
-                write_log([
-                    [ts_code, symbol, table_index + 1, e]
-                ])
+            insert_success = _insert_table(d_table, fields, values)
+            if not insert_success:
                 continue
+            # if _is_empty(values):
+            #     print(f"fetch_daily({ts_code})返回空，故直接跳过")
+            #     continue
+            # clear_table(d_table)
+            # try:
+            #     insert_table(d_table, fields, values)
+            #
+            # except Exception as e:
+            #     print("插入报错：", e)
+            #     write_log([
+            #         [ts_code, symbol, table_index + 1, e]
+            #     ])
+            #     continue
         # 4. 得到[('ts_code', 'latest_trade_date'),...]后，将latest_trade_date相同的ts_code分类
         else:
             last_trade_date = last_row['trade_date']
+            # delist_date = stock_info.get('delist_date')
+            list_status = stock_info.get('list_status')
+            # 如果这个股票是退市的，然后退市日期比如是2015年5月1日，而lastrow的trade_date也是这个时间，
+            # 那么就没必要对这个股票做接下来的【增量更新】，所以没必要将它加入data_code_map
+            # 因为退市日期和最后交易日未必一致，所以上述逻辑不成立，我们就对退市股票做简化处理：
+            # 只要是退市的股票，只做【全量更新】，不做【增量更新】
+            if list_status == 'D':
+                print(f"{stock_info['name']}股票是退市股票，退市日期{stock_info.get('delist_date')},不会参与增量更新！")
+                continue
+
             if date_code_map.get(last_trade_date) is None:
                 date_code_map[last_trade_date] = []
             date_code_map[last_trade_date].append(ts_code)
 
     print('date_code_map', date_code_map)
+    print_map = _map(date_code_map, lambda d: {d: len(date_code_map[d])})
+    print('print_map', print_map)
     # 5. 得到 如: {'latest_trade_date1': [ts_code1, ts_code2],'latest_trade_date2': [ts_code3, ts_code4]...}
 
     for last_trade_date in date_code_map:
@@ -209,6 +251,7 @@ def update_d_tables():
         ts_codes = date_code_map[last_trade_date]
         start_date_str = add_date(last_trade_date, add_days=1, result_type='str')
         if len(ts_codes) > len(d_tables) / 2:
+            print(f"最新的date：{last_trade_date} 对应的ts_codes超过一半了")
             df = fetch_daily(start_date=start_date_str)
             df = df[df['ts_code'].isin(ts_codes)]
             fields, values = parse_dataframe(df)
@@ -241,15 +284,20 @@ def update_d_tables():
                 _df = add_adj_factor(_df, init_adj_factor=init_adj_factor)
                 _fields, _values = parse_dataframe(_df)
                 print(f"大众，{table_name}表插入数据：", _fields, '\n', _values)
-                insert_table(table_name, _fields, _values)
+                # insert_table(table_name, _fields, _values)
+                insert_success = _insert_table(table_name, _fields, _values)
+                if not insert_success:
+                    continue
         else:
             # [
             # ['000001.SZ', '20230101', 1],
             # ['000001.SZ', '20230102', 1],
             # ]
+            print(f"最新的date：{last_trade_date} 对应的ts_codes小于一半")
             for ts_code in ts_codes:
+                stock_info = stock_info_map[ts_code]
                 df = fetch_daily(ts_code, start_date=start_date_str)
-                time.sleep(1.5)
+                time.sleep(sleep_time)
                 fields, values = parse_dataframe(df)
                 table_name = f"d_{ts_code.split('.')[0]}"
                 # 从数据库取最后一条数据，取出它的adj_factor做初始值
@@ -258,5 +306,9 @@ def update_d_tables():
                 # 为新增加的数据计算出adj_factor
                 df = add_adj_factor(df, init_adj_factor=init_adj_factor)
                 _fields, _values = parse_dataframe(df)
-                print(f"小众，{table_name}表插入数据：", _fields, '\n', _values)
-                insert_table(table_name, _fields, _values)
+
+                print(f"小众，{table_name}表 {stock_info['name']} {ts_code} 插入数据：", _fields, '\n', _values)
+                # insert_table(table_name, _fields, _values)
+                insert_success = _insert_table(table_name, _fields, _values)
+                if not insert_success:
+                    continue

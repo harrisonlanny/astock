@@ -25,7 +25,8 @@ def get_path(src_relative_path):
     _path = str_path if str_path.startswith('/') else '/' + str_path
     return f"{get_root_path()}{_path}"
 
-
+def is_iterable(value):
+    return isinstance(value, Iterable)
 def _is_number(value):
     return isinstance(value, (int, float))
 
@@ -33,6 +34,18 @@ def _is_number(value):
 def _is_nan(value):
     if _is_number(value):
         return numpy.isnan(value)
+    return False
+
+
+def _is_empty(value):
+    if value is None:
+        return True
+    if value == '':
+        return True
+    if _is_nan(value):
+        return True
+    if is_iterable(value) and len(value) == 0:
+        return True
     return False
 
 
@@ -147,8 +160,7 @@ def parse_dataframe(df: pandas.DataFrame):
     return columns, values
 
 
-def is_iterable(value):
-    return isinstance(value, Iterable)
+
 
 
 def print_dataframe(df: DataFrame):
@@ -198,6 +210,8 @@ def add_date_str(date_str: str, add_days: int, str_format: str = '%Y%m%d'):
 
 
 def str2date(date_str: str, str_format: str = '%Y%m%d'):
+    if isinstance(date_str, date):
+        return date_str
     return datetime.strptime(date_str, str_format).date()
 
 
