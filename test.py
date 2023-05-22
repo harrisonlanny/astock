@@ -28,17 +28,19 @@ import baostock as bs
 # '600000.SH', '600000', '浦发银行', '上海', '银行', '主板', 'L', datetime.date(1999, 11, 10), None, 'H'
 
 
-row_list = read_table('d_688126', result_type='dict', filter_str="WHERE trade_date <= date'20201130'")
-
-adj_factors = _map(row_list, lambda row: row['adj_factor'])
-
-avg_af = numpy.mean(adj_factors)
-mid_af = numpy.median(adj_factors)
-target_af = adj_factors[-5:]
-print(avg_af, mid_af, target_af)
+# row_list = read_table('d_688126', result_type='dict', filter_str="WHERE trade_date <= date'20201130'")
+#
+# adj_factors = _map(row_list, lambda row: row['adj_factor'])
+#
+# avg_af = numpy.mean(adj_factors)
+# mid_af = numpy.median(adj_factors)
+# target_af = adj_factors[-5:]
+# print(avg_af, mid_af, target_af)
 
 # test_list = [1,3,4,5,7,9,10,100]
 # avg = numpy.mean(test_list)
 # mid = numpy.median(test_list)
 #
 # print(avg,mid)
+
+print("哈哈".startswith("ST"))

@@ -158,7 +158,7 @@ def _insert_table(table_name, fields, values):
         return False
 
 
-def update_d_tables(sleep_time: float = 1.5):
+def update_d_tables(sleep_time: float = 1.5, update_st:bool = True):
     # 1. 遍历所有的d_tables
     d_tables = get_current_d_tables()
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
@@ -219,6 +219,8 @@ def update_d_tables(sleep_time: float = 1.5):
             last_trade_date = last_row['trade_date']
             # delist_date = stock_info.get('delist_date')
             list_status = stock_info.get('list_status')
+            stock_name = stock_info.get('name')
+            is_st = stock_name.startswith("ST") or stock_name.startswith("*ST")
             # 如果这个股票是退市的，然后退市日期比如是2015年5月1日，而lastrow的trade_date也是这个时间，
             # 那么就没必要对这个股票做接下来的【增量更新】，所以没必要将它加入data_code_map
             # 因为退市日期和最后交易日未必一致，所以上述逻辑不成立，我们就对退市股票做简化处理：
@@ -227,6 +229,9 @@ def update_d_tables(sleep_time: float = 1.5):
                 print(f"{stock_info['name']}股票是退市股票，退市日期{stock_info.get('delist_date')},不会参与增量更新！")
                 continue
 
+            if is_st and not update_st:
+                print(f"{stock_info['name']}股票是ST股票,不会参与增量更新！")
+                continue
             if date_code_map.get(last_trade_date) is None:
                 date_code_map[last_trade_date] = []
             date_code_map[last_trade_date].append(ts_code)
