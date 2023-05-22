@@ -25,8 +25,11 @@ def get_path(src_relative_path):
     _path = str_path if str_path.startswith('/') else '/' + str_path
     return f"{get_root_path()}{_path}"
 
+
 def is_iterable(value):
     return isinstance(value, Iterable)
+
+
 def _is_number(value):
     return isinstance(value, (int, float))
 
@@ -160,9 +163,6 @@ def parse_dataframe(df: pandas.DataFrame):
     return columns, values
 
 
-
-
-
 def print_dataframe(df: DataFrame):
     column_names, rows = parse_dataframe(df)
     print(column_names, '\n')
@@ -217,6 +217,10 @@ def str2date(date_str: str, str_format: str = '%Y%m%d'):
 
 def get_current_date():
     return datetime.now().date()
+
+
+def avg(nums: list[float]):
+    return sum(nums) / len(nums)
 
 
 if __name__ == '__main__':
