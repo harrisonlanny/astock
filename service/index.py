@@ -91,7 +91,9 @@ def get_current_d_tables():
 
 def clear_current_d_tables():
     d_tables = get_current_d_tables()
-    for d_table in d_tables:
+    total = len(d_tables)
+    for index, d_table in enumerate(d_tables):
+        print(f'清空{d_table}', f"{index + 1}/{total}")
         clear_table(d_table)
 
 

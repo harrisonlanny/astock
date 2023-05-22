@@ -3,7 +3,7 @@ from pandas import DataFrame, concat
 from datetime import datetime, date, timedelta
 
 from constants import PAGE_SIZE
-from utils.index import dict_kv_convert, _map, add_date_str, replace_nan_from_dataframe
+from utils.index import dict_kv_convert, _map, add_date_str, replace_nan_from_dataframe, _is_empty
 
 ts.set_token('f3d6e975a07792eeb2978aed05fc7c4b31d408287d74ab0daf6a4464')
 
@@ -81,13 +81,13 @@ def fetch_daily(ts_code: str = '', start_date: str = '', end_date: str = '', **k
             # 但此时我们暂不做考虑，因为涨到6000家股票还有一段时间
             # 另外tushare官方也需要考虑此问题（如果不能一次性请求完，现阶段的api需要结合stock_basic才能知道哪些股票没有请求完，但这个逻辑很复杂，而且还涉及停牌股，所以需要tushare官方去修改对应api）
             # end_date = add_date_str(end_date, add_days=-1)
-
-            # 1. 请求end_date日的数据（一次性能全部请求完，现阶段)
-            end_date_df = fetch_daily(ts_code, start_date=end_date, end_date=end_date, **kwargs)
-            # 2. 将当前df中所有end_date的数据删除
-            result = result[result['trade_date'] != end_date]
-            # 3. 将1的数据加到df头 concat([end_date_result, result], ignore_index=True)
-            result = concat([end_date_df, result], ignore_index=True)
+            if _is_empty(ts_code):
+                # 1. 请求end_date日的数据（一次性能全部请求完，现阶段)
+                end_date_df = fetch_daily(ts_code, start_date=end_date, end_date=end_date, **kwargs)
+                # 2. 将当前df中所有end_date的数据删除
+                result = result[result['trade_date'] != end_date]
+                # 3. 将1的数据加到df头 concat([end_date_result, result], ignore_index=True)
+                result = concat([end_date_df, result], ignore_index=True)
             # 4. end_date - 1，继续while循环
             end_date = add_date_str(end_date, add_days=-1)
             print('end_date', end_date)
