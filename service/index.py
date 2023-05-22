@@ -269,7 +269,7 @@ def update_d_tables(sleep_time: float = 1.5):
             code_values_map = {}
             for value in values:
                 ts_code = value[0]
-                if code_values_map[ts_code] is None:
+                if code_values_map.get(ts_code) is None:
                     code_values_map[ts_code] = []
                 code_values_map[ts_code].append(value)
 

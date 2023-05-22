@@ -25,6 +25,8 @@ class MyEncoder(json.JSONEncoder):
 
 print(__name__)
 app = Flask(__name__)
+
+
 # app.json = MyEncoder(app)
 
 
@@ -42,6 +44,12 @@ def hello_world():
     return "<p>孙正harrison lanny peace & rich</p>"
 
 
+@app.route("/stock")
+def stocks():
+    result = read_table("stock_basic", result_type='dict')
+    return _json(result)
+
+
 @app.route("/stock/<symbol>")
 def stock(symbol):
     # return f'获取 {symbol}对应的所有日线数据(从数据库)'
@@ -55,7 +63,7 @@ def d(symbol):
     # return f'获取 {symbol}对应的所有日线数据(从数据库)'
     symbol = escape(symbol)
     table_name = f"d_{symbol}"
-    return read_table(table_name, result_type='dict')
+    return _json(read_table(table_name, result_type='dict'))
 
 
 # @app.route('/post/<int:post_id>')
@@ -71,4 +79,4 @@ def d(symbol):
 
 if __name__ == '__main__':
     # app.config['JSON_AS_ASCII'] = False
-    app.run(port=5555)
+    app.run(port=8888)
