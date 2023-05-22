@@ -89,6 +89,12 @@ def get_current_d_tables():
     return _filter(show_tables(), lambda item: item.startswith('d_'))
 
 
+def clear_current_d_tables():
+    d_tables = get_current_d_tables()
+    for d_table in d_tables:
+        clear_table(d_table)
+
+
 def get_new_symbols():
     # 现在已经存在的日线表
     d_tables = get_current_d_tables()
@@ -140,10 +146,11 @@ def write_log(row_list):
     csv_writer.writerows(row_list)
 
 
-def _insert_table(table_name, fields, values):
+def _insert_table(table_name, fields, values, clear_before: bool = False):
     if _is_empty(values):
         return False
-    clear_table(table_name)
+    if clear_before:
+        clear_table(table_name)
     try:
         insert_table(table_name, fields, values)
         return True
@@ -158,7 +165,7 @@ def _insert_table(table_name, fields, values):
         return False
 
 
-def update_d_tables(sleep_time: float = 1.5, update_st:bool = True):
+def update_d_tables(sleep_time: float = 1.5, update_st: bool = True):
     # 1. 遍历所有的d_tables
     d_tables = get_current_d_tables()
     # 2. 调用get_latest_trade_date_from_d_table(table_name)
@@ -198,7 +205,7 @@ def update_d_tables(sleep_time: float = 1.5, update_st:bool = True):
             # daily_df = daily_df[sort_fields]
             fields, values = parse_dataframe(daily_df)
             print('fields:', fields)
-            insert_success = _insert_table(d_table, fields, values)
+            insert_success = _insert_table(d_table, fields, values, clear_before=True)
             if not insert_success:
                 continue
             # if _is_empty(values):
