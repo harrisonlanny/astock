@@ -11,7 +11,7 @@ from datetime import date, timedelta, datetime
 from db.str import safe_column, safe_field, safe_field_define
 from ts.index import pro_bar, pro_api, fetch_daily, format_fields, fields_map_df
 from db.index import show_tables, delete_table, create_table, insert_table, read_table, describe_table, copy_table, \
-    clear_table, update_table_fields, get_last_row, get_first_row
+    clear_table, update_table_fields, get_last_row, get_first_row, get_total
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
@@ -43,4 +43,7 @@ import baostock as bs
 #
 # print(avg,mid)
 
-print("哈哈".startswith("ST"))
+# print("哈哈".startswith("ST"))
+
+total = get_total('stock_basic', filter_str="WHERE `name` like '%药%'")
+print(total)

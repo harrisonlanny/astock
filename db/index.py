@@ -93,7 +93,6 @@ def format_insert_value(value):
 # row_list: [[1,2,3],[4,5,6]] => '(1,2,3)','(4,5,6)'
 # row: [1,2,3] => '1,2,3'
 def insert_table(table_name, column_names: list[str], row_list):
-
     if _is_empty(row_list):
         print(f"insert into {table_name}, but values empty!!")
         return
@@ -223,6 +222,13 @@ def read_table(table_name: str, fields: list[str] = None, filter_str='', result_
     # TODO elif result_type == 'df':
 
     return row_list
+
+
+def get_total(table_name: str, filter_str=''):
+    result = read_table(table_name, fields=['COUNT(*)'], filter_str=filter_str)
+    if len(result):
+        return result[0][0]
+    return 0
 
 
 def get_first_row(table_name: str, fields: list[str] = None, order_by: str = '', result_type: str = 'dict'):

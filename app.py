@@ -1,10 +1,12 @@
+import math
 from datetime import datetime, date
 
-from flask import Flask
+from flask import Flask, request
+from flask_cors import CORS
 # from flask.json import jsonify, dumps
 from flask.json.provider import DefaultJSONProvider
 from markupsafe import escape
-from db.index import read_table
+from db.index import read_table, get_total
 import json
 
 
@@ -25,6 +27,7 @@ class MyEncoder(json.JSONEncoder):
 
 print(__name__)
 app = Flask(__name__)
+cors = CORS(app)
 
 
 # app.json = MyEncoder(app)
@@ -39,15 +42,65 @@ def _json(data):
     return app.response_class(json_str, mimetype="application/json")
 
 
+def get_page_info():
+    current = int(request.args.get("current"))
+    page_size = int(request.args.get("pageSize"))
+    limit_sql = f"LIMIT {(current - 1) * page_size}, {page_size}"
+    return {
+        "current": current,
+        "page_size": page_size,
+        "limit_sql": limit_sql
+    }
+
+
+def page_response(data, total: int, current: int, page_size: int):
+    page_sum = math.ceil(total / page_size)
+    next = current < page_sum
+    return _json({
+        "data": data,
+        "total": total,
+        "current": current,
+        "page_size": page_size,
+        "page_sum": page_sum,
+        "next": next
+    })
+
+
+def get_search_info():
+    args = request.args
+    sqls = []
+    for arg in args:
+        if arg in ['current', 'pageSize']:
+            continue
+        value = args.get(arg)
+        item_sql = f"`{arg}` like '%{value}%'"
+        sqls.append(item_sql)
+    if len(sqls) == 0:
+        return ""
+    where_sql = "WHERE " + " AND ".join(sqls)
+    return where_sql
+
+
 @app.route("/")
 def hello_world():
     return "<p>孙正harrison lanny peace & rich</p>"
 
 
-@app.route("/stock")
+@app.route("/stock", methods=['GET'])
 def stocks():
-    result = read_table("stock_basic", result_type='dict')
-    return _json(result)
+    print('request', request.args)
+    page_info = get_page_info()
+    current = page_info.get("current")
+    page_size = page_info.get("page_size")
+    limit_sql = page_info.get('limit_sql')
+    where_sql = get_search_info()
+
+    count_str = f"{where_sql}".strip()
+    filter_str = f"{where_sql} {limit_sql}".strip()
+    print('filter_str', filter_str)
+    total = get_total('stock_basic', filter_str=count_str)
+    data = read_table('stock_basic', result_type='dict', filter_str=filter_str)
+    return page_response(data, total=total, page_size=page_size, current=current)
 
 
 @app.route("/stock/<symbol>")
