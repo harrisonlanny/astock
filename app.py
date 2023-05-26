@@ -1,11 +1,11 @@
 import math
 from datetime import datetime, date
-
+from markupsafe import escape
 from flask import Flask, request
 from flask_cors import CORS
 # from flask.json import jsonify, dumps
 from flask.json.provider import DefaultJSONProvider
-from markupsafe import escape
+
 from db.index import read_table, get_total
 import json
 
