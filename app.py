@@ -9,6 +9,8 @@ from flask.json.provider import DefaultJSONProvider
 from db.index import read_table, get_total
 import json
 
+from utils.stock import d_to_w
+
 
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -116,7 +118,19 @@ def d(symbol):
     # return f'获取 {symbol}对应的所有日线数据(从数据库)'
     symbol = escape(symbol)
     table_name = f"d_{symbol}"
-    return _json(read_table(table_name, result_type='dict'))
+    print('table_name', table_name)
+    data = read_table(table_name, result_type='dict')
+    return _json(data)
+
+
+@app.route("/w/<symbol>")
+def w(symbol):
+    # return f'获取 {symbol}对应的所有周线数据(从数据库)'
+    symbol = escape(symbol)
+    table_name = f"d_{symbol}"
+    data = read_table(table_name, result_type='dict')
+    data = d_to_w(data, date_format="%Y-%m-%d")
+    return _json(data)
 
 
 # @app.route('/post/<int:post_id>')

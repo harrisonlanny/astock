@@ -45,5 +45,7 @@ import baostock as bs
 
 # print("哈哈".startswith("ST"))
 
-total = get_total('stock_basic', filter_str="WHERE `name` like '%药%'")
-print(total)
+# total = get_total('stock_basic', filter_str="WHERE `name` like '%药%'")
+# print(total)
+
+print(numpy.sum([1,2,5]))
