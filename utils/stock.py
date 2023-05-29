@@ -1,6 +1,8 @@
+from datetime import date
+
 import numpy
 from pandas import DataFrame
-from utils.index import parse_dataframe, _filter, str2date, add_date, _map
+from utils.index import parse_dataframe, _filter, str2date, add_date, _map, date2str, _is_empty
 
 
 def fq(df: DataFrame):
@@ -32,25 +34,40 @@ def add_adj_factor(df: DataFrame, init_adj_factor=1):
     return df
 
 
-# 日线转周线
-# (默认日期为trade_date, 格式%Y-%m-%d)
-# week命名：该周的最后一个交易日（周五）的日期
-def d_to_w(data: list[dict], date_format: str = "%Y%m%d", last_trade_weekday: int = 5):
+def d_to_adj(data: list[dict], adj_type: str = None):
+    if _is_empty(adj_type) or _is_empty(data):
+        return data
+    target = data[-1] if adj_type == 'q' else data[0]
+    unit = target['close'] / target['adj_factor']
+    result: list[dict] = []
+    for d in data:
+        new_d = d.copy()
+        adj = new_d['adj_factor']
+        old_close = new_d['close']
+        new_close = adj * unit
+        scale = new_close / old_close
+
+        new_d['close'] = new_close
+        new_d['open'] = new_d['open'] * scale
+        new_d['high'] = new_d['high'] * scale
+        new_d['low'] = new_d['low'] * scale
+
+        result.append(new_d)
+    return result
+
+
+def d_to_n(data: list[dict], date_format: str = "%Y%m%d", get_key=None):
     if data is None:
         return data
     w_map = {}
     for d in data:
-        # 1. 获取日期对应星期几
+        # 1. 获取日期对应月份 作为w_map的key
         _date = str2date(d['trade_date'], date_format)
-        weekday = _date.isoweekday()
-        # 2. 用 5-w 得到距离周五还有n天
-        gap = last_trade_weekday - weekday
-        # 3. 得到周5的日期，作为w_map的key
-        weekday_str = add_date(_date, add_days=gap, str_format=date_format, result_type='str')
+        key = get_key(_date)
 
-        if w_map.get(weekday_str) is None:
-            w_map[weekday_str] = []
-        w_map[weekday_str].append(d)
+        if w_map.get(key) is None:
+            w_map[key] = []
+        w_map[key].append(d)
 
     result = []
     for d_str in w_map:
@@ -77,3 +94,20 @@ def d_to_w(data: list[dict], date_format: str = "%Y%m%d", last_trade_weekday: in
             "vol": vol
         })
     return result
+
+
+# 日线转周线
+# (默认日期为trade_date, 格式%Y-%m-%d)
+# week命名：该周的最后一个交易日（周五）的日期
+def d_to_w(data: list[dict], date_format: str = "%Y%m%d", key_format: str = "%Y%m%d", last_trade_weekday: int = 5):
+    return d_to_n(data, date_format,
+                  get_key=lambda d: add_date(d, add_days=last_trade_weekday - d.isoweekday(), str_format=key_format,
+                                             result_type='str'))
+
+
+def d_to_m(data: list[dict], date_format: str = "%Y%m%d", key_format: str = "%Y%m"):
+    return d_to_n(data, date_format, get_key=lambda d: date2str(d, key_format))
+
+
+def d_to_y(data: list[dict], date_format: str = "%Y%m%d", key_format: str = "%Y"):
+    return d_to_n(data, date_format, get_key=lambda d: date2str(d, key_format))

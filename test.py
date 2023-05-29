@@ -48,4 +48,5 @@ import baostock as bs
 # total = get_total('stock_basic', filter_str="WHERE `name` like '%药%'")
 # print(total)
 
-print(numpy.sum([1,2,5]))
+_date = str2date("2002-09-12", "%Y-%m-%d")
+print(_date.month)

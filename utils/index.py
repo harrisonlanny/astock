@@ -215,6 +215,10 @@ def str2date(date_str: str, str_format: str = '%Y%m%d'):
     return datetime.strptime(date_str, str_format).date()
 
 
+def date2str(d: date, _format: str = "%Y%m%d"):
+    return date.strftime(d, _format)
+
+
 def get_current_date():
     return datetime.now().date()
 

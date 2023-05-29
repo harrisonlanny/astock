@@ -9,7 +9,7 @@ from flask.json.provider import DefaultJSONProvider
 from db.index import read_table, get_total
 import json
 
-from utils.stock import d_to_w
+from utils.stock import d_to_w, d_to_m, d_to_y, d_to_adj
 
 
 class MyEncoder(json.JSONEncoder):
@@ -113,7 +113,30 @@ def stock(symbol):
     return _json(result)
 
 
-@app.route("/d/<symbol>")
+@app.route("/k", methods=['GET'])
+def k():
+    # period: D | W | M | Y
+    # adj: q | h | empty
+    period = request.args.get('period')
+    symbol = request.args.get('symbol')
+    adj = request.args.get('adj')
+    table_name = f"d_{symbol}"
+    print('table_name', table_name)
+    data = read_table(table_name, result_type='dict')
+
+    data = d_to_adj(data, adj)
+
+    date_format = "%Y-%m-%d"
+    if period == 'W':
+        data = d_to_w(data, date_format=date_format, key_format=date_format, last_trade_weekday=5)
+    elif period == 'M':
+        data = d_to_m(data, date_format=date_format, key_format="%Y-%m")
+    elif period == 'Y':
+        data = d_to_y(data, date_format=date_format, key_format="%Y")
+    return _json(data)
+
+
+@app.route("/d/<symbol>", methods=['GET'])
 def d(symbol):
     # return f'获取 {symbol}对应的所有日线数据(从数据库)'
     symbol = escape(symbol)
