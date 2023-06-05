@@ -9,7 +9,7 @@ from decimal import Decimal, getcontext
 from datetime import date, timedelta, datetime
 
 from db.str import safe_column, safe_field, safe_field_define
-from ts.index import pro_bar, pro_api, fetch_daily, format_fields, fields_map_df
+from ts.index import pro_bar, pro_api, fetch_daily, format_fields, fields_map_df, fetch_stock_basic_from_bs
 from db.index import show_tables, delete_table, create_table, insert_table, read_table, describe_table, copy_table, \
     clear_table, update_table_fields, get_last_row, get_first_row, get_total
 from model.index import describe_json
@@ -18,8 +18,8 @@ from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
-
-import baostock as bs
+from ts.index import format_code
+# import baostock as bs
 
 # '600276.SH', '600276', '恒瑞医药', '江苏', '化学制药', '主板', 'L', datetime.date(2000, 10, 18)
 # '002475.SZ', '002475', '立讯精密', '深圳', '元器件', '主板', 'L', datetime.date(2010, 9, 15)
@@ -48,5 +48,5 @@ import baostock as bs
 # total = get_total('stock_basic', filter_str="WHERE `name` like '%药%'")
 # print(total)
 
-_date = str2date("2002-09-12", "%Y-%m-%d")
-print(_date.month)
+# print(format_code("000001.SZ", _to="bs"))
+fetch_stock_basic_from_bs()

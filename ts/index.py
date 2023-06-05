@@ -1,4 +1,6 @@
+import pandas as pd
 import tushare as ts
+import baostock as bs
 from pandas import DataFrame, concat
 from datetime import datetime, date, timedelta
 
@@ -6,6 +8,7 @@ from constants import PAGE_SIZE
 from utils.index import dict_kv_convert, _map, add_date_str, replace_nan_from_dataframe, _is_empty
 
 ts.set_token('f3d6e975a07792eeb2978aed05fc7c4b31d408287d74ab0daf6a4464')
+lg = bs.login()
 
 pro_api = ts.pro_api()
 pro_bar = ts.pro_bar
@@ -33,6 +36,24 @@ fields_map_df = DataFrame(columns=['ts', 'bs'], data=[
     ['low', 'low'],
     ['amount', 'amount']
 ])
+
+
+# ts 000001.SZ
+# bs sz.000001
+def format_code(code: str, _to: str = 'ts'):
+    if "." not in code:
+        return code
+    arr = code.split('.')
+    if len(arr[0]) >= 6:
+        num = arr[0]
+        type = arr[1]
+    else:
+        num = arr[1]
+        type = arr[0]
+    if _to == 'ts':
+        return f"{num}.{type.upper()}"
+    else:
+        return f"{type.lower()}.{num}"
 
 
 def format_fields(fields: list[str], _from: str, _to: str):
@@ -93,3 +114,17 @@ def fetch_daily(ts_code: str = '', start_date: str = '', end_date: str = '', **k
             print('end_date', end_date)
 
     return result
+
+
+def fetch_stock_basic_from_bs():
+    rs = bs.query_stock_basic()
+    # 打印结果集
+    data_list = []
+    while (rs.error_code == '0') & rs.next():
+        # 获取一条记录，将记录合并在一起
+        data_list.append(rs.get_row_data())
+    result = pd.DataFrame(data_list, columns=rs.fields)
+    # 结果集输出到csv文件
+    # result.to_csv("./stock_basic.csv", encoding="utf-8", index=False)
+    # print(result)
+    # print(rs)

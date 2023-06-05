@@ -28,6 +28,8 @@ pymysql.err.ProgrammingError: (1064, "You have an error in your SQL syntax; chec
 
 天齐锂业 预计涨到96，第一波涨到88.7
 
+巨潮资讯网(看财报)
+http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search&lastPage=index
 
 ## 快速阅读资产负债表
 ### 钱的来源

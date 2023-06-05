@@ -49,11 +49,16 @@ def format_table_row(row: list | tuple):
     return _map(row, lambda item: format_table_value(item))
 
 
-def refresh_table_stock_basic(fast: bool = True):
+def refresh_table_stock_basic(fast: bool = True, only_live: bool = False):
     table_name = 'stock_basic'
     live_stocks = api_query(table_name, list_status='L')[1]
-    dead_stocks = api_query(table_name, list_status='D')[1]
-    pause_stocks = api_query(table_name, list_status='P')[1]
+    dead_stocks = []
+    pause_stocks = []
+    if not only_live:
+        time.sleep(60)
+        dead_stocks = api_query(table_name, list_status='D')[1]
+        time.sleep(60)
+        pause_stocks = api_query(table_name, list_status='P')[1]
 
     new_stocks = live_stocks + dead_stocks + pause_stocks
     print('new_stocks', len(new_stocks), '\n')
