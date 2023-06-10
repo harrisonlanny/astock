@@ -49,4 +49,105 @@ from ts.index import format_code
 # print(total)
 
 # print(format_code("000001.SZ", _to="bs"))
-fetch_stock_basic_from_bs()
+# fetch_stock_basic_from_bs()
+
+import pdfplumber
+import pandas as pd
+
+
+# read_path = 'reports/lxjm.pdf'
+# kw1 = "公允反映了"
+# kw2 = "标准无保留意见"
+# pdf_content = pdfplumber.open(read_path)
+# result_df = pd.DataFrame()
+# for page in pdf_content.pages:
+#     table = page.extract_table()
+#     df_detail = pd.DataFrame(table)
+#     content = page.extract_text_simple(x_tolerance=3, y_tolerance=3)
+#     if kw1 in content or kw2 in content:
+#         print(1)
+
+# 根据对角线坐标，得到rect的长宽
+def get_size_by_points(points):
+    if _is_empty(points) or len(points) != 4:
+        return None
+    top_left_point = {
+        "x": points[0],
+        "y": points[1]
+    }
+    right_bottom_point = {
+        "x": points[2],
+        "y": points[3]
+    }
+    width = right_bottom_point['x'] - top_left_point['x']
+    height = right_bottom_point['y'] - top_left_point['y']
+
+    return {
+        "width": width,
+        "height": height
+    }
+
+
+def is_cell_size_same(cell1, cell2, empty_is_same: bool = True):
+    same_precision = 0.1
+    size1 = get_size_by_points(cell1)
+    size2 = get_size_by_points(cell2)
+
+    is_cell1_empty = _is_empty(size1)
+    is_cell2_empty = _is_empty(size2)
+
+    if is_cell1_empty and is_cell2_empty:
+        return True
+    if is_cell1_empty or is_cell2_empty:
+        return empty_is_same
+
+    if abs(size1['width'] - size2['width']) <= same_precision:
+        return True
+    return False
+
+
+def is_cells_size_same(cells1, cells2):
+    if len(cells1) != len(cells2):
+        return False
+    for index, cell1 in enumerate(cells1):
+        cell2 = cells2[index]
+        if not is_cell_size_same(cell1, cell2):
+            return False
+    return True
+
+
+with pdfplumber.open('./reports/hgcy.pdf') as pdf:
+    prev_table = None
+    prev_table_id = None
+    prev_table_index = None
+    prev_table_count = None
+
+    maybe_same_tables = {}
+    for page_index, page in enumerate(pdf.pages):
+        print(f'---{page}---', '\n')
+        tables = page.find_tables()
+        for table_index, table in enumerate(tables):
+            table_id = f"{page_index + 1}_{table_index + 1}"
+            print(table_id, table.extract(), '\n')
+
+            if prev_table:
+                print('前一张表的最后一行', prev_table.rows[-1].cells)
+                print('当前表的第一行', table.rows[0].cells, '\n')
+                prev_table_last_row = prev_table.rows[-1]
+                current_table_first_row = table.rows[0]
+
+                # 如果列数不一致，那么就不是同结构
+                # prev_table必须是上一页的最后一张表
+                # current_table必须本页的第一张表
+                if table_index == 0 and prev_table_index + 1 == prev_table_count and \
+                        is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
+
+                    if maybe_same_tables.get(prev_table_id) is None:
+                        maybe_same_tables[prev_table_id] = [prev_table_id]
+                    maybe_same_tables[prev_table_id].append(table_id)
+
+            prev_table = table
+            prev_table_id = table_id
+            prev_table_index = table_index
+            prev_table_count = len(tables)
+    print('可能是同一张表的map', maybe_same_tables)

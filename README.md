@@ -30,7 +30,8 @@ pymysql.err.ProgrammingError: (1064, "You have an error in your SQL syntax; chec
 
 巨潮资讯网(看财报)
 http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search&lastPage=index
-
+## 快速筛选标准无保留意见的财报
+文本包含“公允反映了”或“标准无保留意见”，若不符合条件，直接跳过
 ## 快速阅读资产负债表
 ### 钱的来源
 1.财报最后一行“负债和所有者权益合计”-有多少家当
