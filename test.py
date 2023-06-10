@@ -89,7 +89,7 @@ def get_size_by_points(points):
 
 
 def is_cell_size_same(cell1, cell2, empty_is_same: bool = True):
-    same_precision = 0.1
+    same_precision = 5
     size1 = get_size_by_points(cell1)
     size2 = get_size_by_points(cell2)
 
@@ -128,7 +128,7 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
         tables = page.find_tables()
         for table_index, table in enumerate(tables):
             table_id = f"{page_index + 1}_{table_index + 1}"
-            print(table_id, table.extract(), '\n')
+            print(table_id, table.extract(vertical_strategy='lines_strict', horizontal_strategy='lines_strict'), '\n')
 
             if prev_table:
                 print('前一张表的最后一行', prev_table.rows[-1].cells)
@@ -150,8 +150,6 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
                         maybe_same_tables[prev_table_id].append(table_id)
                     else:
                         maybe_same_tables[key].append(table_id)
-
-
 
             prev_table = table
             prev_table_id = table_id
