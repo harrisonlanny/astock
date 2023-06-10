@@ -196,6 +196,14 @@ def list2dict(keys: list, values: list):
     return result
 
 
+def get_dict_key_by_index(data: dict, index: int):
+    # 5   -1 -2 -3 -4 -5 -6
+    _list = list(data.keys())
+    if abs(index) >= len(_list):
+        return None
+    return _list[index]
+
+
 def add_date(d: date, add_days: int, result_type: str = 'date', str_format: str = '%Y%m%d'):
     result = d + timedelta(days=add_days)
     if result_type == 'date':

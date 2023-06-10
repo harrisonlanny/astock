@@ -15,7 +15,7 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
-    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty
+    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
 from ts.index import format_code
@@ -142,12 +142,23 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
                 if table_index == 0 and prev_table_index + 1 == prev_table_count and \
                         is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
 
-                    if maybe_same_tables.get(prev_table_id) is None:
-                        maybe_same_tables[prev_table_id] = [prev_table_id]
-                    maybe_same_tables[prev_table_id].append(table_id)
+                    # 判断table_id是否已存在于map中
+                    key = get_dict_key_by_index(maybe_same_tables, -1)
+                    if key is None or prev_table_id not in maybe_same_tables[key]:
+                        if maybe_same_tables.get(prev_table_id) is None:
+                            maybe_same_tables[prev_table_id] = [prev_table_id]
+                        maybe_same_tables[prev_table_id].append(table_id)
+                    else:
+                        maybe_same_tables[key].append(table_id)
+
+
 
             prev_table = table
             prev_table_id = table_id
             prev_table_index = table_index
             prev_table_count = len(tables)
     print('可能是同一张表的map', maybe_same_tables)
+
+
+# map = {}
+# print(get_dict_key_by_index(map, -3))
