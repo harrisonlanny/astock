@@ -1,7 +1,6 @@
 import time
 
 import numpy
-import pandas
 import numpy as np
 import pandas as pd
 from pandas import DataFrame, concat
@@ -116,6 +115,17 @@ def is_cells_size_same(cells1, cells2):
     return True
 
 
+def keep_visible_lines(obj):
+    """
+    If the object is a ``rect`` type, keep it only if the lines are visible.
+
+    A visible line is the one having ``non_stroking_color`` as 0.
+    """
+    if obj['object_type'] == 'rect':
+        return obj['non_stroking_color'] == 0
+    return True
+
+
 with pdfplumber.open('./reports/hgcy.pdf') as pdf:
     prev_table = None
     prev_table_id = None
@@ -123,12 +133,19 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
     prev_table_count = None
 
     maybe_same_tables = {}
-    for page_index, page in enumerate(pdf.pages):
+    _pages = pdf.pages
+    for page_index, page in enumerate(_pages):
         print(f'---{page}---', '\n')
+        # Filter out hidden lines.
+        page = page.filter(keep_visible_lines)
+        # im = page.to_image()
+        # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
         tables = page.find_tables()
         for table_index, table in enumerate(tables):
+            if table_index == 2:
+                print(table.extract())
             table_id = f"{page_index + 1}_{table_index + 1}"
-            print(table_id, table.extract(vertical_strategy='lines_strict', horizontal_strategy='lines_strict'), '\n')
+            print(table_id, table.extract(), '\n')
 
             if prev_table:
                 print('前一张表的最后一行', prev_table.rows[-1].cells)
@@ -156,7 +173,6 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
             prev_table_index = table_index
             prev_table_count = len(tables)
     print('可能是同一张表的map', maybe_same_tables)
-
 
 # map = {}
 # print(get_dict_key_by_index(map, -3))
