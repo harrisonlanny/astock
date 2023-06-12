@@ -2,6 +2,7 @@ import os
 from collections.abc import Iterable
 from datetime import datetime, date, timedelta
 from decimal import Decimal
+from json import dump
 
 import numpy
 import pandas
@@ -301,6 +302,14 @@ def txt(output_path: str, chars: any):
     file.write(_str)
     # 关闭文件
     file.close()
+
+
+def json(output_path: str, data: any):
+    # 打开文本文件
+    _output_path = get_path(output_path)
+    f = open(_output_path, 'w')
+    dump(data, f, ensure_ascii=False)
+    f.close()
 
 
 if __name__ == '__main__':

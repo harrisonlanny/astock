@@ -1,6 +1,6 @@
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
-    has_chinese_number, _find
+    has_chinese_number, _find, json
 from utils.stock import fq, _filter
 
 # '600276.SH', '600276', '恒瑞医药', '江苏', '化学制药', '主板', 'L', datetime.date(2000, 10, 18)
@@ -366,8 +366,8 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
                 # table_name = gen_table_name(table_id, page_struct)
                 table_desc = get_table_desc(table_id, page_struct)
                 all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
-    txt('/all_tables.txt', all_tables)
-
+    # txt('/all_tables.txt', all_tables)
+    json('/all_tables.json', all_tables)
 # print([1,2,3][-2:])
 
 # txt_data = {
