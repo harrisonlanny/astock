@@ -235,19 +235,51 @@ def avg(nums: list[float]):
     return sum(nums) / len(nums)
 
 
-def txt(output_path: str, chars: str | list):
+def mul_str(data: str, count: int):
+    result = ''
+    for index in range(0, count):
+        result += data
+    return result
+
+
+def dict2str(data: dict, tab_symbol: str = '\t', tab_symbol_count: int = 1):
+    result = '{\r\n'
+    tab_symbols = mul_str(tab_symbol, tab_symbol_count)
+    for key in data:
+        value = data[key]
+        value_str = format_str(value, tab_symbol, tab_symbol_count + 1)
+        result += f"{tab_symbols}{key}: {value_str},\r\n"
+    result += mul_str(tab_symbol, tab_symbol_count - 1) + "}"
+    return result
+
+
+def list2str(data: list | tuple, tab_symbol: str = '\t', tab_symbol_count: int = 1):
+    result = '[\r\n'
+    tab_symbols = mul_str(tab_symbol, tab_symbol_count)
+    for value in data:
+        value_str = format_str(value, tab_symbol, tab_symbol_count + 1)
+        result += f"{tab_symbols}{value_str},\r\n"
+    result += f"{mul_str(tab_symbol, tab_symbol_count - 1)}]"
+    return result
+
+
+def format_str(data: any, tab_symbol: str = '\t', tab_symbol_count: int = 1):
+    if isinstance(data, str):
+        return f"'{data}'"
+    elif isinstance(data, dict):
+        return dict2str(data, tab_symbol, tab_symbol_count)
+    elif is_iterable(data):
+        return list2str(data, tab_symbol, tab_symbol_count)
+    return str(data)
+
+
+def txt(output_path: str, chars: any):
     # 打开文本文件
     _output_path = get_path(output_path)
     file = open(_output_path, "w")
-
     # 写入数据到文件
-    if is_iterable(chars):
-        _chars = ""
-        for item in chars:
-            _chars += str(item) + "\r\n"
-        file.write(_chars)
-    else:
-        file.write(chars)
+    _str = format_str(chars)
+    file.write(_str)
     # 关闭文件
     file.close()
 

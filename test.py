@@ -14,7 +14,7 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
-    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt
+    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
 from ts.index import format_code
@@ -132,7 +132,7 @@ def keep_bold_chars(obj):
     return True
 
 
-def page_obj(type: str, data, id:str = None):
+def page_obj(type: str, data, id: str = None):
     return {
         "type": type,
         "id": id,
@@ -143,6 +143,38 @@ def page_obj(type: str, data, id:str = None):
 def gen_table_id(page_ind: int, table_ind: int):
     return f"{page_ind + 1}_{table_ind + 1}"
 
+def parse_table_id(table_id: str):
+    [page_num, table_num] = table_id.split("_")
+    return {
+        "page_num": int(page_num),
+        "table_num": int(table_num)
+    }
+
+# 获取table上面的数据（限定在table所在页面内）
+def get_top_table_data(table_id: str, page_struct: any):
+    result = []
+    page_num = parse_table_id(table_id)['page_num']
+    current_page_struct = page_struct[page_num]
+    for item in current_page_struct:
+        if item['id'] == table_id and item['type'] == 'table':
+            break
+        else:
+            result.append(item)
+    return result
+
+# 获取table下面的数据（限定在table所在页面内）
+def get_bottom_table_data(table_id: str, page_struct: any):
+    result = []
+    page_num = parse_table_id(table_id)['page_num']
+    current_page_struct = page_struct[page_num]
+    should_collect = False
+    for item in current_page_struct:
+        if item['id'] == table_id and item['type'] == 'table':
+            should_collect = True
+        if item['type'] != 'table' and should_collect:
+            result.append(item)
+    return result
+
 
 with pdfplumber.open('./reports/hgcy.pdf') as pdf:
     prev_table = None
@@ -150,8 +182,10 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
     prev_table_index = None
     prev_table_count = None
 
+    page_struct = {}
     maybe_same_tables = {}
-    _pages = [pdf.pages[151]]
+    # _pages = [pdf.pages[150], pdf.pages[151]]
+    _pages = pdf.pages
     for page_index, page in enumerate(_pages):
         print(f'---{page}---', '\n')
         # Filter out hidden lines.
@@ -161,15 +195,14 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
         # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
 
         # 提取页面的文字
-        # words = page.extract_words(
-        #     x_tolerance=3, y_tolerance=10,
-        #     extra_attrs=[])
         text_lines = page.extract_text_lines()
         txt('/text_lines.txt', text_lines)
 
-        page_struct = []
-        table_index = 0
         # 确定页面里文字和表格关系
+        if page_struct.get(page_index + 1) is None:
+            page_struct[page_index + 1] = []
+            current_page_struct = page_struct[page_index + 1]
+        table_index = 0
         for text_line in text_lines:
             top = text_line['top']
             bottom = text_line['bottom']
@@ -181,15 +214,14 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
                 [t_x0, t_top, t_x1, t_bottom] = table.bbox
                 # 在表格上方
                 if bottom < t_top:
-                    page_struct.append(page_obj("text_line", text_line))
+                    current_page_struct.append(page_obj("text_line", text_line))
                 # 在表格下方
                 elif top > t_bottom:
-                    page_struct.append(page_obj("table", table, gen_table_id(page_index, table_index)))
-                    page_struct.append(page_obj("text_line", text_line))
+                    current_page_struct.append(page_obj("table", table, gen_table_id(page_index, table_index)))
+                    current_page_struct.append(page_obj("text_line", text_line))
                     table_index += 1
             else:
-                page_struct.append(page_obj("text_line", text_line))
-        txt('/page_struct.txt', page_struct)
+                current_page_struct.append(page_obj("text_line", text_line))
 
         for table_index, table in enumerate(tables):
             table_id = gen_table_id(page_index, table_index)
@@ -205,6 +237,7 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
                 # prev_table必须是上一页的最后一张表
                 # current_table必须本页的第一张表
                 if table_index == 0 and prev_table_index + 1 == prev_table_count and \
+                        len(get_top_table_data(table_id, page_struct) + get_bottom_table_data(prev_table_id, page_struct)) <= 2 and \
                         is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
 
                     # 判断table_id是否已存在于map中
@@ -220,9 +253,21 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
             prev_table_id = table_id
             prev_table_index = table_index
             prev_table_count = len(tables)
-    print('可能是同一张表的map', maybe_same_tables)
+    # print('可能是同一张表的map', str(maybe_same_tables))
+    txt('/same_table.txt', maybe_same_tables)
+    txt('/pdf页面结构.txt', page_struct)
 
-# map = {}
-# print(get_dict_key_by_index(map, -3))
-
-# txt("/test.txt", "hahahaha")
+# txt_data = {
+#     "1": {
+#         "1-1": ["1-1-1", {"2": ["haha"], "1-5":15}]
+#     },
+#     # "1": {
+#     #     "1": ["1-1", "1-2", "1-3", {"1-4": ["1-4-1"], "1-5": 15}]
+#     # }
+#     # "2": {
+#     #     "1": ["1-1", "1-2", "1-3", {"1-4": ["1-4-1"], "1-5": 15}]
+#     # },
+#     # "name": "Harrison",
+#     # "3": [1,2,3,4,5,[6,7,8], {"1":1, "2": "2"}]
+# }
+# txt('/test_txt.txt', txt_data)
