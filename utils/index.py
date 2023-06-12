@@ -235,6 +235,25 @@ def avg(nums: list[float]):
     return sum(nums) / len(nums)
 
 
+def has_chinese_number(data: str):
+    chinese_number_list = [
+        '一',
+        '二',
+        '三',
+        '四',
+        '五',
+        '六',
+        '七',
+        '八',
+        '九',
+        '十'
+    ]
+    for chinese_number in chinese_number_list:
+        if chinese_number in data:
+            return True
+    return False
+
+
 def mul_str(data: str, count: int):
     result = ''
     for index in range(0, count):

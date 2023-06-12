@@ -1,24 +1,7 @@
-import time
-
-import numpy
-import numpy as np
-import pandas as pd
-from pandas import DataFrame, concat
-from decimal import Decimal, getcontext
-from datetime import date, timedelta, datetime
-
-from db.str import safe_column, safe_field, safe_field_define
-from ts.index import pro_bar, pro_api, fetch_daily, format_fields, fields_map_df, fetch_stock_basic_from_bs
-from db.index import show_tables, delete_table, create_table, insert_table, read_table, describe_table, copy_table, \
-    clear_table, update_table_fields, get_last_row, get_first_row, get_total
-from model.index import describe_json
-from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
-    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str
+    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
+    has_chinese_number, _find
 from utils.stock import fq, _filter
-from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
-from ts.index import format_code
-# import baostock as bs
 
 # '600276.SH', '600276', '恒瑞医药', '江苏', '化学制药', '主板', 'L', datetime.date(2000, 10, 18)
 # '002475.SZ', '002475', '立讯精密', '深圳', '元器件', '主板', 'L', datetime.date(2010, 9, 15)
@@ -140,8 +123,33 @@ def page_obj(type: str, data, id: str = None):
     }
 
 
+def gen_table_model(id: str, range: list[str], name: str = None, desc: dict[str, list[str]] = None):
+    return {
+        "id": id,
+        "range": range,
+        "name": name,
+        "desc": desc,
+    }
+
+
 def gen_table_id(page_ind: int, table_ind: int):
     return f"{page_ind + 1}_{table_ind + 1}"
+
+
+# def is_datetime(data: str):
+#
+
+
+def gen_table_name(table_id: str, page_struct: any):
+    # 获取去掉业眉的top数据
+    top_data = _filter(get_top_table_data(table_id, page_struct)[1:], lambda item: item['type'] == 'text_line')
+    for data in top_data[::-1]:
+
+        text = data['data']['text'].strip()
+        if has_chinese_number(text):
+            return text
+    return None
+
 
 def parse_table_id(table_id: str):
     [page_num, table_num] = table_id.split("_")
@@ -149,6 +157,7 @@ def parse_table_id(table_id: str):
         "page_num": int(page_num),
         "table_num": int(table_num)
     }
+
 
 # 获取table上面的数据（限定在table所在页面内）
 def get_top_table_data(table_id: str, page_struct: any):
@@ -161,6 +170,7 @@ def get_top_table_data(table_id: str, page_struct: any):
         else:
             result.append(item)
     return result
+
 
 # 获取table下面的数据（限定在table所在页面内）
 def get_bottom_table_data(table_id: str, page_struct: any):
@@ -176,6 +186,80 @@ def get_bottom_table_data(table_id: str, page_struct: any):
     return result
 
 
+GAP = 17
+
+
+def get_table_top_desc(table_id: str, page_struct: any):
+    result = []
+    page_num = parse_table_id(table_id)['page_num']
+    table = _find(page_struct[page_num], lambda item: item['id'] == table_id)
+    top_data = _filter(get_top_table_data(table_id, page_struct)[1:], lambda item: item['type'] == 'text_line')
+
+    [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
+    prev_item = {
+        "x0": t_x0,
+        "x1": t_x1,
+        "top": t_top,
+        "bottom": t_bottom
+    }
+    # 算出每个item的间距（第一个是table，然后是最靠着table的text，依次外推）
+    for index, item in enumerate(top_data[::-1]):
+        gap = prev_item['top'] - item['data']['bottom']
+        if gap <= GAP:
+            # print(table_id, 'top', gap)
+            result.append(item)
+        else:
+            break
+        prev_item = item['data']
+    result.reverse()
+    return result
+
+
+def get_table_bottom_desc(table_id: str, page_struct: any):
+    result = []
+    page_num = parse_table_id(table_id)['page_num']
+    table = _find(page_struct[page_num], lambda item: item['id'] == table_id)
+    bottom_data = _filter(get_bottom_table_data(table_id, page_struct)[:-1], lambda item: item['type'] == 'text_line')
+
+    [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
+    prev_item = {
+        "x0": t_x0,
+        "x1": t_x1,
+        "top": t_top,
+        "bottom": t_bottom
+    }
+
+    for index, item in enumerate(bottom_data):
+        gap = item['data']['top'] - prev_item['bottom']
+        if gap <= GAP:
+            # print(table_id, 'bottom', gap, item['data']['text'])
+            result.append(item)
+        else:
+            break
+        prev_item = item['data']
+
+    return result
+
+
+def get_table_desc(table_id: str, page_struct: any):
+    top_desc = get_table_top_desc(table_id, page_struct)
+    bottom_desc = get_table_bottom_desc(table_id, page_struct)
+
+    top_desc_list = _map(top_desc, lambda item: item['data']['text'])
+    bottom_desc_list = _map(bottom_desc, lambda item: item['data']['text'])
+
+    return {
+        "top": top_desc_list,
+        "bottom": bottom_desc_list
+    }
+
+
+# def parse_table_desc(table_desc: dict[str, list[str]]):
+#     top_desc =table_desc['top'][::-1]
+#     for text in top_desc:
+#         if ['单位']
+
+
 with pdfplumber.open('./reports/hgcy.pdf') as pdf:
     prev_table = None
     prev_table_id = None
@@ -184,8 +268,10 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
 
     page_struct = {}
     maybe_same_tables = {}
+    single_tables = {}
     # _pages = [pdf.pages[150], pdf.pages[151]]
     _pages = pdf.pages
+    table_id_list = []
     for page_index, page in enumerate(_pages):
         print(f'---{page}---', '\n')
         # Filter out hidden lines.
@@ -196,7 +282,6 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
 
         # 提取页面的文字
         text_lines = page.extract_text_lines()
-        txt('/text_lines.txt', text_lines)
 
         # 确定页面里文字和表格关系
         if page_struct.get(page_index + 1) is None:
@@ -225,6 +310,7 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
 
         for table_index, table in enumerate(tables):
             table_id = gen_table_id(page_index, table_index)
+            table_id_list.append(table_id)
 
             # 不同页面的相同表合并
             if prev_table:
@@ -237,7 +323,8 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
                 # prev_table必须是上一页的最后一张表
                 # current_table必须本页的第一张表
                 if table_index == 0 and prev_table_index + 1 == prev_table_count and \
-                        len(get_top_table_data(table_id, page_struct) + get_bottom_table_data(prev_table_id, page_struct)) <= 2 and \
+                        len(get_top_table_data(table_id, page_struct) + get_bottom_table_data(prev_table_id,
+                                                                                              page_struct)) <= 2 and \
                         is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
 
                     # 判断table_id是否已存在于map中
@@ -253,9 +340,35 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
             prev_table_id = table_id
             prev_table_index = table_index
             prev_table_count = len(tables)
+
     # print('可能是同一张表的map', str(maybe_same_tables))
-    txt('/same_table.txt', maybe_same_tables)
-    txt('/pdf页面结构.txt', page_struct)
+    # txt('/same_table.txt', maybe_same_tables)
+    # txt('/pdf页面结构.txt', page_struct)
+
+    # 将maybe_same_tables降为一维数组
+    same_tables = []
+    for key in maybe_same_tables:
+        same_tables += maybe_same_tables[key]
+
+    # 将逻辑统一的tables和单独的tables归纳到一起 ['1-1', ['2-1','2-2'], ...]
+    all_tables = []
+    for table_id in table_id_list:
+        if table_id not in same_tables:
+            # 获取table上面的text_lines，从而给出一个推测的name
+            # table_name = gen_table_name(table_id, page_struct)
+            table_desc = get_table_desc(table_id, page_struct)
+            all_tables.append(gen_table_model(table_id, [table_id], desc=table_desc))
+        else:
+            same_ids = maybe_same_tables.get(table_id)
+            # 为空说明不是逻辑表的第一张表，所以不需要管，不为空说明是头表，直接加入all_tables即可
+            if same_ids is not None:
+                # 获取table上面的text_lines，从而给出一个推测的name
+                # table_name = gen_table_name(table_id, page_struct)
+                table_desc = get_table_desc(table_id, page_struct)
+                all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
+    txt('/all_tables.txt', all_tables)
+
+# print([1,2,3][-2:])
 
 # txt_data = {
 #     "1": {
