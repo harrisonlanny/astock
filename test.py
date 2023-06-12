@@ -14,7 +14,7 @@ from db.index import show_tables, delete_table, create_table, insert_table, read
 from model.index import describe_json
 from model.model import TableModel
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
-    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index
+    get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt
 from utils.stock import fq, _filter
 from service.index import api_query, get_current_d_tables, get_ts_code_from_symbol, update_d_tables
 from ts.index import format_code
@@ -126,6 +126,24 @@ def keep_visible_lines(obj):
     return True
 
 
+def keep_bold_chars(obj):
+    if obj['object_type'] == 'char':
+        return 'Bold' in obj['fontname']
+    return True
+
+
+def page_obj(type: str, data, id:str = None):
+    return {
+        "type": type,
+        "id": id,
+        "data": data,
+    }
+
+
+def gen_table_id(page_ind: int, table_ind: int):
+    return f"{page_ind + 1}_{table_ind + 1}"
+
+
 with pdfplumber.open('./reports/hgcy.pdf') as pdf:
     prev_table = None
     prev_table_id = None
@@ -133,20 +151,50 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
     prev_table_count = None
 
     maybe_same_tables = {}
-    _pages = pdf.pages
+    _pages = [pdf.pages[151]]
     for page_index, page in enumerate(_pages):
         print(f'---{page}---', '\n')
         # Filter out hidden lines.
         page = page.filter(keep_visible_lines)
+        tables = page.find_tables()
         # im = page.to_image()
         # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
-        tables = page.find_tables()
-        for table_index, table in enumerate(tables):
-            if table_index == 2:
-                print(table.extract())
-            table_id = f"{page_index + 1}_{table_index + 1}"
-            print(table_id, table.extract(), '\n')
 
+        # 提取页面的文字
+        # words = page.extract_words(
+        #     x_tolerance=3, y_tolerance=10,
+        #     extra_attrs=[])
+        text_lines = page.extract_text_lines()
+        txt('/text_lines.txt', text_lines)
+
+        page_struct = []
+        table_index = 0
+        # 确定页面里文字和表格关系
+        for text_line in text_lines:
+            top = text_line['top']
+            bottom = text_line['bottom']
+            x0 = text_line['x0']
+            x1 = text_line['x1']
+
+            if table_index <= len(tables) - 1:
+                table = tables[table_index]
+                [t_x0, t_top, t_x1, t_bottom] = table.bbox
+                # 在表格上方
+                if bottom < t_top:
+                    page_struct.append(page_obj("text_line", text_line))
+                # 在表格下方
+                elif top > t_bottom:
+                    page_struct.append(page_obj("table", table, gen_table_id(page_index, table_index)))
+                    page_struct.append(page_obj("text_line", text_line))
+                    table_index += 1
+            else:
+                page_struct.append(page_obj("text_line", text_line))
+        txt('/page_struct.txt', page_struct)
+
+        for table_index, table in enumerate(tables):
+            table_id = gen_table_id(page_index, table_index)
+
+            # 不同页面的相同表合并
             if prev_table:
                 print('前一张表的最后一行', prev_table.rows[-1].cells)
                 print('当前表的第一行', table.rows[0].cells, '\n')
@@ -176,3 +224,5 @@ with pdfplumber.open('./reports/hgcy.pdf') as pdf:
 
 # map = {}
 # print(get_dict_key_by_index(map, -3))
+
+# txt("/test.txt", "hahahaha")

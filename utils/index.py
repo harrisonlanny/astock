@@ -235,6 +235,23 @@ def avg(nums: list[float]):
     return sum(nums) / len(nums)
 
 
+def txt(output_path: str, chars: str | list):
+    # 打开文本文件
+    _output_path = get_path(output_path)
+    file = open(_output_path, "w")
+
+    # 写入数据到文件
+    if is_iterable(chars):
+        _chars = ""
+        for item in chars:
+            _chars += str(item) + "\r\n"
+        file.write(_chars)
+    else:
+        file.write(chars)
+    # 关闭文件
+    file.close()
+
+
 if __name__ == '__main__':
     print(get_path('/model/tables.json'))
 
