@@ -259,128 +259,113 @@ def get_table_desc(table_id: str, page_struct: any):
 #     for text in top_desc:
 #         if ['单位']
 
+def parse_pdf():
+    with pdfplumber.open('./reports/hgcy.pdf') as pdf:
+        prev_table = None
+        prev_table_id = None
+        prev_table_index = None
+        prev_table_count = None
 
-with pdfplumber.open('./reports/hgcy.pdf') as pdf:
-    prev_table = None
-    prev_table_id = None
-    prev_table_index = None
-    prev_table_count = None
+        page_struct = {}
+        maybe_same_tables = {}
+        single_tables = {}
+        # _pages = [pdf.pages[150], pdf.pages[151]]
+        _pages = pdf.pages
+        table_id_list = []
+        for page_index, page in enumerate(_pages):
+            print(f'---{page}---', '\n')
+            # Filter out hidden lines.
+            page = page.filter(keep_visible_lines)
+            tables = page.find_tables()
+            # im = page.to_image()
+            # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
 
-    page_struct = {}
-    maybe_same_tables = {}
-    single_tables = {}
-    # _pages = [pdf.pages[150], pdf.pages[151]]
-    _pages = pdf.pages
-    table_id_list = []
-    for page_index, page in enumerate(_pages):
-        print(f'---{page}---', '\n')
-        # Filter out hidden lines.
-        page = page.filter(keep_visible_lines)
-        tables = page.find_tables()
-        # im = page.to_image()
-        # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+            # 提取页面的文字
+            text_lines = page.extract_text_lines()
 
-        # 提取页面的文字
-        text_lines = page.extract_text_lines()
+            # 确定页面里文字和表格关系
+            if page_struct.get(page_index + 1) is None:
+                page_struct[page_index + 1] = []
+                current_page_struct = page_struct[page_index + 1]
+            table_index = 0
+            for text_line in text_lines:
+                top = text_line['top']
+                bottom = text_line['bottom']
+                x0 = text_line['x0']
+                x1 = text_line['x1']
 
-        # 确定页面里文字和表格关系
-        if page_struct.get(page_index + 1) is None:
-            page_struct[page_index + 1] = []
-            current_page_struct = page_struct[page_index + 1]
-        table_index = 0
-        for text_line in text_lines:
-            top = text_line['top']
-            bottom = text_line['bottom']
-            x0 = text_line['x0']
-            x1 = text_line['x1']
-
-            if table_index <= len(tables) - 1:
-                table = tables[table_index]
-                [t_x0, t_top, t_x1, t_bottom] = table.bbox
-                # 在表格上方
-                if bottom < t_top:
+                if table_index <= len(tables) - 1:
+                    table = tables[table_index]
+                    [t_x0, t_top, t_x1, t_bottom] = table.bbox
+                    # 在表格上方
+                    if bottom < t_top:
+                        current_page_struct.append(page_obj("text_line", text_line))
+                    # 在表格下方
+                    elif top > t_bottom:
+                        current_page_struct.append(page_obj("table", table, gen_table_id(page_index, table_index)))
+                        current_page_struct.append(page_obj("text_line", text_line))
+                        table_index += 1
+                else:
                     current_page_struct.append(page_obj("text_line", text_line))
-                # 在表格下方
-                elif top > t_bottom:
-                    current_page_struct.append(page_obj("table", table, gen_table_id(page_index, table_index)))
-                    current_page_struct.append(page_obj("text_line", text_line))
-                    table_index += 1
-            else:
-                current_page_struct.append(page_obj("text_line", text_line))
 
-        for table_index, table in enumerate(tables):
-            table_id = gen_table_id(page_index, table_index)
-            table_id_list.append(table_id)
+            for table_index, table in enumerate(tables):
+                table_id = gen_table_id(page_index, table_index)
+                table_id_list.append(table_id)
 
-            # 不同页面的相同表合并
-            if prev_table:
-                print('前一张表的最后一行', prev_table.rows[-1].cells)
-                print('当前表的第一行', table.rows[0].cells, '\n')
-                prev_table_last_row = prev_table.rows[-1]
-                current_table_first_row = table.rows[0]
+                # 不同页面的相同表合并
+                if prev_table:
+                    print('前一张表的最后一行', prev_table.rows[-1].cells)
+                    print('当前表的第一行', table.rows[0].cells, '\n')
+                    prev_table_last_row = prev_table.rows[-1]
+                    current_table_first_row = table.rows[0]
 
-                # 如果列数不一致，那么就不是同结构
-                # prev_table必须是上一页的最后一张表
-                # current_table必须本页的第一张表
-                if table_index == 0 and prev_table_index + 1 == prev_table_count and \
-                        len(get_top_table_data(table_id, page_struct) + get_bottom_table_data(prev_table_id,
-                                                                                              page_struct)) <= 2 and \
-                        is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
+                    # 如果列数不一致，那么就不是同结构
+                    # prev_table必须是上一页的最后一张表
+                    # current_table必须本页的第一张表
+                    if table_index == 0 and prev_table_index + 1 == prev_table_count and \
+                            len(get_top_table_data(table_id, page_struct) + get_bottom_table_data(prev_table_id,
+                                                                                                  page_struct)) <= 2 and \
+                            is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
 
-                    # 判断table_id是否已存在于map中
-                    key = get_dict_key_by_index(maybe_same_tables, -1)
-                    if key is None or prev_table_id not in maybe_same_tables[key]:
-                        if maybe_same_tables.get(prev_table_id) is None:
-                            maybe_same_tables[prev_table_id] = [prev_table_id]
-                        maybe_same_tables[prev_table_id].append(table_id)
-                    else:
-                        maybe_same_tables[key].append(table_id)
+                        # 判断table_id是否已存在于map中
+                        key = get_dict_key_by_index(maybe_same_tables, -1)
+                        if key is None or prev_table_id not in maybe_same_tables[key]:
+                            if maybe_same_tables.get(prev_table_id) is None:
+                                maybe_same_tables[prev_table_id] = [prev_table_id]
+                            maybe_same_tables[prev_table_id].append(table_id)
+                        else:
+                            maybe_same_tables[key].append(table_id)
 
-            prev_table = table
-            prev_table_id = table_id
-            prev_table_index = table_index
-            prev_table_count = len(tables)
+                prev_table = table
+                prev_table_id = table_id
+                prev_table_index = table_index
+                prev_table_count = len(tables)
 
-    # print('可能是同一张表的map', str(maybe_same_tables))
-    # txt('/same_table.txt', maybe_same_tables)
-    # txt('/pdf页面结构.txt', page_struct)
+        # 将maybe_same_tables降为一维数组
+        same_tables = []
+        for key in maybe_same_tables:
+            same_tables += maybe_same_tables[key]
 
-    # 将maybe_same_tables降为一维数组
-    same_tables = []
-    for key in maybe_same_tables:
-        same_tables += maybe_same_tables[key]
-
-    # 将逻辑统一的tables和单独的tables归纳到一起 ['1-1', ['2-1','2-2'], ...]
-    all_tables = []
-    for table_id in table_id_list:
-        if table_id not in same_tables:
-            # 获取table上面的text_lines，从而给出一个推测的name
-            # table_name = gen_table_name(table_id, page_struct)
-            table_desc = get_table_desc(table_id, page_struct)
-            all_tables.append(gen_table_model(table_id, [table_id], desc=table_desc))
-        else:
-            same_ids = maybe_same_tables.get(table_id)
-            # 为空说明不是逻辑表的第一张表，所以不需要管，不为空说明是头表，直接加入all_tables即可
-            if same_ids is not None:
+        # 将逻辑统一的tables和单独的tables归纳到一起 ['1-1', ['2-1','2-2'], ...]
+        all_tables = []
+        for table_id in table_id_list:
+            if table_id not in same_tables:
                 # 获取table上面的text_lines，从而给出一个推测的name
                 # table_name = gen_table_name(table_id, page_struct)
                 table_desc = get_table_desc(table_id, page_struct)
-                all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
-    # txt('/all_tables.txt', all_tables)
-    json('/all_tables.json', all_tables)
-# print([1,2,3][-2:])
+                all_tables.append(gen_table_model(table_id, [table_id], desc=table_desc))
+            else:
+                same_ids = maybe_same_tables.get(table_id)
+                # 为空说明不是逻辑表的第一张表，所以不需要管，不为空说明是头表，直接加入all_tables即可
+                if same_ids is not None:
+                    # 获取table上面的text_lines，从而给出一个推测的name
+                    # table_name = gen_table_name(table_id, page_struct)
+                    table_desc = get_table_desc(table_id, page_struct)
+                    all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
+        # txt('/all_tables.txt', all_tables)
+        json('/all_tables.json', all_tables)
 
-# txt_data = {
-#     "1": {
-#         "1-1": ["1-1-1", {"2": ["haha"], "1-5":15}]
-#     },
-#     # "1": {
-#     #     "1": ["1-1", "1-2", "1-3", {"1-4": ["1-4-1"], "1-5": 15}]
-#     # }
-#     # "2": {
-#     #     "1": ["1-1", "1-2", "1-3", {"1-4": ["1-4-1"], "1-5": 15}]
-#     # },
-#     # "name": "Harrison",
-#     # "3": [1,2,3,4,5,[6,7,8], {"1":1, "2": "2"}]
-# }
-# txt('/test_txt.txt', txt_data)
+
+all_tables = json('/all_tables.json')
+table = _filter(all_tables, lambda table: "合并资产负债表" in table["desc"]["top"])
+txt('/target.txt', table)
