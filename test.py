@@ -360,12 +360,18 @@ def parse_pdf():
                 if same_ids is not None:
                     # 获取table上面的text_lines，从而给出一个推测的name
                     # table_name = gen_table_name(table_id, page_struct)
-                    table_desc = get_table_desc(table_id, page_struct)
+                    table_top_desc = get_table_desc(table_id, page_struct)['top']
+                    table_bottom_desc = get_table_desc(same_ids[-1], page_struct)['bottom']
+                    table_desc = {
+                        "top": table_top_desc,
+                        "bottom": table_bottom_desc
+                    }
                     all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
         # txt('/all_tables.txt', all_tables)
         json('/all_tables.json', all_tables)
 
 
-all_tables = json('/all_tables.json')
-table = _filter(all_tables, lambda table: "合并资产负债表" in table["desc"]["top"])
-txt('/target.txt', table)
+# all_tables = json('/all_tables.json')
+# table = _filter(all_tables, lambda table: "合并资产负债表" in table["desc"]["top"])
+# txt('/target.txt', table)
+parse_pdf()
