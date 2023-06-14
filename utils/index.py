@@ -2,7 +2,7 @@ import os
 from collections.abc import Iterable
 from datetime import datetime, date, timedelta
 from decimal import Decimal
-from json import dump,load
+from json import dump, load
 
 import numpy
 import pandas
@@ -200,7 +200,8 @@ def list2dict(keys: list, values: list):
 def get_dict_key_by_index(data: dict, index: int):
     # 5   -1 -2 -3 -4 -5 -6
     _list = list(data.keys())
-    if abs(index) >= len(_list):
+    index_range = get_list_index_range(_list)
+    if index > index_range[1] or index < index_range[0]:
         return None
     return _list[index]
 
@@ -281,6 +282,13 @@ def list2str(data: list | tuple, tab_symbol: str = '\t', tab_symbol_count: int =
         result += f"{tab_symbols}{value_str},\r\n"
     result += f"{mul_str(tab_symbol, tab_symbol_count - 1)}]"
     return result
+
+
+def get_list_index_range(data: list | tuple):
+    length = len(data)
+    max_index = length - 1
+    min_index = -length
+    return min_index, max_index
 
 
 def format_str(data: any, tab_symbol: str = '\t', tab_symbol_count: int = 1):

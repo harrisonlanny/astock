@@ -1,3 +1,9 @@
+# encoding：utf-8
+
+from enum import Enum
+
+from pdfplumber.table import Table
+
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
     has_chinese_number, _find, json
@@ -132,6 +138,17 @@ def gen_table_model(id: str, range: list[str], name: str = None, desc: dict[str,
     }
 
 
+def gen_table_content_model(id: str):
+    return {
+        "id": id,
+        "data": {
+            "fields": [],
+            "rows": [],
+            "origin": any
+        }
+    }
+
+
 def gen_table_id(page_ind: int, table_ind: int):
     return f"{page_ind + 1}_{table_ind + 1}"
 
@@ -254,10 +271,17 @@ def get_table_desc(table_id: str, page_struct: any):
     }
 
 
-# def parse_table_desc(table_desc: dict[str, list[str]]):
-#     top_desc =table_desc['top'][::-1]
-#     for text in top_desc:
-#         if ['单位']
+def find_table_from_page_struct(table_id: str, page_struct: dict[int, list[dict]]):
+    page_num = parse_table_id(table_id)['page_num']
+    page_data = page_struct[page_num]
+
+    table = _find(page_data, lambda item: item['type'] == 'table')
+    return table
+
+
+class Financial_Statement(Enum):
+    合并资产负债表 = "合并资产负债表"
+
 
 def parse_pdf():
     with pdfplumber.open('./reports/hgcy.pdf') as pdf:
@@ -270,7 +294,7 @@ def parse_pdf():
         maybe_same_tables = {}
         single_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
-        _pages = pdf.pages
+        _pages = pdf.pages[101:110]
         table_id_list = []
         for page_index, page in enumerate(_pages):
             print(f'---{page}---', '\n')
@@ -314,8 +338,8 @@ def parse_pdf():
 
                 # 不同页面的相同表合并
                 if prev_table:
-                    print('前一张表的最后一行', prev_table.rows[-1].cells)
-                    print('当前表的第一行', table.rows[0].cells, '\n')
+                    # print('前一张表的最后一行', prev_table.rows[-1].cells)
+                    # print('当前表的第一行', table.rows[0].cells, '\n')
                     prev_table_last_row = prev_table.rows[-1]
                     current_table_first_row = table.rows[0]
 
@@ -329,6 +353,7 @@ def parse_pdf():
 
                         # 判断table_id是否已存在于map中
                         key = get_dict_key_by_index(maybe_same_tables, -1)
+                        print(f"table_id:{table_id};prev_table_id:{prev_table_id},key:{key}, maybe_same_tables:{maybe_same_tables}")
                         if key is None or prev_table_id not in maybe_same_tables[key]:
                             if maybe_same_tables.get(prev_table_id) is None:
                                 maybe_same_tables[prev_table_id] = [prev_table_id]
@@ -345,6 +370,8 @@ def parse_pdf():
         same_tables = []
         for key in maybe_same_tables:
             same_tables += maybe_same_tables[key]
+
+        json('maybe_same_tables.json', maybe_same_tables)
 
         # 将逻辑统一的tables和单独的tables归纳到一起 ['1-1', ['2-1','2-2'], ...]
         all_tables = []
@@ -367,8 +394,21 @@ def parse_pdf():
                         "bottom": table_bottom_desc
                     }
                     all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
-        # txt('/all_tables.txt', all_tables)
         json('/all_tables.json', all_tables)
+
+        for table in all_tables:
+            table_id = table['id']
+            range = table['range']
+
+            table_extracts = []
+            for id in range:
+                table_detail: Table = find_table_from_page_struct(id, page_struct)['data']
+                table_extract = table_detail.extract()
+                table_extracts += table_extract
+
+            if Financial_Statement.合并资产负债表.value in table['desc']['top']:
+                print(Financial_Statement.合并资产负债表.value, table_extracts)
+                json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
 
 
 # all_tables = json('/all_tables.json')
