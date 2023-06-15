@@ -1,5 +1,5 @@
 # encoding：utf-8
-
+import re
 from enum import Enum
 
 from pdfplumber.table import Table
@@ -279,6 +279,16 @@ def find_table_from_page_struct(table_id: str, page_struct: dict[int, list[dict]
     return table
 
 
+def large_num_format(large_num: str):
+    regular = r'^\d{1,3},(\d{3},)*(\d{3})(.\d+)?$|^[1-9]\d{1,2}$'
+    if large_num is None:
+        return None
+    elif re.findall(regular, large_num):
+        new_large_num = large_num.replace('，', '').replace(',', '')
+        return float(new_large_num)
+    return large_num
+
+
 class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
 
@@ -353,7 +363,8 @@ def parse_pdf():
 
                         # 判断table_id是否已存在于map中
                         key = get_dict_key_by_index(maybe_same_tables, -1)
-                        print(f"table_id:{table_id};prev_table_id:{prev_table_id},key:{key}, maybe_same_tables:{maybe_same_tables}")
+                        print(
+                            f"table_id:{table_id};prev_table_id:{prev_table_id},key:{key}, maybe_same_tables:{maybe_same_tables}")
                         if key is None or prev_table_id not in maybe_same_tables[key]:
                             if maybe_same_tables.get(prev_table_id) is None:
                                 maybe_same_tables[prev_table_id] = [prev_table_id]
@@ -401,10 +412,19 @@ def parse_pdf():
             range = table['range']
 
             table_extracts = []
+
+
             for id in range:
                 table_detail: Table = find_table_from_page_struct(id, page_struct)['data']
                 table_extract = table_detail.extract()
-                table_extracts += table_extract
+                format_extract = []
+                for row in table_extract:
+                    format_row = []
+                    for cell in row:
+                        cell = large_num_format(cell)
+                        format_row.append(cell)
+                    format_extract.append(format_row)
+                table_extracts += format_extract
 
             if Financial_Statement.合并资产负债表.value in table['desc']['top']:
                 print(Financial_Statement.合并资产负债表.value, table_extracts)
