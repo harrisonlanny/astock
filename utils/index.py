@@ -326,6 +326,20 @@ def json(output_path: str, data: any = None):
     return result
 
 
+def _dir(dir_path: str, file_types: list[str] = None):
+    _path = get_path(dir_path)
+    if file_types is None:
+        file_types = []
+    file_names = []
+    for root, dirs, files in os.walk(f"{_path}"):
+        for file in files:
+            file_name = os.path.join(root, file).split('/')[-1]
+            file_names.append(file_name)
+    if _is_empty(file_types):
+        return file_names
+    return _filter(file_names, lambda file_name: file_name.split('.')[-1] in file_types)
+
+
 if __name__ == '__main__':
     print(get_path('/model/tables.json'))
 

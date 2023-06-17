@@ -1,4 +1,5 @@
 # encoding：utf-8
+import os
 import re
 from enum import Enum
 
@@ -6,7 +7,7 @@ from pdfplumber.table import Table
 
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
-    has_chinese_number, _find, json
+    has_chinese_number, _find, json, _dir
 from utils.stock import fq, _filter
 
 # '600276.SH', '600276', '恒瑞医药', '江苏', '化学制药', '主板', 'L', datetime.date(2000, 10, 18)
@@ -289,12 +290,49 @@ def large_num_format(large_num: str):
     return large_num
 
 
+def amount_empty_to_zero(value: str | float):
+    if value is None or value == '':
+        return 0
+    return value
+
+
+def calculate_interest_bearing_liabilities(json_result):
+    fields = _map(json_result, lambda row: row[0])
+    detail_current = {}
+    detail_last = {}
+    current_interest_bearing_liabilities_result = 0
+    last_interest_bearing_liabilities_result = 0
+    interest_bearing_liabilities = ["短期借款", "交易性金融负债", "长期借款", "应付债券", "一年内到期的非流动负债"]
+    for field_index, field in enumerate(fields):
+        if field in interest_bearing_liabilities:
+            detail_current[field] = json_result[field_index][-2]
+            detail_last[field] = json_result[field_index][-1]
+        for key in detail_current.keys():
+            detail_current[key] = amount_empty_to_zero(detail_current[key])
+            current_interest_bearing_liabilities_result += detail_current[key]
+        for key in detail_last.keys():
+            detail_last[key] = amount_empty_to_zero(detail_last[key])
+            last_interest_bearing_liabilities_result += detail_last[key]
+    return current_interest_bearing_liabilities_result, last_interest_bearing_liabilities_result
+
+
+def get_total_assets(json_result):
+    fields = _map(json_result, lambda row: row[0])
+    key = _filter(fields, lambda field: field.replace('\n', '').replace('（', '').replace('）',
+                                                                                         '') == "负债和所有者权益或股东权益总计")
+    for index, field in enumerate(fields):
+        if field in key:
+            current_total_assets = json_result[index][-2]
+            last_total_assets = json_result[index][-1]
+            return current_total_assets, last_total_assets
+
+
 class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
 
 
-def parse_pdf():
-    with pdfplumber.open('./reports/hgcy.pdf') as pdf:
+def parse_pdf(pdf_name):
+    with pdfplumber.open(f'./reports/{pdf_name}') as pdf:
         prev_table = None
         prev_table_id = None
         prev_table_index = None
@@ -413,7 +451,6 @@ def parse_pdf():
 
             table_extracts = []
 
-
             for id in range:
                 table_detail: Table = find_table_from_page_struct(id, page_struct)['data']
                 table_extract = table_detail.extract()
@@ -429,9 +466,17 @@ def parse_pdf():
             if Financial_Statement.合并资产负债表.value in table['desc']['top']:
                 print(Financial_Statement.合并资产负债表.value, table_extracts)
                 json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
+        return table_extracts
 
 
 # all_tables = json('/all_tables.json')
 # table = _filter(all_tables, lambda table: "合并资产负债表" in table["desc"]["top"])
 # txt('/target.txt', table)
-parse_pdf()
+
+
+# parse_pdf('./reports/hgcy.pdf')
+
+pdf_names = _dir("/reports", ['pdf'])
+for pdf_name in pdf_names:
+    print(parse_pdf(pdf_name))
+
