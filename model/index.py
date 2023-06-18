@@ -1,5 +1,6 @@
 import json
 
+from db.index import update_table_fields
 from model.model import TableModel
 from utils.index import get_path, _map
 
@@ -16,6 +17,12 @@ def get_columns(table_name):
 
 def describe_json(table_name):
     return TableModel(columns=get_columns(table_name))
+
+# TODO
+def update_table_fields_from_json(table_name):
+    update_table_fields('announcements', update_field_defines={
+        "file_title": ""
+    })
 
 #
 # if __name__ == '__main__':

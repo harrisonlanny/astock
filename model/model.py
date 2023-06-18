@@ -31,7 +31,8 @@ class TableModel:
             self.safe_columns = TableModel.get_safe_columns(self.columns)
             self.safe_column_names = TableModel.get_safe_column_names(self.column_names)
             pk_index = _find_index(self.columns, lambda item: "PRIMARY KEY" in item)
-            self.primary_key = self.column_names[pk_index]
+            if pk_index:
+                self.primary_key = self.column_names[pk_index]
 
         # 目标是：入参columns (参考tables.json) 出参：columns、column_names 、safe_columns、safe_column_names
 

@@ -1,6 +1,9 @@
 import requests
 
-from utils.index import json, _filter, date2str, is_iterable
+from db.index import clear_table, insert_table, get_total, delete_rows
+from model.index import describe_json
+from service.index import get_current_d_tables
+from utils.index import json, _filter, date2str, is_iterable, _map, get_path, _is_empty
 from datetime import date
 
 STATIC_DIR = '/static/financial_statement'
@@ -26,11 +29,13 @@ JU_CHAO_HEADERS = {
 }
 
 
-def fetch_juchao_all_stocks():
-    response = requests.get(f'{JU_CHAO_BASE_URL}/new/data/szse_stock.json', cookies=JU_CHAO_COOKIE,
-                            headers=JU_CHAO_HEADERS)
-    json(f'{STATIC_DIR}/juchao_all_stocks.json', response.json())
-    return response.json()
+def fetch_juchao_all_stocks(refresh: bool = True):
+    if refresh:
+        response = requests.get(f'{JU_CHAO_BASE_URL}/new/data/szse_stock.json', cookies=JU_CHAO_COOKIE,
+                                headers=JU_CHAO_HEADERS)
+        json(f'{STATIC_DIR}/juchao_all_stocks.json', response.json())
+        return response.json()['stockList']
+    return json(f'{STATIC_DIR}/juchao_all_stocks.json')['stockList']
 
 
 def fetch_one_page_financial_statements(symbol: str, org_id: str, page_num: int, page_size: int):
@@ -57,7 +62,7 @@ def fetch_financial_statements(symbol: str, org_id: str):
 
     while has_more:
         page_result = fetch_one_page_financial_statements(symbol, org_id, page_num, page_size)
-        print(f"{symbol}的第{page_num}页: ",page_result)
+        print(f"{symbol}的第{page_num}页: ", page_result)
         if is_iterable(page_result['announcements']):
             result += page_result['announcements']
         has_more = page_result['hasMore']
@@ -73,25 +78,19 @@ def get_pdf_url(announcement, simple: bool = True):
     if simple:
         return f'{JU_CHAO_STATIC_URL}/{announcement["adjunctUrl"]}'
 
-    announcement_time = date2str(date.fromtimestamp(announcement['announcementTime']/1000), "%Y-%m-%d")
+    announcement_time = date2str(date.fromtimestamp(announcement['announcementTime'] / 1000), "%Y-%m-%d")
     return f'/new/disclosure/detail?stockCode={announcement["secCode"]}&amp;announcementId={announcement["announcementId"]}&amp;orgId={announcement["orgId"]}&amp;announcementTime={announcement_time}'
 
 
+def download_announcement(url: str, title: str):
+    response = requests.get(url)
+    save_path = get_path(STATIC_DIR) + "/" + title + '.pdf'
+    # wb指的是writebyte,以二进制形式写入
+    open(save_path, 'wb').write(response.content)
+
+
 if __name__ == '__main__':
-    # fetch_financial_statements('')
-    # page_result = fetch_one_page_financial_statements('600276', 'gssh0600276',1,30)
-    # print(page_result)
 
-
-
-    symbols = [
-        '600276',  # 恒瑞医药
-        '002475',  # 立讯精密
-        '688126',  # 沪硅产业
-        '300699',  # 光威复材
-    ]
-
-    # fetch_juchao_all_stocks()
     juchao_all_stocks = json(f"{STATIC_DIR}/juchao_all_stocks.json")['stockList']
 
     target_juchao_stocks = _filter(juchao_all_stocks, lambda item: item['code'] in symbols)
@@ -127,3 +126,70 @@ if __name__ == '__main__':
         json(f'{STATIC_DIR}/announcements.json', pdf_urls)
 
 
+def refresh_table_announcements(symbols: list[str] = None):
+    # 1. 得到symbols
+    if _is_empty(symbols):
+        symbols = _map(get_current_d_tables(), lambda item: item[2:])
+
+    # 2. 得到巨潮的all_stocks (包含org_id与symbol的映射)
+    juchao_all_stocks = fetch_juchao_all_stocks()
+
+    # 3. 根据symbols和all_stocks得到包含org_id和symbol的dictlist
+    target_juchao_stocks = _filter(juchao_all_stocks, lambda item: item['code'] in symbols)
+
+    # 4. 获取announcements表的描述信息
+    table_name = 'announcements'
+    table_describe = describe_json(table_name)
+
+    # 遍历target_juchao_stocks
+    for stock in target_juchao_stocks:
+        print(stock['zwjc'])
+        name = stock['zwjc']
+        org_id = stock['orgId']
+        symbol = stock['code']
+        # 请求symbol对应的所有财报
+        announcements = fetch_financial_statements(symbol, org_id)
+
+        # 将数据结构化 （format_item指的是symbol的所有财报数据)
+        # rows: [[symbol, name, org_id, file_title, title, url]]
+        rows = []
+        format_item = {
+            "symbol": symbol,
+            "name": name,
+            "org_id": org_id,
+            "announcements": []
+        }
+        for announcement in announcements:
+            pdf_title = announcement['announcementTitle']
+            pdf_url = get_pdf_url(announcement)
+            file_title = f"{symbol}__{name}__{pdf_title}"
+            format_item['announcements'].append({
+                "file_title": file_title,
+                "title": pdf_title,
+                "url": pdf_url
+            })
+            row = [symbol, name, org_id, file_title, pdf_title, pdf_url]
+            rows.append(row)
+
+        if len(rows):
+            # 删除原数据库中symbol对应的所有announcements
+            delete_rows(table_name, f"WHERE `symbol`={symbol}")
+            # 将rows插入数据库
+            insert_table(table_name, table_describe.safe_column_names, rows)
+
+    datas = []
+    for key in juchao_announcements_json.keys():
+        values = juchao_announcements_json[key]
+        symbol = values["symbol"]
+        name = values["name"]
+        org_id = values["org_id"]
+        announcements = values["announcements"]
+        for annoumcement in announcements:
+            file_title = annoumcement["file_title"]
+            title = annoumcement["title"]
+            url = annoumcement["url"]
+            data = [symbol, name, org_id, file_title, title, url]
+            datas.append(data)
+    if data_count_in_table < data_count_in_juchao:
+        clear_table(table_name)
+        insert_table(table_name, describe.safe_column_names, datas)

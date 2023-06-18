@@ -1,19 +1,26 @@
-# a = {"name": "harrison"}
-# b = {"age": 12}
-# # c = a.copy()
-# # c.update(b)
-# #
-# # print(c)
+# from service.index import get_current_d_tables
+# from utils.index import _map
 #
-# c = dict(a, **{
-#     "age": 15
+# result = _map(get_current_d_tables(), lambda item: item[2:])
+# print(result)
+# from service.report import download_announcement
+# from utils.index import json
+#
+# data = json('/static/financial_statement/announcements.json')
+# announcements = data['688126']['announcements']
+#
+# for announcement in announcements:
+#     url = announcement['url']
+#     title = announcement['file_title']
+#     download_announcement(url, title)
+# from db.index import update_table_fields
+#
+# update_table_fields('announcements', update_field_defines={
+#     "file_title": ""
 # })
-# print(c)
-from datetime import datetime,date
+from db.index import delete_table, create_table
+from model.index import describe_json
 
-from utils.index import date2str
-
-timestamp = 1681142400000
-d = date.fromtimestamp(timestamp / 1000)
-s = date2str(d, "%Y-%m-%d")
-print(s)
+delete_table('announcements')
+describe = describe_json('announcements')
+create_table('announcements', describe.safe_columns)

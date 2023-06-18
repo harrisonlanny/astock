@@ -34,5 +34,16 @@
       "low_qfq FLOAT(10)",
       "close_qfq FLOAT(10)"
     ]
+  },
+  "announcements": {
+    "table_name": "announcements",
+    "columns": [
+      "symbol CHAR(9)",
+      "name VARCHAR(30)",
+      "org_id VARCHAR(20)",
+      "file_title VARCHAR(100) NOT NULL PRIMARY KEY",
+      "title VARCHAR(60)",
+      "url VARCHAR(80)"
+    ]
   }
 }

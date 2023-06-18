@@ -50,6 +50,15 @@ def clear_table(table_name):
     sql([delete_sql], lambda cursor: db.commit())
 
 
+def delete_rows(table_name, filter_str: str):
+    # 如果为空，就是清空整张表的数据，过于危险，故不会操作
+    if _is_empty(filter_str):
+        return
+    sql_str = f"DELETE FROM {table_name} {filter_str}".strip()
+    print(sql_str)
+    sql([sql_str], lambda cursor: db.commit())
+
+
 def describe_table(table_name):
     # return sql([f"describe {table_name}"], lambda cursor: cursor.fetchall())
     # (('stock_basic', 'CREATE TABLE `stock_basic` (\n  `ts_code` char(9) NOT NULL,\n  `symbol` char(6) NO ....
@@ -155,6 +164,7 @@ def update_table_fields(
     real_update_field_defines = {}
     for from_field in update_field_defines:
         to_field_define = update_field_defines.get(from_field)
+        # 这儿的意图是如果只改名字，就把后面的描述给加上
         if not is_field_define(to_field_define):
             if desc is None:
                 desc = describe_table(table_name)
