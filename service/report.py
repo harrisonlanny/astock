@@ -1,3 +1,6 @@
+import os
+import time
+
 import requests
 
 from db.index import clear_table, insert_table, get_total, delete_rows
@@ -82,51 +85,24 @@ def get_pdf_url(announcement, simple: bool = True):
     return f'/new/disclosure/detail?stockCode={announcement["secCode"]}&amp;announcementId={announcement["announcementId"]}&amp;orgId={announcement["orgId"]}&amp;announcementTime={announcement_time}'
 
 
-def download_announcement(url: str, title: str):
-    response = requests.get(url)
+def download_announcement(url: str, title: str, skip_if_exist: bool = True):
     save_path = get_path(STATIC_DIR) + "/" + title + '.pdf'
+    # print('save_path', save_path)
+    if skip_if_exist:
+        # 判断下 title.pdf是否已经存在于静态文件夹，如果已经存在就直接return，不做操作
+        is_exist = os.path.exists(save_path)
+        if is_exist:
+            print(f"{title}.pdf 已存在，不会重复下载 ")
+            return
+    response = requests.get(url, headers=JU_CHAO_HEADERS)
     # wb指的是writebyte,以二进制形式写入
     open(save_path, 'wb').write(response.content)
 
 
-if __name__ == '__main__':
-
-    juchao_all_stocks = json(f"{STATIC_DIR}/juchao_all_stocks.json")['stockList']
-
-    target_juchao_stocks = _filter(juchao_all_stocks, lambda item: item['code'] in symbols)
-
-    pdf_urls = {}
-    for stock in target_juchao_stocks:
-        print(stock['zwjc'])
-        name = stock['zwjc']
-        org_id = stock['orgId']
-        symbol = stock['code']
-        announcements = fetch_financial_statements(symbol, org_id)
-        pdf_urls[symbol] = {
-            "symbol": symbol,
-            "name": name,
-            "org_id": org_id,
-            "announcements": []
-        }
-        for announcement in announcements:
-            pdf_title = announcement['announcementTitle']
-            pdf_url = get_pdf_url(announcement)
-
-            file_title = f"{symbol}__{name}__{pdf_title}"
-
-            pdf_urls[symbol]['announcements'].append({
-                "file_title": file_title,
-                "title": pdf_title,
-                "url": pdf_url
-            })
-            print(pdf_title)
-            print(pdf_url)
-            print('\n')
-        print('\n')
-        json(f'{STATIC_DIR}/announcements.json', pdf_urls)
+# if __name__ == '__main__':
 
 
-def refresh_table_announcements(symbols: list[str] = None):
+def refresh_table_announcements(symbols: list[str] = None, sleep_time: float = 0.5):
     # 1. 得到symbols
     if _is_empty(symbols):
         symbols = _map(get_current_d_tables(), lambda item: item[2:])
@@ -162,7 +138,8 @@ def refresh_table_announcements(symbols: list[str] = None):
         for announcement in announcements:
             pdf_title = announcement['announcementTitle']
             pdf_url = get_pdf_url(announcement)
-            file_title = f"{symbol}__{name}__{pdf_title}"
+            announcement_id = announcement['announcementId']
+            file_title = f"{symbol}__{name}__{pdf_title}__{announcement_id}"
             format_item['announcements'].append({
                 "file_title": file_title,
                 "title": pdf_title,
@@ -170,26 +147,15 @@ def refresh_table_announcements(symbols: list[str] = None):
             })
             row = [symbol, name, org_id, file_title, pdf_title, pdf_url]
             rows.append(row)
+            # 下载对应的pdf，存储到静态文件夹
+            print(f'{file_title}.pdf is downloading...')
+            download_announcement(pdf_url, file_title)
+            time.sleep(sleep_time)
 
         if len(rows):
             # 删除原数据库中symbol对应的所有announcements
             delete_rows(table_name, f"WHERE `symbol`={symbol}")
             # 将rows插入数据库
+            print('insert table')
             insert_table(table_name, table_describe.safe_column_names, rows)
-
-    datas = []
-    for key in juchao_announcements_json.keys():
-        values = juchao_announcements_json[key]
-        symbol = values["symbol"]
-        name = values["name"]
-        org_id = values["org_id"]
-        announcements = values["announcements"]
-        for annoumcement in announcements:
-            file_title = annoumcement["file_title"]
-            title = annoumcement["title"]
-            url = annoumcement["url"]
-            data = [symbol, name, org_id, file_title, title, url]
-            datas.append(data)
-    if data_count_in_table < data_count_in_juchao:
-        clear_table(table_name)
-        insert_table(table_name, describe.safe_column_names, datas)
+        print('\n')
