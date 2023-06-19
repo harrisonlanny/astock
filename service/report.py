@@ -42,19 +42,24 @@ def fetch_juchao_all_stocks(refresh: bool = True):
 
 
 def fetch_one_page_financial_statements(symbol: str, org_id: str, page_num: int, page_size: int):
-    response = requests.post(f'{JU_CHAO_BASE_URL}/new/hisAnnouncement/query', data={
-        "pageNum": page_num,
-        "pageSize": page_size,
-        "column": "szse",
-        "tabName": "fulltext",
-        "stock": f"{symbol},{org_id}",
-        "category": "category_ndbg_szsh",
-        "isHLtitle": True
-    }, cookies=JU_CHAO_COOKIE, headers=dict(JU_CHAO_HEADERS, **{
-        "Content-Type": "application/x-www-form-urlencoded"
-    }))
-    result = response.json()
-    return result
+    try:
+        response = requests.post(f'{JU_CHAO_BASE_URL}/new/hisAnnouncement/query', data={
+            "pageNum": page_num,
+            "pageSize": page_size,
+            "column": "szse",
+            "tabName": "fulltext",
+            "stock": f"{symbol},{org_id}",
+            "category": "category_ndbg_szsh",
+            "isHLtitle": True
+        }, cookies=JU_CHAO_COOKIE, headers=dict(JU_CHAO_HEADERS, **{
+            "Content-Type": "application/x-www-form-urlencoded"
+        }))
+        result = response.json()
+        return result
+    except requests.exceptions.ConnectionError:
+        print('请求one_page_financeial_statements超负荷了，休息15s后将继续请求..')
+        time.sleep(15)
+        return fetch_one_page_financial_statements(symbol, org_id, page_num, page_size)
 
 
 def fetch_financial_statements(symbol: str, org_id: str):
@@ -93,19 +98,36 @@ def download_announcement(url: str, title: str, skip_if_exist: bool = True):
         is_exist = os.path.exists(save_path)
         if is_exist:
             print(f"{title}.pdf 已存在，不会重复下载 ")
-            return
-    response = requests.get(url, headers=JU_CHAO_HEADERS)
+            return is_exist
+    try:
+        response = requests.get(url, headers=JU_CHAO_HEADERS)
+    except requests.exceptions.ConnectionError:
+        print('请求pdf超负荷了，休息15s后将继续请求..')
+        time.sleep(15)
+        response = requests.get(url, headers=JU_CHAO_HEADERS)
     # wb指的是writebyte,以二进制形式写入
     open(save_path, 'wb').write(response.content)
+    return False
 
 
 # if __name__ == '__main__':
 
 
-def refresh_table_announcements(symbols: list[str] = None, sleep_time: float = 0.5):
+def refresh_table_announcements(symbols: list[str] = None, start_symbol: str = None, sleep_time: float = 0.5):
     # 1. 得到symbols
     if _is_empty(symbols):
         symbols = _map(get_current_d_tables(), lambda item: item[2:])
+    # 如果有start_symbol,就从start_symbol开始截取symbols（用于因为异常中断后，避免重新开始更新，而是从中断处开始）
+    if not _is_empty(start_symbol):
+        _symbols = []
+        should_add = False
+        for symbol in symbols:
+            if symbol == start_symbol:
+                should_add = True
+            if should_add:
+                _symbols.append(symbol)
+        symbols = _symbols
+    print(symbols)
 
     # 2. 得到巨潮的all_stocks (包含org_id与symbol的映射)
     juchao_all_stocks = fetch_juchao_all_stocks()
@@ -118,8 +140,9 @@ def refresh_table_announcements(symbols: list[str] = None, sleep_time: float = 0
     table_describe = describe_json(table_name)
 
     # 遍历target_juchao_stocks
-    for stock in target_juchao_stocks:
-        print(stock['zwjc'])
+    for stock_index, stock in enumerate(target_juchao_stocks):
+        percent = round((stock_index + 1) / len(target_juchao_stocks) * 100, 2)
+        print(stock['zwjc'], f"{percent}%")
         name = stock['zwjc']
         org_id = stock['orgId']
         symbol = stock['code']
@@ -135,8 +158,11 @@ def refresh_table_announcements(symbols: list[str] = None, sleep_time: float = 0
             "org_id": org_id,
             "announcements": []
         }
+        # dict[file_title, count]
+        same_file_title_count = {}
+
         for announcement in announcements:
-            pdf_title = announcement['announcementTitle']
+            pdf_title = announcement['announcementTitle'].strip()
             pdf_url = get_pdf_url(announcement)
             announcement_id = announcement['announcementId']
             file_title = f"{symbol}__{name}__{pdf_title}__{announcement_id}"
@@ -145,17 +171,32 @@ def refresh_table_announcements(symbols: list[str] = None, sleep_time: float = 0
                 "title": pdf_title,
                 "url": pdf_url
             })
+
+            # 在same_file_title_count里添上记录
+            if same_file_title_count.get(file_title) is None:
+                same_file_title_count[file_title] = 1
+            else:
+                same_file_title_count[file_title] += 1
+
+            # 如果same_file_title_count里统计>=2（不止一条），那么在file_title的末尾添加上__{count-1}
+            if same_file_title_count[file_title] >= 2:
+                file_title = f"{file_title}__{same_file_title_count[file_title] - 1}"
+
             row = [symbol, name, org_id, file_title, pdf_title, pdf_url]
             rows.append(row)
             # 下载对应的pdf，存储到静态文件夹
             print(f'{file_title}.pdf is downloading...')
-            download_announcement(pdf_url, file_title)
-            time.sleep(sleep_time)
+            is_exist = download_announcement(pdf_url, file_title)
+            if not is_exist:
+                time.sleep(sleep_time)
 
         if len(rows):
             # 删除原数据库中symbol对应的所有announcements
             delete_rows(table_name, f"WHERE `symbol`={symbol}")
             # 将rows插入数据库
             print('insert table')
+            for row_index, row in enumerate(rows):
+                print(f"第{row_index}行", row)
             insert_table(table_name, table_describe.safe_column_names, rows)
         print('\n')
+        time.sleep(sleep_time)

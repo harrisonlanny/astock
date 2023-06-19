@@ -15,8 +15,11 @@
 #     download_announcement(url, title)
 # from db.index import update_table_fields
 #
+from db.index import update_table_fields
+
 # update_table_fields('announcements', update_field_defines={
-#     "file_title": ""
+#     # "file_title": "file_title VARCHAR(120) NOT NULL PRIMARY KEY",
+#     "title": "title VARCHAR(80)",
 # })
 # from db.index import delete_table, create_table
 # from model.index import describe_json
@@ -37,5 +40,6 @@ from service.report import refresh_table_announcements
 # save_path = "/Users/sunzheng/PycharmProjects/astock/static/financial_statement/000003__PT金田A__PT金田Ａ2001年年度报告（英文版）.pdf"
 # print('exists', os.path.exists(save_path))
 # refresh_table_announcements([
-#     '000419'
+#     '600256'
 # ])
+read_table()

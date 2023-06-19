@@ -8,7 +8,6 @@ from service.report import refresh_table_announcements
 # create_new_d_tables()
 
 
-
 # update_d_tables(sleep_time=0.2, update_st=False)
-refresh_table_announcements(sleep_time=0.2)
+refresh_table_announcements(sleep_time=0.25, start_symbol='600256')
 print('成功！！')

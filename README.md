@@ -132,3 +132,6 @@ http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search&l
 =（净利润/销售收入）*（销售收入/平均总资产）*（平均总资产/净资产）
 =产品净利润率*总资产周转率*杠杆系数
 分别对应高净利率（茅台模式）、高管理层运营能力（沃尔玛模式）、高杠杆（银行模式）
+
+
+SELECT * FROM  announcements a where title like '%2005%' and title not like '%英文%'  and title not like '%（已取消）%' and title not like '%摘要%'
