@@ -3,7 +3,7 @@ import time
 
 import requests
 
-from db.index import clear_table, insert_table, get_total, delete_rows
+from db.index import clear_table, insert_table, get_total, delete_rows, read_table
 from model.index import describe_json
 from service.index import get_current_d_tables
 from utils.index import json, _filter, date2str, is_iterable, _map, get_path, _is_empty
@@ -200,3 +200,11 @@ def refresh_table_announcements(symbols: list[str] = None, start_symbol: str = N
             insert_table(table_name, table_describe.safe_column_names, rows)
         print('\n')
         time.sleep(sleep_time)
+
+
+def get_year_announcements(year):
+    result = read_table(table_name="announcements",
+                        filter_str=f"where title like '%{year}%' and title not like '%英文%'  and title not like "
+                                   f"'%（已取消）%' and title not like '%摘要%'",
+                        result_type="dict")
+    return result

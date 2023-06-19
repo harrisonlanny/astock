@@ -15,7 +15,7 @@
 #     download_announcement(url, title)
 # from db.index import update_table_fields
 #
-from db.index import update_table_fields
+from db.index import update_table_fields, read_table
 
 # update_table_fields('announcements', update_field_defines={
 #     # "file_title": "file_title VARCHAR(120) NOT NULL PRIMARY KEY",
@@ -42,4 +42,5 @@ from service.report import refresh_table_announcements
 # refresh_table_announcements([
 #     '600256'
 # ])
-read_table()
+result = read_table(table_name="announcements", filter_str="where title like '%2005%' and title not like '%英文%'  and title not like '%（已取消）%' and title not like '%摘要%'",result_type="dict")
+print(len(result))
