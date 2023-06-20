@@ -134,12 +134,10 @@ def update_table(table_name, column_name_list, row, conditions):
     update_sql = f"UPDATE {table_name} SET {update_fields} {conditions}"
     print('update sql', update_sql)
 
-    # TODO FINISH REAL COMMIT
-
-    # sql([
-    #     update_sql
-    # ], lambda cursor: db.commit())
-    # return update_sql
+    sql([
+        update_sql
+    ], lambda cursor: db.commit())
+    return update_sql
 
 
 # 'ts_code' field

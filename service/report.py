@@ -3,7 +3,7 @@ import time
 
 import requests
 
-from db.index import clear_table, insert_table, get_total, delete_rows, read_table
+from db.index import clear_table, insert_table, get_total, delete_rows, read_table, update_table
 from model.index import describe_json
 from service.index import get_current_d_tables
 from utils.index import json, _filter, date2str, is_iterable, _map, get_path, _is_empty
@@ -90,6 +90,16 @@ def get_pdf_url(announcement, simple: bool = True):
     return f'/new/disclosure/detail?stockCode={announcement["secCode"]}&amp;announcementId={announcement["announcementId"]}&amp;orgId={announcement["orgId"]}&amp;announcementTime={announcement_time}'
 
 
+class DownLoadAnnouncementException(Exception):
+    def __init__(self, code, reason, url):
+        self.code = code
+        self.reason = reason
+        self.url = url
+
+    def __str__(self):
+        return f"获取announcement报错：{self.url},{self.code},{self.reason}"
+
+
 def download_announcement(url: str, title: str, skip_if_exist: bool = True):
     save_path = get_path(STATIC_DIR) + "/" + title + '.pdf'
     print('save_path', save_path)
@@ -110,7 +120,11 @@ def download_announcement(url: str, title: str, skip_if_exist: bool = True):
         time.sleep(15)
         response = requests.get(url)
     if response.status_code != 200:
-        raise Exception(f"pdf请求报错:{response.status_code},{response.reason},{url}")
+        raise DownLoadAnnouncementException(
+            code=response.status_code,
+            reason=response.reason,
+            url=url
+        )
     # wb指的是write_byte,以二进制形式写入
     with open(save_path, 'wb') as f:
         f.write(response.content)
@@ -224,7 +238,14 @@ def download_year_announcements(year: int = None):
     for index, announcement in enumerate(announcements):
         percent = round((index + 1) / len(announcements) * 100, 2)
 
+        symbol = announcement['symbol']
         url = announcement['url']
         file_title = announcement['file_title']
         print(file_title, f"{percent}%")
-        download_announcement(url, file_title)
+        try:
+            download_announcement(url, file_title)
+        except DownLoadAnnouncementException as e:
+            print(e)
+            # 如果pdf404，则在announcements表中标记为不可用
+            if e.code == 404:
+                update_table("announcements", ['`disabled`'], [1], f"WHERE `file_title`='{file_title}'")
