@@ -3,8 +3,10 @@ import os
 import re
 from enum import Enum
 
+import requests
 from pdfplumber.table import Table
 
+from service.report import STATIC_DIR, download_announcement, download_year_announcements
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
     has_chinese_number, _find, json, _dir
@@ -331,8 +333,8 @@ class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
 
 
-def parse_pdf(pdf_name):
-    with pdfplumber.open(f'./reports/{pdf_name}') as pdf:
+def parse_pdf(pdf_url):
+    with pdfplumber.open(pdf_url) as pdf:
         prev_table = None
         prev_table_id = None
         prev_table_index = None
@@ -342,15 +344,16 @@ def parse_pdf(pdf_name):
         maybe_same_tables = {}
         single_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
-        _pages = pdf.pages[101:110]
+        _pages = pdf.pages[5:6]
         table_id_list = []
         for page_index, page in enumerate(_pages):
             print(f'---{page}---', '\n')
             # Filter out hidden lines.
             page = page.filter(keep_visible_lines)
             tables = page.find_tables()
-            # im = page.to_image()
-            # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+            print(len(tables))
+            im = page.to_image()
+            im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
 
             # 提取页面的文字
             text_lines = page.extract_text_lines()
@@ -466,7 +469,7 @@ def parse_pdf(pdf_name):
             if Financial_Statement.合并资产负债表.value in table['desc']['top']:
                 print(Financial_Statement.合并资产负债表.value, table_extracts)
                 json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
-        return table_extracts
+        return all_tables
 
 
 # all_tables = json('/all_tables.json')
@@ -476,7 +479,27 @@ def parse_pdf(pdf_name):
 
 # parse_pdf('./reports/hgcy.pdf')
 
-pdf_names = _dir("/reports", ['pdf'])
-for pdf_name in pdf_names:
-    print(parse_pdf(pdf_name))
+# pdf_names = _dir("/reports", ['pdf'])
+# for pdf_name in pdf_names:
+#     print(parse_pdf(pdf_name))
+# pdfs = [
+#     "000001__平安银行__2006年年度报告__21676577.pdf",
+#     "688126__沪硅产业__2019年年度报告__1207650684.pdf"
+# ]
+# result = parse_pdf(pdfs[1])
+# print(result)
 
+# download_announcement('http://static.cninfo.com.cn/finalpage/2011-03-18/59136299.PDF', title="test")
+# url = "http://static.cninfo.com.cn/finalpage/2011-03-18/59136299.PDF"
+# url = "http://static.cninfo.com.cn/finalpage/2007-03-22/21676577.PDF"
+# response = requests.get(url)
+#
+# f = open("test.pdf", "wb")
+# f.write(response.content)
+
+# parse_pdf("hgcy.pdf")
+
+# file_size = os.path.getsize("hgcy.pdf")
+# print(file_size)
+
+# download_year_announcements()

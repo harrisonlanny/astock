@@ -9,7 +9,7 @@ from service.index import get_current_d_tables
 from utils.index import json, _filter, date2str, is_iterable, _map, get_path, _is_empty
 from datetime import date
 
-STATIC_DIR = '/static/financial_statement'
+STATIC_DIR = '/static/announcements'
 
 JU_CHAO_PROTOCOL = "http://"
 JU_CHAO_HOST = 'www.cninfo.com.cn'
@@ -92,21 +92,28 @@ def get_pdf_url(announcement, simple: bool = True):
 
 def download_announcement(url: str, title: str, skip_if_exist: bool = True):
     save_path = get_path(STATIC_DIR) + "/" + title + '.pdf'
-    # print('save_path', save_path)
+    print('save_path', save_path)
     if skip_if_exist:
         # 判断下 title.pdf是否已经存在于静态文件夹，如果已经存在就直接return，不做操作
         is_exist = os.path.exists(save_path)
+
         if is_exist:
-            print(f"{title}.pdf 已存在，不会重复下载 ")
-            return is_exist
+            file_size = os.path.getsize(save_path)
+            # 如果大小小于1kb，我们认为是空文件
+            if file_size >= 1024:
+                print(f"{title}.pdf 已存在，不会重复下载 ")
+                return is_exist
     try:
-        response = requests.get(url, headers=JU_CHAO_HEADERS)
+        response = requests.get(url)
     except requests.exceptions.ConnectionError:
         print('请求pdf超负荷了，休息15s后将继续请求..')
         time.sleep(15)
-        response = requests.get(url, headers=JU_CHAO_HEADERS)
-    # wb指的是writebyte,以二进制形式写入
-    open(save_path, 'wb').write(response.content)
+        response = requests.get(url)
+    if response.status_code != 200:
+        raise Exception("pdf请求接口报错了!")
+    # wb指的是write_byte,以二进制形式写入
+    with open(save_path, 'wb') as f:
+        f.write(response.content)
     return False
 
 
@@ -202,9 +209,22 @@ def refresh_table_announcements(symbols: list[str] = None, start_symbol: str = N
         time.sleep(sleep_time)
 
 
-def get_year_announcements(year):
+def get_year_announcements(year: int = None):
+    year_filter = '' if year is None else f' title like ' % {year} % ' and'
     result = read_table(table_name="announcements",
-                        filter_str=f"where title like '%{year}%' and title not like '%英文%'  and title not like "
-                                   f"'%（已取消）%' and title not like '%摘要%'",
+                        filter_str=f"where{year_filter} title not like '%英文%'  and title not like "
+                                   f"'%取消%' and title not like '%摘要%'",
                         result_type="dict")
     return result
+
+
+def download_year_announcements(year: int = None):
+    announcements: list[dict] = get_year_announcements(year)
+    # announcements = announcements[0:300]
+    for index, announcement in enumerate(announcements):
+        percent = round((index + 1) / len(announcements) * 100, 2)
+
+        url = announcement['url']
+        file_title = announcement['file_title']
+        print(file_title, f"{percent}%")
+        download_announcement(url, file_title)

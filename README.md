@@ -135,3 +135,8 @@ http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search&l
 
 
 SELECT * FROM  announcements a where title like '%2005%' and title not like '%英文%'  and title not like '%（已取消）%' and title not like '%摘要%'
+
+今天任务
+1. 表格解析，隐藏线去掉后，有些pdf解析不出表格
+2. 下载pdf，相当多pdf格式错误
+3. 下载pdf优化，只下载不含英文 且 不含简要 且 不含取消 的年度报表
