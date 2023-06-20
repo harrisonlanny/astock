@@ -110,7 +110,7 @@ def download_announcement(url: str, title: str, skip_if_exist: bool = True):
         time.sleep(15)
         response = requests.get(url)
     if response.status_code != 200:
-        raise Exception("pdf请求接口报错了!")
+        raise Exception(f"pdf请求报错:{response.status_code},{response.reason},{url}")
     # wb指的是write_byte,以二进制形式写入
     with open(save_path, 'wb') as f:
         f.write(response.content)

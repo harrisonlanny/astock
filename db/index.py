@@ -162,6 +162,8 @@ def update_table_fields(
 
     desc = None
     real_update_field_defines = {}
+    if update_field_defines is None:
+        update_field_defines = []
     for from_field in update_field_defines:
         to_field_define = update_field_defines.get(from_field)
         # 这儿的意图是如果只改名字，就把后面的描述给加上

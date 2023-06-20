@@ -43,7 +43,8 @@
       "org_id VARCHAR(20)",
       "file_title VARCHAR(100) NOT NULL PRIMARY KEY",
       "title VARCHAR(80)",
-      "url VARCHAR(80)"
+      "url VARCHAR(80)",
+      "disabled TINYINT(1) DEFAULT 0"
     ]
   }
 }

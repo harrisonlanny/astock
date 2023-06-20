@@ -6,6 +6,7 @@ from enum import Enum
 import requests
 from pdfplumber.table import Table
 
+from db.index import update_table_fields
 from service.report import STATIC_DIR, download_announcement, download_year_announcements
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
@@ -503,3 +504,7 @@ def parse_pdf(pdf_url):
 # print(file_size)
 
 # download_year_announcements()
+
+update_table_fields('announcements', add_field_defines=[
+    "`disabled` TINYINT(1) DEFAULT 0"
+])
