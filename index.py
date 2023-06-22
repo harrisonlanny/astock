@@ -12,5 +12,5 @@ from service.report import refresh_table_announcements, download_year_announceme
 # refresh_table_announcements(sleep_time=0.25)
 
 download_year_announcements()
-
-print('成功！！')
+#
+# print('成功！！')

@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Iterable
 from datetime import datetime, date, timedelta
 from decimal import Decimal
@@ -254,6 +255,17 @@ def has_chinese_number(data: str):
         if chinese_number in data:
             return True
     return False
+
+
+def large_num_format(large_num: str):
+    regular = r'^\d{1,3},(\d{3},)*(\d{3})(.\d+)?$|^[1-9]\d{1,2}$'
+    if large_num is None:
+        return None
+    elif re.findall(regular, large_num):
+        new_large_num = large_num.replace('，', '').replace(',', '')
+        return float(new_large_num)
+    return large_num
+
 
 
 def mul_str(data: str, count: int):
