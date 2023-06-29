@@ -1,4 +1,6 @@
+import math
 import os
+import threading
 import time
 from enum import Enum
 
@@ -510,7 +512,7 @@ def parse_pdf(pdf_url, pdf_name):
         _pages = pdf.pages
         table_id_list = []
         for page_index, page in enumerate(_pages):
-            print(f'--{pdf_name}  {page_index + 1}/{len(_pages)}--', '\n')
+            # print(f'--{pdf_name}  {page_index + 1}/{len(_pages)}--', '\n')
             # Filter out hidden lines.
             page = page.filter(keep_visible_lines)
             tables = page.find_tables()
@@ -672,6 +674,38 @@ def get_color_statistic(pdf_url):
         print(result)
 
 # 2010, 2020
+
+class ParsePdfThread(threading.Thread):
+    def __init__(self,thread_name, file_title_list, start_index, end_index):
+        self.thread_name = thread_name
+        self.file_title_list = file_title_list
+        self.start_index = start_index
+        self.end_index = end_index
+        super().__init__()
+
+    def run(self):
+        arr = self.file_title_list[self.start_index:self.end_index+1]
+        arr_length = len(arr)
+        for i,file_title in enumerate(arr):
+            index = self.start_index + i
+            pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf')
+            table_json_url = get_path(f'{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json')
+            print(f"{self.thread_name}: {file_title}, 线程内进度：{i+1}/{arr_length}, 总任务第几个：{index + 1}")
+            exists = os.path.exists(table_json_url)
+            if not exists:
+                parse_pdf(pdf_url, pdf_name=file_title)
+
+
+# def parse_pdfs(file_title_list):
+#     length = len(file_title_list)
+#     for index, file_title in enumerate(file_title_list):
+#         pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf')
+#         table_json_url = get_path(f'{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json')
+#         print(pdf_url, f" {index + 1}/{length}")
+#         exists = os.path.exists(table_json_url)
+#         if not exists:
+#             parse_pdf(pdf_url, pdf_name=file_title)
+
 def parse_announcements(start_year,end_year):
     point_year = start_year
     or_str = ""
@@ -693,13 +727,21 @@ def parse_announcements(start_year,end_year):
                         {or_str}
                     )
                 ''')
-    print(r)
+    file_title_list = _map(r, lambda item: item['file_title'])
+    middle = math.ceil(len(file_title_list) / 2)
+    t1 = ParsePdfThread(
+        thread_name="线程1",
+        file_title_list=file_title_list,
+        start_index=0,
+        end_index=middle
+    )
+    t1.start()
+    t2 = ParsePdfThread(
+        thread_name="线程2",
+        file_title_list=file_title_list,
+        start_index=middle+1,
+        end_index=len(file_title_list)-1
+    )
+    t2.start()
 
-    # for index, rs in enumerate(r):
-    #     file_title = rs['file_title']
-    #     pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf')
-    #     table_json_url = get_path(f'{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json')
-    #     print(pdf_url, f" {index + 1}/{len(r)}")
-    #     exists = os.path.exists(table_json_url)
-    #     if not exists:
-    #         parse_pdf(pdf_url, pdf_name=file_title)
+
