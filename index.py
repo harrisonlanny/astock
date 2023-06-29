@@ -8,9 +8,9 @@ from service.report import refresh_table_announcements, download_year_announceme
 # create_new_d_tables()
 
 
-# update_d_tables(sleep_time=0.2, update_st=False)
+update_d_tables(sleep_time=0.2, update_st=False)
 # refresh_table_announcements(sleep_time=0.25)
 
-download_year_announcements()
+# download_year_announcements()
 #
 # print('成功！！')
