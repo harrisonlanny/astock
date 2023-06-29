@@ -7,7 +7,7 @@ import requests
 from pdfplumber.table import Table
 
 from db.index import update_table_fields, update_table
-from service.report import STATIC_DIR, download_announcement, download_year_announcements
+from service.report import STATIC_ANNOUNCEMENTS_DIR, download_announcement, download_year_announcements
 from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
     has_chinese_number, _find, json, _dir

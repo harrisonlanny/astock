@@ -13,7 +13,8 @@ from utils.index import json, _filter, date2str, is_iterable, _map, get_path, _i
     large_num_format, has_chinese_number
 from datetime import date
 
-STATIC_DIR = '/static/announcements'
+STATIC_ANNOUNCEMENTS_DIR = '/static/announcements'
+STATIC_ANNOUNCEMENTS_PARSE_DIR = '/static/parse-announcements'
 
 JU_CHAO_PROTOCOL = "http://"
 JU_CHAO_HOST = 'www.cninfo.com.cn'
@@ -40,9 +41,9 @@ def fetch_juchao_all_stocks(refresh: bool = True):
     if refresh:
         response = requests.get(f'{JU_CHAO_BASE_URL}/new/data/szse_stock.json', cookies=JU_CHAO_COOKIE,
                                 headers=JU_CHAO_HEADERS)
-        json(f'{STATIC_DIR}/juchao_all_stocks.json', response.json())
+        json(f'{STATIC_ANNOUNCEMENTS_DIR}/juchao_all_stocks.json', response.json())
         return response.json()['stockList']
-    return json(f'{STATIC_DIR}/juchao_all_stocks.json')['stockList']
+    return json(f'{STATIC_ANNOUNCEMENTS_DIR}/juchao_all_stocks.json')['stockList']
 
 
 def fetch_one_page_financial_statements(symbol: str, org_id: str, page_num: int, page_size: int):
@@ -105,7 +106,7 @@ class DownLoadAnnouncementException(Exception):
 
 
 def download_announcement(url: str, title: str, skip_if_exist: bool = True):
-    save_path = get_path(STATIC_DIR) + "/" + title + '.pdf'
+    save_path = get_path(STATIC_ANNOUNCEMENTS_DIR) + "/" + title + '.pdf'
     print('save_path', save_path)
     if skip_if_exist:
         # 判断下 title.pdf是否已经存在于静态文件夹，如果已经存在就直接return，不做操作
@@ -276,7 +277,18 @@ def keep_visible_lines(obj):
     A visible line is the one having ``non_stroking_color`` as 0.
     """
     if obj['object_type'] == 'rect':
-        return obj['non_stroking_color'] == 0
+        color = obj['non_stroking_color']
+        if isinstance(color, int):
+            return color == 0
+        elif is_iterable(color):
+            is_visible = False
+            for c in color:
+                if c != 1:
+                    is_visible = True
+                    break
+            return is_visible
+        elif color == None:
+            return False
     return True
 
 
@@ -479,8 +491,13 @@ class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
 
 
-def parse_pdf(pdf_url):
+# 输出 1. base.json 2.table.json 3.财务报表.json
+def parse_pdf(pdf_url, pdf_name):
     with pdfplumber.open(pdf_url) as pdf:
+        table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__table.json"
+        base_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__base.json"
+        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__{Financial_Statement.合并资产负债表.value}.json"
+
         prev_table = None
         prev_table_id = None
         prev_table_index = None
@@ -488,18 +505,18 @@ def parse_pdf(pdf_url):
 
         page_struct = {}
         maybe_same_tables = {}
-        single_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
-        _pages = pdf.pages[5:6]
+        # _pages = pdf.pages[5:6]
+        _pages = pdf.pages
         table_id_list = []
         for page_index, page in enumerate(_pages):
-            print(f'---{page}---', '\n')
+            print(f'--{pdf_name}  {page_index + 1}/{len(_pages)}--', '\n')
             # Filter out hidden lines.
             page = page.filter(keep_visible_lines)
             tables = page.find_tables()
-            print(len(tables))
-            im = page.to_image()
-            im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+            # print(len(tables))
+            # im = page.to_image()
+            # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
 
             # 提取页面的文字
             text_lines = page.extract_text_lines()
@@ -569,7 +586,7 @@ def parse_pdf(pdf_url):
         for key in maybe_same_tables:
             same_tables += maybe_same_tables[key]
 
-        json('maybe_same_tables.json', maybe_same_tables)
+        # json('maybe_same_tables.json', maybe_same_tables)
 
         # 将逻辑统一的tables和单独的tables归纳到一起 ['1-1', ['2-1','2-2'], ...]
         all_tables = []
@@ -592,7 +609,8 @@ def parse_pdf(pdf_url):
                         "bottom": table_bottom_desc
                     }
                     all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
-        json('/all_tables.json', all_tables)
+        
+
 
         for table in all_tables:
             table_id = table['id']
@@ -614,8 +632,19 @@ def parse_pdf(pdf_url):
 
             if Financial_Statement.合并资产负债表.value in table['desc']['top']:
                 print(Financial_Statement.合并资产负债表.value, table_extracts)
-                json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
-        return all_tables
+                # json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
+                json(hbzcfzb_json_url, table_extracts)
+        # 输出json
+        json(table_json_url, all_tables)
+        # page_struct中的table替换为table.extract的文本
+        for page_num in page_struct:
+            page_info_list = page_struct[page_num]
+            for item in page_info_list:
+                if item['type'] == 'table':
+                    item['data'] = item['data'].extract()
+        json(base_json_url, page_struct)
+
+        # return all_tables
 
 
 def get_color_statistic(pdf_url):
