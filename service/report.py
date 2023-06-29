@@ -671,17 +671,35 @@ def get_color_statistic(pdf_url):
             tables = page.find_tables()
         print(result)
 
-def parse_announcements():
+# 2010, 2020
+def parse_announcements(start_year,end_year):
+    point_year = start_year
+    or_str = ""
+    while point_year <= end_year:
+        suffix = " or " if point_year < end_year else ""
+        or_str += f'title like "%{point_year}%"{suffix}'
+        point_year += 1
+
     r = read_table(table_name="announcements",
                 fields=["file_title"],
                 result_type="dict",
-                filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要% and title not like '%公告%'")
+                filter_str=
+                f'''
+                    where title not like "%英文%" and 
+                    title not like "%取消%" and 
+                    title not like "%摘要%" and 
+                    title not like "%公告%" and
+                    (
+                        {or_str}
+                    )
+                ''')
+    print(r)
 
-    for index, rs in enumerate(r):
-        file_title = rs['file_title']
-        pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf')
-        table_json_url = get_path(f'{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json')
-        print(pdf_url, f" {index + 1}/{len(r)}")
-        exists = os.path.exists(table_json_url)
-        if not exists:
-            parse_pdf(pdf_url, pdf_name=file_title)
+    # for index, rs in enumerate(r):
+    #     file_title = rs['file_title']
+    #     pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf')
+    #     table_json_url = get_path(f'{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json')
+    #     print(pdf_url, f" {index + 1}/{len(r)}")
+    #     exists = os.path.exists(table_json_url)
+    #     if not exists:
+    #         parse_pdf(pdf_url, pdf_name=file_title)

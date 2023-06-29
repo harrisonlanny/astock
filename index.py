@@ -13,5 +13,5 @@ from service.report import parse_announcements, refresh_table_announcements, dow
 
 # download_year_announcements()
 
-parse_announcements()
+parse_announcements(2022,2022)
 print('成功！！')
