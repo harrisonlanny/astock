@@ -567,8 +567,8 @@ def parse_pdf(pdf_url, pdf_name):
 
                         # 判断table_id是否已存在于map中
                         key = get_dict_key_by_index(maybe_same_tables, -1)
-                        print(
-                            f"table_id:{table_id};prev_table_id:{prev_table_id},key:{key}, maybe_same_tables:{maybe_same_tables}")
+                        # print(
+                        #     f"table_id:{table_id};prev_table_id:{prev_table_id},key:{key}, maybe_same_tables:{maybe_same_tables}")
                         if key is None or prev_table_id not in maybe_same_tables[key]:
                             if maybe_same_tables.get(prev_table_id) is None:
                                 maybe_same_tables[prev_table_id] = [prev_table_id]
@@ -631,7 +631,7 @@ def parse_pdf(pdf_url, pdf_name):
                 table_extracts += format_extract
 
             if Financial_Statement.合并资产负债表.value in table['desc']['top']:
-                print(Financial_Statement.合并资产负债表.value, table_extracts)
+                # print(Financial_Statement.合并资产负债表.value, table_extracts)
                 # json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
                 json(hbzcfzb_json_url, table_extracts)
         # 输出json
@@ -648,6 +648,8 @@ def parse_pdf(pdf_url, pdf_name):
 
 
 def get_color_statistic(pdf_url):
+
+
     result = {}
 
     def page_filter(obj):
@@ -668,3 +670,18 @@ def get_color_statistic(pdf_url):
             # 懒加载
             tables = page.find_tables()
         print(result)
+
+def parse_announcements():
+    r = read_table(table_name="announcements",
+                fields=["file_title"],
+                result_type="dict",
+                filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要% and title not like '%公告%'")
+
+    for index, rs in enumerate(r):
+        file_title = rs['file_title']
+        pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf')
+        table_json_url = get_path(f'{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json')
+        print(pdf_url, f" {index + 1}/{len(r)}")
+        exists = os.path.exists(table_json_url)
+        if not exists:
+            parse_pdf(pdf_url, pdf_name=file_title)
