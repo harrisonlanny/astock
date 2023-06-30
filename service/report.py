@@ -668,7 +668,7 @@ def get_color_statistic(pdf_url):
         return True
 
     with pdfplumber.open(pdf_url) as pdf:
-        print("pdf_url:", pdf_url)
+        # print("pdf_url:", pdf_url)
         _pages = pdf.pages
         for page_index, page in enumerate(_pages):
             page = page.filter(page_filter)

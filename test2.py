@@ -1,3 +1,4 @@
+import threading
 from db.index import read_table
 from service.report import (
     STATIC_ANNOUNCEMENTS_DIR,
@@ -5,16 +6,14 @@ from service.report import (
     get_color_statistic,
     parse_pdf,
 )
-from utils.index import _map, get_path, is_iterable
+from utils.index import _map, concurrency, get_path, is_iterable
 import os
-
-urls = []
 from db.index import read_table
 from service.report import STATIC_ANNOUNCEMENTS_DIR, get_color_statistic
 from utils.index import get_path, json
 
 
-def json_format_color_result(color_result):
+def json_format_color_result(result):
     new_result = result.copy()
     for key in result:
         if is_iterable(key):
@@ -27,20 +26,32 @@ r = read_table(
     table_name="announcements",
     fields=["file_title"],
     result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' limit 2",
+    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' limit 150",
 )
 
 file_title_list = _map(r, lambda item: item["file_title"])
+
+
 result = []
+def save_color(file_title_list, start_index, end_index):
+    arr = file_title_list[start_index:end_index+1]
+    for index, file_title in enumerate(arr):
+        print(f"{threading.current_thread().name}: {file_title}")
+        pdf_url = get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf")
+        color_result = json_format_color_result(get_color_statistic(pdf_url))
+        result.append({
+            "title": file_title,
+            "color": color_result
+        })
 
-
-for index, file_title in enumerate(file_title_list):
-    pdf_url = get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf")
-    color_result = json_format_color_result(get_color_statistic(pdf_url))
-    result.append(color_result)
-
-print("result: ",result)
+concurrency(
+    run=save_color,
+    arr=file_title_list,
+    count = 3
+)
+# print("result: ",result)
 json("/color.json", result)
+
 
 
 

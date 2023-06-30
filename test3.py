@@ -4,7 +4,7 @@ import time
 import threading
 from typing import Any
 
-from utils.index import txt
+from utils.index import concurrency, txt
 
 v = 50000000
 
@@ -66,41 +66,13 @@ def handle(start_index, end_index):
 
 
 
-def concurrency(run, arr:list|tuple,count=2):
-    length = len(arr)
-    unit = round(length / count)
-    max_index = length - 1
-    index_list = []
-    for value in range(0,count):
-        start_index = value * (unit + 1)
-        end_index = start_index + unit
-        if end_index > max_index:
-            end_index = max_index
-        index_list.append((start_index, end_index))
-    print(index_list)
-
-    for seg in index_list:
-        (start_index, end_index)=seg
-        t = threading.Thread(
-            target=run,
-            args=(arr, start_index, end_index)
-        )
-        t.start()
-    print('concurrency done!!')
-
-def run_adapter(arr, start_index, end_index):
-    return handle(start_index=start_index, end_index=end_index)
 
 
-start_time = time.time()
 concurrency(
-    run=run_adapter,
-    arr=arr,
+    None,
+    list(range(0, 101)),
     count=3
 )
-end_time = time.time()
-cost_time = f"{end_time-start_time:.2f}"
-print(f"采用并发的耗时：{cost_time}")
 
 
 

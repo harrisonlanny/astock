@@ -5,6 +5,7 @@ from datetime import datetime, date, timedelta
 from decimal import Decimal
 from json import dump, load
 import threading
+import time
 
 import numpy
 import pandas
@@ -353,26 +354,44 @@ def _dir(dir_path: str, file_types: list[str] = None):
     return _filter(file_names, lambda file_name: file_name.split('.')[-1] in file_types)
 
 def concurrency(run, arr:list|tuple,count=2):
+    start_time = time.time()
     length = len(arr)
     unit = round(length / count)
     max_index = length - 1
     index_list = []
     for value in range(0,count):
-        start_index = value * (unit + 1)
-        end_index = start_index + unit
-        if end_index > max_index:
+        if len(index_list) == 0:
+            start_index = 0
+        else:
+            last_end_index = index_list[-1][1]
+            start_index = last_end_index + 1
+        if value == count - 1:
             end_index = max_index
+        else:
+            end_index = start_index + unit - 1
         index_list.append((start_index, end_index))
-    print(index_list)
-
-    for seg in index_list:
+    print("concurrency segmentation",index_list)
+    tlist: list[threading.Thread] = []
+    for i, seg in enumerate(index_list):
         (start_index, end_index)=seg
         t = threading.Thread(
             target=run,
             args=(arr, start_index, end_index)
         )
+        tlist.append(t)
+
+    for i,t in enumerate(tlist):
+        t.daemon = True
+        print(f"启动第{i+1}个线程")
         t.start()
-    print('concurrency done!!')
+    
+    for i,t in enumerate(tlist):
+        # print(f"第{i+1}个线程 join()")
+        t.join()
+    
+    end_time = time.time()
+    cost_time = f"{end_time-start_time:.2f}"
+    print(f"cost-time：{cost_time}  concurrency done!! ")
 
 # if __name__ == '__main__':
 #     print(get_path('/model/tables.json'))
