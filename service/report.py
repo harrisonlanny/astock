@@ -11,7 +11,7 @@ from pdfplumber.table import Table
 from db.index import clear_table, insert_table, get_total, delete_rows, read_table, update_table
 from model.index import describe_json
 from service.index import get_current_d_tables
-from utils.index import json, _filter, date2str, is_iterable, _map, get_path, _is_empty, get_dict_key_by_index, _find, \
+from utils.index import _is_number, json, _filter, date2str, is_iterable, _map, get_path, _is_empty, get_dict_key_by_index, _find, \
     large_num_format, has_chinese_number
 from datetime import date
 
@@ -280,7 +280,8 @@ def keep_visible_lines(obj):
     """
     if obj['object_type'] == 'rect':
         color = obj['non_stroking_color']
-        if isinstance(color, int):
+        print('color: ',color)
+        if _is_number(color):
             return color == 0
         elif is_iterable(color):
             is_visible = False
@@ -388,6 +389,7 @@ def get_table_top_desc(table_id: str, page_struct: any):
     table = _find(page_struct[page_num], lambda item: item['id'] == table_id)
     top_data = _filter(get_top_table_data(table_id, page_struct)[1:], lambda item: item['type'] == 'text_line')
 
+    print(f"table_id: {table_id}, page_num: {page_num}")
     [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
     prev_item = {
         "x0": t_x0,
@@ -509,10 +511,11 @@ def parse_pdf(pdf_url, pdf_name):
         maybe_same_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
         # _pages = pdf.pages[5:6]
+        # _pages = pdf.pages[26:27]
         _pages = pdf.pages
         table_id_list = []
         for page_index, page in enumerate(_pages):
-            # print(f'--{pdf_name}  {page_index + 1}/{len(_pages)}--', '\n')
+            print(f'--{pdf_name}  {page_index + 1}/{len(_pages)}--', '\n')
             # Filter out hidden lines.
             page = page.filter(keep_visible_lines)
             tables = page.find_tables()
@@ -672,6 +675,7 @@ def get_color_statistic(pdf_url):
             # 懒加载
             tables = page.find_tables()
         print(result)
+        return result
 
 # 2010, 2020
 
@@ -743,5 +747,7 @@ def parse_announcements(start_year,end_year):
         end_index=len(file_title_list)-1
     )
     t2.start()
+
+    print(f"多线程解析{start_year}-{end_year}年报完成")
 
 

@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from json import dump, load
+import threading
 
 import numpy
 import pandas
@@ -351,8 +352,29 @@ def _dir(dir_path: str, file_types: list[str] = None):
         return file_names
     return _filter(file_names, lambda file_name: file_name.split('.')[-1] in file_types)
 
+def concurrency(run, arr:list|tuple,count=2):
+    length = len(arr)
+    unit = round(length / count)
+    max_index = length - 1
+    index_list = []
+    for value in range(0,count):
+        start_index = value * (unit + 1)
+        end_index = start_index + unit
+        if end_index > max_index:
+            end_index = max_index
+        index_list.append((start_index, end_index))
+    print(index_list)
 
-if __name__ == '__main__':
-    print(get_path('/model/tables.json'))
+    for seg in index_list:
+        (start_index, end_index)=seg
+        t = threading.Thread(
+            target=run,
+            args=(arr, start_index, end_index)
+        )
+        t.start()
+    print('concurrency done!!')
 
-    print(",".join(_map([1, 2, 3], lambda item: str(item))))
+# if __name__ == '__main__':
+#     print(get_path('/model/tables.json'))
+
+#     print(",".join(_map([1, 2, 3], lambda item: str(item))))
