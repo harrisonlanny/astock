@@ -3,89 +3,63 @@ import math
 import time
 import threading
 from typing import Any
+from service.report import STATIC_ANNOUNCEMENTS_DIR, parse_pdf
 
-from utils.index import concurrency, txt
+from utils.index import concurrency, get_path, txt,json,_filter
 
-# v = 50000000
+# pdf_name = "834599__同力股份__2022年年度报告__1216458687"
+# pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{pdf_name}.pdf')
+# parse_pdf(pdf_url, pdf_name=pdf_name)
 
-# arr = list(range(1,v+1))
+scan_colors = json("/scan_color.json")
+print("总数：",len(scan_colors))
 
+# 1. 解决line_count==0，就解决了2/3的问题
+# line_count_zero_list = _filter(scan_colors, lambda item: item['line']['count'] == 0)
+# print("line count为0的个数：", len(line_count_zero_list))
 
-# def handle(start_index, end_index):
-#     for i,item in enumerate(arr[start_index:end_index+1]):
-#         index = start_index + i
-#         arr[index] = arr[index] + 0.1
+# # 2. 剩下不等于0的里面，哪些line的个数不到rect的1/n
+# n = 10
+# line_count_not_zero_list = _filter(scan_colors, lambda item: item['line']['count'] != 0)
+# line_count_very_small_list = _filter(line_count_not_zero_list, lambda item: item['rect']['count']/item['line']['count'] > n)
+# print("line count极小的个数: ", len(line_count_very_small_list))
 
-# middle = math.ceil(len(arr) / 2)
-# print(middle)
+# line_count_import_list =  _filter(line_count_not_zero_list, lambda item: item['rect']['count']/item['line']['count'] <= n)
+# print(len(line_count_import_list))
 
-# 0,middle
-# middle+1, len-1
+# json("/scan_color_line_important.json",line_count_import_list)
 
-# # 不采用并发的耗时：
-# def old_function():
-#     start_time = time.time()
+def get_color_list(color_dict: dict):
+    arr: list[list] = []
+    for color in color_dict:
+        count = color_dict[color]
+        arr.append([
+            color,
+            count
+        ])
+    arr.sort(reverse=True, key=lambda item: (item[1], item[0]))
+    return arr
 
-#     handle(0, v)
+line_count_small_list = _filter(
+    scan_colors, 
+    lambda item: item['line']['count'] == 0 or item['rect']['count']/item['line']['count'] >= 10
+)
+print('line占比极小的个数：', len(line_count_small_list))
 
-#     end_time = time.time()
-#     cost_time = f"{end_time-start_time:.2f}"
-#     print(f"不采用并发的耗时：{cost_time}")
-#     # print(arr)
+rect_has_2_color_list = []
+for item in line_count_small_list:
+    rect = item['rect']
+    rect_color_dict = rect['color']
+    rect_color_list = get_color_list(rect_color_dict)
+    first_color = rect_color_list[0]
+    if len(rect_color_list) >= 2:
+        second_color = rect_color_list[1]
+        if second_color[1]/first_color[1] >= 0.2:
+            rect_has_2_color_list.append(item)
+json("rect_2_color.json", rect_has_2_color_list)
+print(len(rect_has_2_color_list))
 
-# # 采用并发的耗时
-# class MyThread(threading.Thread):
-#     def __init__(self,start_index, end_index):
-#         self.start_index = start_index
-#         self.end_index = end_index
-#         super().__init__()
+# 834599__同力股份__2022年年度报告__1216458687
+# 831304__迪尔化工__2022年年度报告__1216547848
+# 
 
-#     def run(self):
-#         handle(self.start_index, self.end_index)
-
-
-# def new_function():
-#     start_time = time.time()
-
-#     length = len(arr)
-#     middle = math.ceil(length / 2)
-#     t1 = MyThread(start_index=0, end_index=middle)
-#     t1.start()
-#     t2 = MyThread(start_index=middle+1, end_index=length-1)
-#     t2.start()
-
-#     end_time = time.time()
-#     cost_time = f"{end_time-start_time:.2f}"
-#     print(f"采用并发的耗时：{cost_time}")
-
-# old_function()
-
-# new_function()
-# txt("/test.txt", arr)
-
-
-# print((0,0,0)==(0,0,0))
-
-# result = {
-#         "title": "000100__TCL科技__2022年年度报告__1216280932",
-#         "color": {
-#             "(0, 0, 0)": 84,
-#             "(0.827, 0.827, 0.827)": 963,
-#             "(1, 1, 1)": 1310,
-#             "(0.843, 0.843, 0.843)": 14,
-#             "(0.847, 0.847, 0.847)": 22,
-#             "(0.996, 0.996, 0.996)": 1
-#         }
-#     }
-# color = result["color"]
-# max_value = max(color.values())
-# for key in color:
-#     if color[key] == max_value:
-#         print("最多的颜色:",{key: color[key]})
-
-
-
-result = [None]*100
-
-result[99] = 10
-print(result)

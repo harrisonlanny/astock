@@ -11,7 +11,7 @@ from pdfplumber.table import Table
 from db.index import clear_table, insert_table, get_total, delete_rows, read_table, update_table
 from model.index import describe_json
 from service.index import get_current_d_tables
-from utils.index import _is_number, json, _filter, date2str, is_iterable, _map, get_path, _is_empty, get_dict_key_by_index, _find, \
+from utils.index import _is_number, is_list_item_same, json, _filter, date2str, is_iterable, _map, get_path, _is_empty, get_dict_key_by_index, _find, \
     large_num_format, has_chinese_number
 from datetime import date
 
@@ -486,7 +486,7 @@ def parse_pdf(pdf_url, pdf_name):
         page_struct = {}
         maybe_same_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
-        _pages = pdf.pages[150:151]
+        _pages = pdf.pages[145:146]
         # _pages = pdf.pages[26:27]
         # _pages = pdf.pages
         table_id_list = []
@@ -495,65 +495,130 @@ def parse_pdf(pdf_url, pdf_name):
             "line": {
                 "count": 0,
                 "color": {},
-                "max_color": None
             },
             "rect": {
                 "count": 0,
                 "color": {},
-                "max_color": None
-            },
+            }
         }
+        color_info = {
+            "name": pdf_name,
+            "line": {
+                "count": 0,
+                "non_stroking_color": {
+                },
+                "stroking_color": {
+                }
+            },
+            "rect": {
+                "count": 0,
+                "non_stroking_color": {
+                },
+                "stroking_color": {
+                }
+            }
+        }
+        analysis_color = {
+            "name": pdf_name,
+            "leading_colors": [],
+            "rect_color_empty": True,
+            "line_small": True
+        }
+        # 将color格式由dict改为逆序的二维数组[[color, count]]
+        # dict : {color:count, ...}
+        def get_color_list(color_dict: dict):
+            arr: list[list] = []
+            for color in color_dict:
+                count = color_dict[color]
+                arr.append([
+                    color,
+                    count
+                ])
+            arr.sort(reverse=True, key=lambda item: (item[1], item[0]))
+            return arr
+        
+        # 如果是相同元素的元组，返回元组第一个值
+        # 如(0,0)返回0
+        def format_color(color):
+            if isinstance(color, list):
+                color = tuple(color)
+                if is_list_item_same(color):
+                    return color[0]
+            return color
+
 
         def color_distribution(obj):
-            if obj['object_type'] == 'rect':
-                # 获取颜色
-                color = obj['non_stroking_color']
-                if isinstance(color, list):
-                    color = tuple(color)
-                # 计数+1
-                pdf_line_rect_result['rect']['count'] += 1
-                # 颜色统计+1
-                if pdf_line_rect_result['rect']['color'].get(color) is None:
-                    pdf_line_rect_result['rect']['color'][color] = 0
-                pdf_line_rect_result['rect']['color'][color] += 1
-
-            if obj['object_type'] == 'line':
-                # 获取颜色
-                color = obj['stroking_color']
-                if isinstance(color, list):
-                    color = tuple(color)
-                # 计数+1
-                pdf_line_rect_result['line']['count'] += 1
-                # 颜色统计+1
-                if pdf_line_rect_result['line']['color'].get(color) is None:
-                    pdf_line_rect_result['line']['color'][color] = 0
-                pdf_line_rect_result['line']['color'][color] += 1
-                
+            type = obj['object_type']
+            if type in ('rect', 'line'):
+                color_info[type]['count'] += 1
+                # color_empty_count = 0
+                for color_type in ['stroking_color', 'non_stroking_color']:
+                    color = format_color(obj[color_type])
+                    color_map = color_info[type][color_type]
+                    if color_map.get(color) is None:
+                        color_map[color] = 0
+                    color_map[color] += 1
+ 
             return True
         
-        def get_max_color(color_result):
-            max_color = None
-            max_count = 0
-            for color in color_result:
-                color_count = color_result[color]
-                if max_count == 0 or (color_count > max_count):
-                    max_count = color_count
-                    max_color = color
-            return max_color
+
+
+        def analysis_color_info(color_info):
+            def is_color_empty(arr: list[list]):
+                if len(arr) == 0:
+                    return True
+                elif len(arr) == 1 and arr[0][0] == None:
+                    return True
+                return False
+
+            
+            line_count = color_info['line']['count']
+            rect_count = color_info['rect']['count']
+            leading_colors = []
+
+            line_non_color = color_info['line']['non_stroking_color']
+            line_color = color_info['line']['stroking_color']
+
+            rect_non_color = color_info['rect']['non_stroking_color']
+            rect_color = color_info['rect']['stroking_color']
+
+            # rect按道理是不应该有stroking_color的
+            analysis_color['rect_color_empty'] = is_color_empty(rect_color)
+
+            # line_count==0或者不到rect数量1/10，占据了(81+24)/120 = 87.5%的情况
+            analysis_color['line_small'] = line_count == 0 or rect_count / line_count >= 10
+            if analysis_color['line_small']:
+                leading_colors = []
+                main_color = rect_non_color[0]
+                leading_colors.append(main_color[0])
+                if len(rect_non_color) >= 2:
+                    second_color = rect_non_color[1]
+                    if second_color[1] / main_color[1] >= 0.5:
+                        leading_colors.append(second_color[0])
+            # line比rect多 占据 12/120 = 10%的情况
+            elif line_count > rect_count:
+                leading_colors = []
+                main_color = line_color[0]
+                leading_colors.append(main_color)
+            # rect比line稍微多一点 占据3/120 = 2.5%的情况
+            else:
+                leading_colors = []
+                main_color = line_color[0]
+                leading_colors.append(main_color)
+
+            
+            analysis_color['leading_colors'] = leading_colors
+            return analysis_color
+
 
         def keep_visible_lines(obj):
             if obj['object_type'] == 'rect':
-                line_max_color = pdf_line_rect_result['line']['max_color']
-                color = obj['non_stroking_color']
-
-                # 统一为tuple 再进行比较
-                if _is_number(color):
-                    color = (color, color, color)
-                if _is_number(line_max_color):
-                    line_max_color = (line_max_color, line_max_color, line_max_color)
-                
-                # 如果颜色和line最多色一致，则视为可见，否则不可见
-                return color == line_max_color
+                non_color = format_color(obj['non_stroking_color'])
+                leading_colors = analysis_color['leading_colors']
+                if non_color in leading_colors:
+                    return True
+                else:
+                    return False
             return True
         
         # 全页面颜色扫描
@@ -561,14 +626,15 @@ def parse_pdf(pdf_url, pdf_name):
             print(f'color_scan --{pdf_name}  {page_index + 1}/{len(pdf.pages)}--', '\n')
             page = page.filter(color_distribution)
             page.find_tables()
-
-        pdf_line_rect_result['line']['max_color'] = get_max_color(pdf_line_rect_result['line']['color'])
-        pdf_line_rect_result['rect']['max_color'] = get_max_color(pdf_line_rect_result['rect']['color'])
-        print('color_result: ', pdf_line_rect_result)
-
-
-
-        return pdf_line_rect_result
+        # 将color格式由dict改为逆序的二维数组[[color, count]]
+        for type in ['line', 'rect']:
+            for color_type in ['stroking_color', 'non_stroking_color']:
+                color_dict = color_info[type][color_type]
+                color_arr = get_color_list(color_dict)
+                color_info[type][color_type] = color_arr
+        print('color_info: ', color_info)
+        analysis_color = analysis_color_info(color_info)
+        return color_info, analysis_color
 
         # 数据提取 
         for page_index, page in enumerate(_pages):
@@ -577,8 +643,9 @@ def parse_pdf(pdf_url, pdf_name):
             page = page.filter(keep_visible_lines)
             tables = page.find_tables()
             # print(len(tables))
-            im = page.to_image()
-            im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+            if len(tables):
+                im = page.to_image()
+                im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
 
             continue
 

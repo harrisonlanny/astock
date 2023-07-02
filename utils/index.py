@@ -304,6 +304,14 @@ def get_list_index_range(data: list | tuple):
     min_index = -length
     return min_index, max_index
 
+def is_list_item_same(data: list|tuple):
+    is_same = True
+    for item in data:
+        if item != data[0]:
+            is_same = False
+            break
+    return is_same
+
 
 def format_str(data: any, tab_symbol: str = '\t', tab_symbol_count: int = 1):
     if isinstance(data, str):

@@ -27,7 +27,7 @@ r = read_table(
     table_name="announcements",
     fields=["file_title"],
     result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%'",
+    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 3",
 )
 
 file_title_list = _map(r, lambda item: item["file_title"])
@@ -51,7 +51,7 @@ concurrency(
     count = 3
 )
 # # print("result: ",result)
-json("/scan_color.json", result)
+json("/scan_color1.json", result)
 
 
 
