@@ -486,21 +486,10 @@ def parse_pdf(pdf_url, pdf_name):
         page_struct = {}
         maybe_same_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
-        _pages = pdf.pages[145:146]
+        _pages = pdf.pages[52:54]
         # _pages = pdf.pages[26:27]
         # _pages = pdf.pages
         table_id_list = []
-        pdf_line_rect_result = {
-            "name": pdf_name,
-            "line": {
-                "count": 0,
-                "color": {},
-            },
-            "rect": {
-                "count": 0,
-                "color": {},
-            }
-        }
         color_info = {
             "name": pdf_name,
             "line": {
@@ -599,12 +588,13 @@ def parse_pdf(pdf_url, pdf_name):
             elif line_count > rect_count:
                 leading_colors = []
                 main_color = line_color[0]
-                leading_colors.append(main_color)
+                leading_colors.append(main_color[0])
             # rect比line稍微多一点 占据3/120 = 2.5%的情况
             else:
                 leading_colors = []
+                print("react比line稍微多一点：", line_color)
                 main_color = line_color[0]
-                leading_colors.append(main_color)
+                leading_colors.append(main_color[0])
 
             
             analysis_color['leading_colors'] = leading_colors
@@ -634,7 +624,9 @@ def parse_pdf(pdf_url, pdf_name):
                 color_info[type][color_type] = color_arr
         print('color_info: ', color_info)
         analysis_color = analysis_color_info(color_info)
-        return color_info, analysis_color
+        # return color_info, analysis_color
+        json("/demo1.json", color_info)
+        json("/demo2.json", analysis_color)
 
         # 数据提取 
         for page_index, page in enumerate(_pages):
