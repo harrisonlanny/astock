@@ -271,30 +271,6 @@ def keep_bold_chars(obj):
         return 'Bold' in obj['fontname']
     return True
 
-
-def keep_visible_lines(obj):
-    """
-    If the object is a ``rect`` type, keep it only if the lines are visible.
-
-    A visible line is the one having ``non_stroking_color`` as 0.
-    """
-    if obj['object_type'] == 'rect':
-        color = obj['non_stroking_color']
-        print('color: ',color)
-        if _is_number(color):
-            return color == 0
-        elif is_iterable(color):
-            is_visible = False
-            for c in color:
-                if c != 1:
-                    is_visible = True
-                    break
-            return is_visible
-        elif color == None:
-            return False
-    return True
-
-
 def gen_table_id(page_ind: int, table_ind: int):
     return f"{page_ind + 1}_{table_ind + 1}"
 
@@ -510,18 +486,101 @@ def parse_pdf(pdf_url, pdf_name):
         page_struct = {}
         maybe_same_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
-        # _pages = pdf.pages[5:6]
+        _pages = pdf.pages[150:151]
         # _pages = pdf.pages[26:27]
-        _pages = pdf.pages
+        # _pages = pdf.pages
         table_id_list = []
+        pdf_line_rect_result = {
+            "name": pdf_name,
+            "line": {
+                "count": 0,
+                "color": {},
+                "max_color": None
+            },
+            "rect": {
+                "count": 0,
+                "color": {},
+                "max_color": None
+            },
+        }
+
+        def color_distribution(obj):
+            if obj['object_type'] == 'rect':
+                # 获取颜色
+                color = obj['non_stroking_color']
+                if isinstance(color, list):
+                    color = tuple(color)
+                # 计数+1
+                pdf_line_rect_result['rect']['count'] += 1
+                # 颜色统计+1
+                if pdf_line_rect_result['rect']['color'].get(color) is None:
+                    pdf_line_rect_result['rect']['color'][color] = 0
+                pdf_line_rect_result['rect']['color'][color] += 1
+
+            if obj['object_type'] == 'line':
+                # 获取颜色
+                color = obj['stroking_color']
+                if isinstance(color, list):
+                    color = tuple(color)
+                # 计数+1
+                pdf_line_rect_result['line']['count'] += 1
+                # 颜色统计+1
+                if pdf_line_rect_result['line']['color'].get(color) is None:
+                    pdf_line_rect_result['line']['color'][color] = 0
+                pdf_line_rect_result['line']['color'][color] += 1
+                
+            return True
+        
+        def get_max_color(color_result):
+            max_color = None
+            max_count = 0
+            for color in color_result:
+                color_count = color_result[color]
+                if max_count == 0 or (color_count > max_count):
+                    max_count = color_count
+                    max_color = color
+            return max_color
+
+        def keep_visible_lines(obj):
+            if obj['object_type'] == 'rect':
+                line_max_color = pdf_line_rect_result['line']['max_color']
+                color = obj['non_stroking_color']
+
+                # 统一为tuple 再进行比较
+                if _is_number(color):
+                    color = (color, color, color)
+                if _is_number(line_max_color):
+                    line_max_color = (line_max_color, line_max_color, line_max_color)
+                
+                # 如果颜色和line最多色一致，则视为可见，否则不可见
+                return color == line_max_color
+            return True
+        
+        # 全页面颜色扫描
+        for page_index, page in enumerate(pdf.pages):
+            print(f'color_scan --{pdf_name}  {page_index + 1}/{len(pdf.pages)}--', '\n')
+            page = page.filter(color_distribution)
+            page.find_tables()
+
+        pdf_line_rect_result['line']['max_color'] = get_max_color(pdf_line_rect_result['line']['color'])
+        pdf_line_rect_result['rect']['max_color'] = get_max_color(pdf_line_rect_result['rect']['color'])
+        print('color_result: ', pdf_line_rect_result)
+
+
+
+        return pdf_line_rect_result
+
+        # 数据提取 
         for page_index, page in enumerate(_pages):
             print(f'--{pdf_name}  {page_index + 1}/{len(_pages)}--', '\n')
             # Filter out hidden lines.
             page = page.filter(keep_visible_lines)
             tables = page.find_tables()
             # print(len(tables))
-            # im = page.to_image()
-            # im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+            im = page.to_image()
+            im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+
+            continue
 
             # 提取页面的文字
             text_lines = page.extract_text_lines()

@@ -21,36 +21,37 @@ def json_format_color_result(result):
             new_result.pop(key)
             new_result[f"{key}"] = value
     return new_result
-
+#  and title like '%2022%'
+# json_format_color_result(get_color_statistic(pdf_url))
 r = read_table(
     table_name="announcements",
     fields=["file_title"],
     result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' limit 150",
+    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%'",
 )
 
 file_title_list = _map(r, lambda item: item["file_title"])
 
 
-result = []
-def save_color(file_title_list, start_index, end_index):
+result = [None]*len(file_title_list)
+def scan_color(file_title_list, start_index, end_index):
     arr = file_title_list[start_index:end_index+1]
-    for index, file_title in enumerate(arr):
+    for i, file_title in enumerate(arr):
+        index = start_index + i
         print(f"{threading.current_thread().name}: {file_title}")
         pdf_url = get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf")
-        color_result = json_format_color_result(get_color_statistic(pdf_url))
-        result.append({
-            "title": file_title,
-            "color": color_result
-        })
+        scan_result = parse_pdf(pdf_url, file_title)
+        scan_result['line']['color'] = json_format_color_result(scan_result['line']['color'])
+        scan_result['rect']['color'] = json_format_color_result(scan_result['rect']['color'])
+        result[index] = scan_result
 
 concurrency(
-    run=save_color,
+    run=scan_color,
     arr=file_title_list,
     count = 3
 )
-# print("result: ",result)
-json("/color.json", result)
+# # print("result: ",result)
+json("/scan_color.json", result)
 
 
 
@@ -72,10 +73,14 @@ json("/color.json", result)
 # pdf_name = "000002__万科A__2022年年度报告__1216273938"
 # pdf_name = "000623__吉林敖东__2022年年度报告__1216455868"
 # pdf_name = "000625__长安汽车__2022年年度报告__1216442229"
+# pdf_name = "000068__华控赛格__2022年年度报告__1216701006"
+# pdf_name = "hgcy"
+# pdf_url = get_path("reports/hgcy.pdf")
 # pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{pdf_name}.pdf')
 # a = get_color_statistic(pdf_url)
 # print(a)
 # parse_pdf(pdf_url, pdf_name=pdf_name)
+
 
 
 

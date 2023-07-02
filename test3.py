@@ -6,15 +6,15 @@ from typing import Any
 
 from utils.index import concurrency, txt
 
-v = 50000000
+# v = 50000000
 
-arr = list(range(1,v+1))
+# arr = list(range(1,v+1))
 
 
-def handle(start_index, end_index):
-    for i,item in enumerate(arr[start_index:end_index+1]):
-        index = start_index + i
-        arr[index] = arr[index] + 0.1
+# def handle(start_index, end_index):
+#     for i,item in enumerate(arr[start_index:end_index+1]):
+#         index = start_index + i
+#         arr[index] = arr[index] + 0.1
 
 # middle = math.ceil(len(arr) / 2)
 # print(middle)
@@ -64,17 +64,28 @@ def handle(start_index, end_index):
 # txt("/test.txt", arr)
 
 
+# print((0,0,0)==(0,0,0))
+
+# result = {
+#         "title": "000100__TCL科技__2022年年度报告__1216280932",
+#         "color": {
+#             "(0, 0, 0)": 84,
+#             "(0.827, 0.827, 0.827)": 963,
+#             "(1, 1, 1)": 1310,
+#             "(0.843, 0.843, 0.843)": 14,
+#             "(0.847, 0.847, 0.847)": 22,
+#             "(0.996, 0.996, 0.996)": 1
+#         }
+#     }
+# color = result["color"]
+# max_value = max(color.values())
+# for key in color:
+#     if color[key] == max_value:
+#         print("最多的颜色:",{key: color[key]})
 
 
 
+result = [None]*100
 
-concurrency(
-    None,
-    list(range(0, 101)),
-    count=3
-)
-
-
-
-
-
+result[99] = 10
+print(result)
