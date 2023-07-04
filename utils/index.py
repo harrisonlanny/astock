@@ -257,6 +257,12 @@ def has_chinese_number(data: str):
         if chinese_number in data:
             return True
     return False
+def has_english_number(data):
+    english_number_list = [0,1,2,3,4,5,6,7,8,9]
+    for english_number in english_number_list:
+        if str(english_number) in str(data):
+            return True
+    return False
 
 
 def large_num_format(large_num: str):
@@ -347,6 +353,24 @@ def json(output_path: str, data: any = None):
     f.close()
     return result
 
+# /User/Harrison/astock/xxx.json
+# /xxx.json
+def json2(output_path: str, data: any = None):
+    if get_root_path() in output_path:
+        _path = output_path
+    else:
+        _path = get_path(output_path)
+    print("_path: ", _path)
+    result = None
+    if data is None:
+        f = open(_path, 'r')
+        result = load(f)
+    else:
+        f = open(_path, 'w')
+        dump(data, f, ensure_ascii=False)
+    f.close()
+    return result
+
 
 def _dir(dir_path: str, file_types: list[str] = None):
     _path = get_path(dir_path)
@@ -360,6 +384,9 @@ def _dir(dir_path: str, file_types: list[str] = None):
     if _is_empty(file_types):
         return file_names
     return _filter(file_names, lambda file_name: file_name.split('.')[-1] in file_types)
+
+def is_exist(_path: str):
+    return os.path.exists(_path)
 
 def concurrency(run, arr:list|tuple,count=2):
     start_time = time.time()

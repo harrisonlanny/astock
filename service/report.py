@@ -11,12 +11,13 @@ from pdfplumber.table import Table
 from db.index import clear_table, insert_table, get_total, delete_rows, read_table, update_table
 from model.index import describe_json
 from service.index import get_current_d_tables
-from utils.index import _is_number, is_list_item_same, json, _filter, date2str, is_iterable, _map, get_path, _is_empty, get_dict_key_by_index, _find, \
+from utils.index import _is_number, has_english_number, is_exist, is_list_item_same, json, _filter, date2str, is_iterable, _map, get_path, _is_empty, get_dict_key_by_index, _find, json2, \
     large_num_format, has_chinese_number
 from datetime import date
 
 STATIC_ANNOUNCEMENTS_DIR = '/static/announcements'
-STATIC_ANNOUNCEMENTS_PARSE_DIR = '/static/parse-announcements'
+STATIC_ANNOUNCEMENTS_PARSE_DIR = '/static/parse-announcements/base'
+STATIC_ANNOUNCEMENTS_HBZCFZB_DIR = '/static/parse-announcements/hbzcfzb'
 
 JU_CHAO_PROTOCOL = "http://"
 JU_CHAO_HOST = 'www.cninfo.com.cn'
@@ -365,28 +366,51 @@ def get_table_top_desc(table_id: str, page_struct: any):
     table = _find(page_struct[page_num], lambda item: item['id'] == table_id)
     top_data = _filter(get_top_table_data(table_id, page_struct)[1:], lambda item: item['type'] == 'text_line')
 
-    print(f"table_id: {table_id}, page_num: {page_num}")
-    [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
-    prev_item = {
-        "x0": t_x0,
-        "x1": t_x1,
-        "top": t_top,
-        "bottom": t_bottom
-    }
-    # 算出每个item的间距（第一个是table，然后是最靠着table的text，依次外推）
-    for index, item in enumerate(top_data[::-1]):
-        gap = prev_item['top'] - item['data']['bottom']
-        if gap <= GAP:
-            # print(table_id, 'top', gap)
-            result.append(item)
-        else:
-            break
-        prev_item = item['data']
-    result.reverse()
-    return result
+    # print(f"table_id: {table_id}, page_num: {page_num}")
+    if table['data'] is not None:
+        [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
+        prev_item = {
+            "x0": t_x0,
+            "x1": t_x1,
+            "top": t_top,
+            "bottom": t_bottom
+        }
+        # 算出每个item的间距（第一个是table，然后是最靠着table的text，依次外推）
+        for index, item in enumerate(top_data[::-1]):
+            gap = prev_item['top'] - item['data']['bottom']
+            if gap <= GAP:
+                # print(table_id, 'top', gap)
+                result.append(item)
+            else:
+                break
+            prev_item = item['data']
+        result.reverse()
+        # 这里判断下，如果result数量很少，比如只有1个，而且是“单位：元”这种，就继续翻上一页，找到类似1、或者一、这种结束
+        effective_count = len(result)
+        for item in result:
+            if "单位" in item['data']['text'] and "元" in item['data']['text']:
+                effective_count -= 1
+                break
+        # print(f"有效topdesc统计 {table_id}: {effective_count}")
+        if effective_count <= 2:
+            print(f"有效top_desc很少的table: {table_id}")
+            prev_page_num = page_num - 1
+            prev_page = page_struct[prev_page_num]
+            prev_count = 0
+            for item in prev_page[::-1][1:]:
+                if item['type'] == 'text_line':
+                    result.insert(0, item)
+                    prev_count += 1
+                    if "、" in item['data']['text']:
+                        break
+                    if prev_count > 3:
+                        break
+                else:
+                    break
+        return result
 
 
-GAP = 17
+GAP = 30
 
 
 def get_table_bottom_desc(table_id: str, page_struct: any):
@@ -476,8 +500,14 @@ def parse_pdf(pdf_url, pdf_name):
     with pdfplumber.open(pdf_url) as pdf:
         table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__table.json"
         content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__content.json"
-        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__{Financial_Statement.合并资产负债表.value}.json"
-
+       
+        # 如果table.json和content.json都存在，则不进行parse，直接return
+       
+        all_exists = is_exist(get_path(table_json_url)) and is_exist(get_path(content_json_url))
+        if all_exists:
+            print(f"{pdf_name} 已经parse过了，不需要parse了!!")
+            return 
+        print(f"{pdf_name} 开始parse!")
         prev_table = None
         prev_table_id = None
         prev_table_index = None
@@ -735,28 +765,28 @@ def parse_pdf(pdf_url, pdf_name):
         
 
 
-        for table in all_tables:
-            table_id = table['id']
-            range = table['range']
+        # for table in all_tables:
+        #     table_id = table['id']
+            # range = table['range']
 
-            table_extracts = []
+            # table_extracts = []
 
-            for id in range:
-                table_detail: Table = find_table_from_page_struct(id, page_struct)['data']
-                table_extract = table_detail.extract()
-                format_extract = []
-                for row in table_extract:
-                    format_row = []
-                    for cell in row:
-                        cell = large_num_format(cell)
-                        format_row.append(cell)
-                    format_extract.append(format_row)
-                table_extracts += format_extract
+            # for id in range:
+            #     table_detail: Table = find_table_from_page_struct(id, page_struct)['data']
+            #     table_extract = table_detail.extract()
+            #     format_extract = []
+            #     for row in table_extract:
+            #         format_row = []
+            #         for cell in row:
+            #             cell = large_num_format(cell)
+            #             format_row.append(cell)
+            #         format_extract.append(format_row)
+            #     table_extracts += format_extract
 
-            for top_desc_item in table['desc']['top']:
-                if Financial_Statement.合并资产负债表.value in top_desc_item:
-                    json(hbzcfzb_json_url, table_extracts)
-            
+            # for top_desc_item in table['desc']['top']:
+            #     if Financial_Statement.合并资产负债表.value in top_desc_item:
+            #         json(hbzcfzb_json_url, table_extracts)
+
             # if Financial_Statement.合并资产负债表.value in table['desc']['top']:
             #     # print(Financial_Statement.合并资产负债表.value, table_extracts)
             #     # json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
@@ -781,7 +811,7 @@ def parse_pdf(pdf_url, pdf_name):
                     # [type, id, data]
         json(content_json_url, base_content)
 
-        # return all_tables
+        # return page_struct
 
 
 def get_color_statistic(pdf_url):
@@ -875,3 +905,36 @@ def parse_announcements(start_year,end_year):
 
 def get_announcement_url(name):
     return get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{name}.pdf")
+
+def gen_hbzcfzb(file_title, url):
+        save_content_path = get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + '__content.json'
+        save_table_path = get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + '__table.json'
+        file_all_tables = json2(save_table_path)
+        content = json2(save_content_path)
+
+        hbzcfzb = None
+        hbzcfzb_rows = []
+        for t in file_all_tables:
+            top_desc = t['desc']['top']
+            for d in top_desc:
+                if Financial_Statement.合并资产负债表.value in d:
+                    hbzcfzb = t
+                    break
+            if hbzcfzb is not None:
+                break
+
+        if hbzcfzb:
+            find_count = 0
+            for p in content:
+                p_values = content[p]
+                for item in p_values:
+                    if item[0] == 'table' and item[1] in hbzcfzb['range']:
+                        find_count += 1
+                        hbzcfzb_rows += item[2]
+                    if find_count == len(hbzcfzb['range']):
+                        break
+                if find_count == len(hbzcfzb['range']):
+                    break
+            json2(f"{url}", hbzcfzb_rows)
+            return True
+        return False
