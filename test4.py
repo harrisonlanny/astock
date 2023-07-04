@@ -23,13 +23,13 @@ namelist = [
 # 异常加粗线P54
 # 未识别全边框P141-P187（附注）
 
-# name = namelist[2]
+name = namelist[2]
 # 异常加粗线P181
 # 未识别全边框P26，P28
+# 158,
+# name = namelist[3]
+# 未识别全边框P127-P217
 
-name = namelist[3]
-# 未识别全边框P154-P217
-# 未识别出P153前所有表格
 path = get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{name}.pdf")
 
 parse_pdf(path, name)

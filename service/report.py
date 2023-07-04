@@ -475,7 +475,7 @@ class Financial_Statement(Enum):
 def parse_pdf(pdf_url, pdf_name):
     with pdfplumber.open(pdf_url) as pdf:
         table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__table.json"
-        base_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__base.json"
+        content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__content.json"
         hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__{Financial_Statement.合并资产负债表.value}.json"
 
         prev_table = None
@@ -486,7 +486,7 @@ def parse_pdf(pdf_url, pdf_name):
         page_struct = {}
         maybe_same_tables = {}
         # _pages = [pdf.pages[150], pdf.pages[151]]
-        _pages = pdf.pages[52:54]
+        _pages = pdf.pages
         # _pages = pdf.pages[26:27]
         # _pages = pdf.pages
         table_id_list = []
@@ -625,8 +625,8 @@ def parse_pdf(pdf_url, pdf_name):
         print('color_info: ', color_info)
         analysis_color = analysis_color_info(color_info)
         # return color_info, analysis_color
-        json("/demo1.json", color_info)
-        json("/demo2.json", analysis_color)
+        # json("/demo1.json", color_info)
+        # json("/demo2.json", analysis_color)
 
         # 数据提取 
         for page_index, page in enumerate(_pages):
@@ -635,11 +635,11 @@ def parse_pdf(pdf_url, pdf_name):
             page = page.filter(keep_visible_lines)
             tables = page.find_tables()
             # print(len(tables))
-            if len(tables):
-                im = page.to_image()
-                im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+            # if len(tables):
+            #     im = page.to_image()
+            #     im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
 
-            continue
+            # continue
 
             # 提取页面的文字
             text_lines = page.extract_text_lines()
@@ -753,19 +753,33 @@ def parse_pdf(pdf_url, pdf_name):
                     format_extract.append(format_row)
                 table_extracts += format_extract
 
-            if Financial_Statement.合并资产负债表.value in table['desc']['top']:
-                # print(Financial_Statement.合并资产负债表.value, table_extracts)
-                # json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
-                json(hbzcfzb_json_url, table_extracts)
+            for top_desc_item in table['desc']['top']:
+                if Financial_Statement.合并资产负债表.value in top_desc_item:
+                    json(hbzcfzb_json_url, table_extracts)
+            
+            # if Financial_Statement.合并资产负债表.value in table['desc']['top']:
+            #     # print(Financial_Statement.合并资产负债表.value, table_extracts)
+            #     # json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
+            #     json(hbzcfzb_json_url, table_extracts)
         # 输出json
         json(table_json_url, all_tables)
         # page_struct中的table替换为table.extract的文本
+        base_content = {}
         for page_num in page_struct:
             page_info_list = page_struct[page_num]
+            base_content[page_num] = []
             for item in page_info_list:
                 if item['type'] == 'table':
-                    item['data'] = item['data'].extract()
-        json(base_json_url, page_struct)
+                    item['data'] = _map(item['data'].extract(), lambda item: item)
+                elif item['type'] == 'text_line':
+                    item['data'] = item['data']['text']
+                base_content[page_num].append(
+                    list(item.values())
+                )
+                
+                    # item['data'] = item['data'].extract()
+                    # [type, id, data]
+        json(content_json_url, base_content)
 
         # return all_tables
 
@@ -818,16 +832,6 @@ class ParsePdfThread(threading.Thread):
                 parse_pdf(pdf_url, pdf_name=file_title)
 
 
-# def parse_pdfs(file_title_list):
-#     length = len(file_title_list)
-#     for index, file_title in enumerate(file_title_list):
-#         pdf_url = get_path(f'{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf')
-#         table_json_url = get_path(f'{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json')
-#         print(pdf_url, f" {index + 1}/{length}")
-#         exists = os.path.exists(table_json_url)
-#         if not exists:
-#             parse_pdf(pdf_url, pdf_name=file_title)
-
 def parse_announcements(start_year,end_year):
     point_year = start_year
     or_str = ""
@@ -869,3 +873,5 @@ def parse_announcements(start_year,end_year):
     print(f"多线程解析{start_year}-{end_year}年报完成")
 
 
+def get_announcement_url(name):
+    return get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{name}.pdf")
