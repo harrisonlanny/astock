@@ -41,5 +41,14 @@
 
 # print(is_exist(_path))
 
-arr = [1,2,3]
-print(arr[::-1][1:])
+# print("91_1".split("_")[1])
+from test import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, get_total_assets
+from utils.index import _is_empty, json
+
+
+a = json("static/parse-announcements/hbzcfzb/003005__竞业达__2022年年度报告__1216617405__合并资产负债表.json")
+
+
+i = calculate_interest_bearing_liabilities(a)
+c=get_total_assets(a)
+b = caculate_interest_bearing_liabilities_rate(i,c)

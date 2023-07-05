@@ -8,7 +8,7 @@ from pdfplumber.table import Table
 
 from db.index import update_table_fields, update_table
 from service.report import STATIC_ANNOUNCEMENTS_DIR, download_announcement, download_year_announcements
-from utils.index import _map, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
+from utils.index import _map, large_num_format, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
     has_chinese_number, _find, json, _dir
 from utils.stock import fq, _filter
@@ -107,35 +107,39 @@ def amount_empty_to_zero(value: str | float):
     return value
 
 
-def calculate_interest_bearing_liabilities(json_result):
-    fields = _map(json_result, lambda row: row[0])
-    detail_current = {}
-    detail_last = {}
-    current_interest_bearing_liabilities_result = 0
-    last_interest_bearing_liabilities_result = 0
-    interest_bearing_liabilities = ["短期借款", "交易性金融负债", "长期借款", "应付债券", "一年内到期的非流动负债"]
-    for field_index, field in enumerate(fields):
-        if field in interest_bearing_liabilities:
-            detail_current[field] = json_result[field_index][-2]
-            detail_last[field] = json_result[field_index][-1]
-        for key in detail_current.keys():
-            detail_current[key] = amount_empty_to_zero(detail_current[key])
-            current_interest_bearing_liabilities_result += detail_current[key]
-        for key in detail_last.keys():
-            detail_last[key] = amount_empty_to_zero(detail_last[key])
-            last_interest_bearing_liabilities_result += detail_last[key]
-    return current_interest_bearing_liabilities_result, last_interest_bearing_liabilities_result
+def calculate_interest_bearing_liabilities(hbzcfzb_json):
+    '''
+        计算有息负债
+    '''
+    interest_items = ["短期借款", "交易性金融负债", "长期借款", "应付债券", "一年内到期的非流动负债"]
+    interest_bearing_liabilities_current_list = []
+    interest_bearing_liabilities_current_list_new = []
+    for row in hbzcfzb_json:
+        result = _map(row,lambda item: large_num_format(item))
+        if result[0] in interest_items:
+            interest_bearing_liabilities_current_list.append(result[1])
+    for item in interest_bearing_liabilities_current_list:
+        item = 0 if _is_empty(item) else item
+        interest_bearing_liabilities_current_list_new.append(item)
+    interest_bearing_liabilities_current_list_new = _map(interest_bearing_liabilities_current_list_new, lambda x: float(x))
+    interest_bearing_liabilities_current = sum(interest_bearing_liabilities_current_list_new)
+   
+    return interest_bearing_liabilities_current
 
 
-def get_total_assets(json_result):
-    fields = _map(json_result, lambda row: row[0])
-    key = _filter(fields, lambda field: field.replace('\n', '').replace('（', '').replace('）',
-                                                                                         '') == "负债和所有者权益或股东权益总计")
-    for index, field in enumerate(fields):
-        if field in key:
-            current_total_assets = json_result[index][-2]
-            last_total_assets = json_result[index][-1]
-            return current_total_assets, last_total_assets
+def get_total_assets(hbzcfzb_json):
+    fields = _map(hbzcfzb_json, lambda item: item[0])
+    key_word = _filter(fields, lambda field: field.replace('\n', '').replace('（', '').replace('）',
+                                                                                         '') in ["负债和所有者权益或股东权益总计", "负债和所有者权益总计"])
+    for row in hbzcfzb_json:
+        if row[0] in key_word:
+            row[1] = float(large_num_format(row[1]))
+    return row[1]
+        
+def caculate_interest_bearing_liabilities_rate(interest_bearing_liabilities, total_assets):
+    interest_bearing_liabilities_rate = interest_bearing_liabilities / total_assets 
+    print("有息负债比为：", interest_bearing_liabilities_rate*100,"%")
+    return interest_bearing_liabilities_rate * 100
 
 
 

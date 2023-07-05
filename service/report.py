@@ -385,28 +385,32 @@ def get_table_top_desc(table_id: str, page_struct: any):
                 break
             prev_item = item['data']
         result.reverse()
-        # 这里判断下，如果result数量很少，比如只有1个，而且是“单位：元”这种，就继续翻上一页，找到类似1、或者一、这种结束
-        effective_count = len(result)
-        for item in result:
-            if "单位" in item['data']['text'] and "元" in item['data']['text']:
-                effective_count -= 1
-                break
-        # print(f"有效topdesc统计 {table_id}: {effective_count}")
-        if effective_count <= 2:
-            print(f"有效top_desc很少的table: {table_id}")
-            prev_page_num = page_num - 1
-            prev_page = page_struct[prev_page_num]
-            prev_count = 0
-            for item in prev_page[::-1][1:]:
-                if item['type'] == 'text_line':
-                    result.insert(0, item)
-                    prev_count += 1
-                    if "、" in item['data']['text']:
-                        break
-                    if prev_count > 3:
-                        break
-                else:
+        # TODO 需要上溯的表一定是当前页的第一张表，id以_1结尾
+        if table_id.split("_")[1] == "1":
+            # 这里判断下，如果result数量很少，比如只有1个，而且是“单位：元”这种，就继续翻上一页，找到类似1、或者一、这种结束
+            effective_count = len(result)
+            for item in result:
+                if "单位" in item['data']['text'] and "元" in item['data']['text']:
+                    effective_count -= 1
                     break
+            # print(f"有效topdesc统计 {table_id}: {effective_count}")
+
+            if effective_count <= 2:
+                print(f"有效top_desc很少的table: {table_id}")
+                prev_page_num = page_num - 1
+                prev_page = page_struct[prev_page_num]
+                prev_count = 0
+                for item in prev_page[::-1][1:]:
+                    if item['type'] == 'text_line':
+                        result.insert(0, item)
+                        prev_count += 1
+                        if "、" in item['data']['text']:
+                            break
+                        if prev_count > 3:
+                            break
+                    else:
+                        break
+            
         return result
 
 
@@ -778,7 +782,7 @@ def parse_pdf(pdf_url, pdf_name):
             #     for row in table_extract:
             #         format_row = []
             #         for cell in row:
-            #             cell = large_num_format(cell)
+                        # cell = large_num_format(cell)
             #             format_row.append(cell)
             #         format_extract.append(format_row)
             #     table_extracts += format_extract
@@ -938,3 +942,37 @@ def gen_hbzcfzb(file_title, url):
             json2(f"{url}", hbzcfzb_rows)
             return True
         return False
+
+def calculate_interest_bearing_liabilities(hbzcfzb_json):
+    '''
+        计算有息负债
+    '''
+    interest_items = ["短期借款", "交易性金融负债", "长期借款", "应付债券", "一年内到期的非流动负债"]
+    interest_bearing_liabilities_current_list = []
+    interest_bearing_liabilities_current_list_new = []
+    for row in hbzcfzb_json:
+        result = _map(row,lambda item: large_num_format(item))
+        if result[0] in interest_items:
+            interest_bearing_liabilities_current_list.append(result[1])
+    for item in interest_bearing_liabilities_current_list:
+        item = 0 if _is_empty(item) else item
+        interest_bearing_liabilities_current_list_new.append(item)
+    interest_bearing_liabilities_current_list_new = _map(interest_bearing_liabilities_current_list_new, lambda x: float(x))
+    interest_bearing_liabilities_current = sum(interest_bearing_liabilities_current_list_new)
+   
+    return interest_bearing_liabilities_current
+
+
+def get_total_assets(hbzcfzb_json):
+    fields = _map(hbzcfzb_json, lambda item: item[0])
+    key_word = _filter(fields, lambda field: field.replace('\n', '').replace('（', '').replace('）',
+                                                                                         '') in ["负债和所有者权益或股东权益总计", "负债和所有者权益总计"])
+    for row in hbzcfzb_json:
+        if row[0] in key_word:
+            row[1] = float(large_num_format(row[1]))
+    return row[1]
+        
+def caculate_interest_bearing_liabilities_rate(interest_bearing_liabilities, total_assets):
+    interest_bearing_liabilities_rate = interest_bearing_liabilities / total_assets 
+    print("有息负债比为：", interest_bearing_liabilities_rate*100,"%")
+    return interest_bearing_liabilities_rate * 100
