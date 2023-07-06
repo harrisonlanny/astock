@@ -42,13 +42,13 @@
 # print(is_exist(_path))
 
 # print("91_1".split("_")[1])
+import itertools
+from db.index import read_table
 from test import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, get_total_assets
-from utils.index import _is_empty, json
+from utils.index import _is_empty, _map, json
 
 
-a = json("static/parse-announcements/hbzcfzb/003005__竞业达__2022年年度报告__1216617405__合并资产负债表.json")
 
-
-i = calculate_interest_bearing_liabilities(a)
-c=get_total_assets(a)
-b = caculate_interest_bearing_liabilities_rate(i,c)
+c = "负债和所有者权益\n（或股东权益）总计"
+m = c.replace('\n', '').replace('（', '').replace('）', '') 
+print(m)

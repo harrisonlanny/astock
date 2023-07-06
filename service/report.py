@@ -367,49 +367,52 @@ def get_table_top_desc(table_id: str, page_struct: any):
     top_data = _filter(get_top_table_data(table_id, page_struct)[1:], lambda item: item['type'] == 'text_line')
 
     # print(f"table_id: {table_id}, page_num: {page_num}")
-    if table['data'] is not None:
-        [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
-        prev_item = {
-            "x0": t_x0,
-            "x1": t_x1,
-            "top": t_top,
-            "bottom": t_bottom
-        }
-        # 算出每个item的间距（第一个是table，然后是最靠着table的text，依次外推）
-        for index, item in enumerate(top_data[::-1]):
-            gap = prev_item['top'] - item['data']['bottom']
-            if gap <= GAP:
-                # print(table_id, 'top', gap)
-                result.append(item)
-            else:
-                break
-            prev_item = item['data']
-        result.reverse()
-        # TODO 需要上溯的表一定是当前页的第一张表，id以_1结尾
-        if table_id.split("_")[1] == "1":
-            # 这里判断下，如果result数量很少，比如只有1个，而且是“单位：元”这种，就继续翻上一页，找到类似1、或者一、这种结束
-            effective_count = len(result)
-            for item in result:
-                if "单位" in item['data']['text'] and "元" in item['data']['text']:
-                    effective_count -= 1
+    if table is not None:
+        if table.get("data") is not None:
+            [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
+            prev_item = {
+                "x0": t_x0,
+                "x1": t_x1,
+                "top": t_top,
+                "bottom": t_bottom
+            }
+            # 算出每个item的间距（第一个是table，然后是最靠着table的text，依次外推）
+            for index, item in enumerate(top_data[::-1]):
+                gap = prev_item['top'] - item['data']['bottom']
+                if gap <= GAP:
+                    # print(table_id, 'top', gap)
+                    result.append(item)
+                else:
                     break
-            # print(f"有效topdesc统计 {table_id}: {effective_count}")
-
-            if effective_count <= 2:
-                print(f"有效top_desc很少的table: {table_id}")
-                prev_page_num = page_num - 1
-                prev_page = page_struct[prev_page_num]
-                prev_count = 0
-                for item in prev_page[::-1][1:]:
-                    if item['type'] == 'text_line':
-                        result.insert(0, item)
-                        prev_count += 1
-                        if "、" in item['data']['text']:
-                            break
-                        if prev_count > 3:
-                            break
-                    else:
+                prev_item = item['data']
+            result.reverse()
+            # TODO 需要上溯的表一定是当前页的第一张表，id以_1结尾
+            if table_id.split("_")[1] == "1":
+                # 这里判断下，如果result数量很少，比如只有1个，而且是“单位：元”这种，就继续翻上一页，找到类似1、或者一、这种结束
+                effective_count = len(result)
+                for item in result:
+                    if "单位" in item['data']['text'] and "元" in item['data']['text']:
+                        effective_count -= 1
                         break
+                # print(f"有效topdesc统计 {table_id}: {effective_count}")
+
+                if effective_count <= 2:
+                    print(f"有效top_desc很少的table: {table_id}")
+                    prev_page_num = page_num - 1
+                    # 改：第一页无需上溯
+                    if prev_page_num > 0:
+                        prev_page = page_struct[prev_page_num]
+                        prev_count = 0
+                        for item in prev_page[::-1][1:]:
+                            if item['type'] == 'text_line':
+                                result.insert(0, item)
+                                prev_count += 1
+                                if "、" in item['data']['text']:
+                                    break
+                                if prev_count > 3:
+                                    break
+                            else:
+                                break
             
         return result
 
@@ -422,23 +425,24 @@ def get_table_bottom_desc(table_id: str, page_struct: any):
     page_num = parse_table_id(table_id)['page_num']
     table = _find(page_struct[page_num], lambda item: item['id'] == table_id)
     bottom_data = _filter(get_bottom_table_data(table_id, page_struct)[:-1], lambda item: item['type'] == 'text_line')
+    if table is not None:
+        if table.get("data") is not None:
+            [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
+            prev_item = {
+                "x0": t_x0,
+                "x1": t_x1,
+                "top": t_top,
+                "bottom": t_bottom
+            }
 
-    [t_x0, t_top, t_x1, t_bottom] = table['data'].bbox
-    prev_item = {
-        "x0": t_x0,
-        "x1": t_x1,
-        "top": t_top,
-        "bottom": t_bottom
-    }
-
-    for index, item in enumerate(bottom_data):
-        gap = item['data']['top'] - prev_item['bottom']
-        if gap <= GAP:
-            # print(table_id, 'bottom', gap, item['data']['text'])
-            result.append(item)
-        else:
-            break
-        prev_item = item['data']
+            for index, item in enumerate(bottom_data):
+                gap = item['data']['top'] - prev_item['bottom']
+                if gap <= GAP:
+                    # print(table_id, 'bottom', gap, item['data']['text'])
+                    result.append(item)
+                else:
+                    break
+                prev_item = item['data']
 
     return result
 
@@ -497,6 +501,7 @@ def gen_table_content_model(id: str):
 
 class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
+    资产负债表 = "资产负债表"
 
 
 # 输出 1. base.json 2.table.json 3.财务报表.json
@@ -557,7 +562,7 @@ def parse_pdf(pdf_url, pdf_name):
                     color,
                     count
                 ])
-            arr.sort(reverse=True, key=lambda item: (item[1], item[0]))
+            arr.sort(reverse=True, key=lambda item: (item[1]))
             return arr
         
         # 如果是相同元素的元组，返回元组第一个值
@@ -768,33 +773,6 @@ def parse_pdf(pdf_url, pdf_name):
                     all_tables.append(gen_table_model(table_id, same_ids, desc=table_desc))
         
 
-
-        # for table in all_tables:
-        #     table_id = table['id']
-            # range = table['range']
-
-            # table_extracts = []
-
-            # for id in range:
-            #     table_detail: Table = find_table_from_page_struct(id, page_struct)['data']
-            #     table_extract = table_detail.extract()
-            #     format_extract = []
-            #     for row in table_extract:
-            #         format_row = []
-            #         for cell in row:
-                        # cell = large_num_format(cell)
-            #             format_row.append(cell)
-            #         format_extract.append(format_row)
-            #     table_extracts += format_extract
-
-            # for top_desc_item in table['desc']['top']:
-            #     if Financial_Statement.合并资产负债表.value in top_desc_item:
-            #         json(hbzcfzb_json_url, table_extracts)
-
-            # if Financial_Statement.合并资产负债表.value in table['desc']['top']:
-            #     # print(Financial_Statement.合并资产负债表.value, table_extracts)
-            #     # json(Financial_Statement.合并资产负债表.value + '.json', table_extracts)
-            #     json(hbzcfzb_json_url, table_extracts)
         # 输出json
         json(table_json_url, all_tables)
         # page_struct中的table替换为table.extract的文本
@@ -921,7 +899,9 @@ def gen_hbzcfzb(file_title, url):
         for t in file_all_tables:
             top_desc = t['desc']['top']
             for d in top_desc:
-                if Financial_Statement.合并资产负债表.value in d:
+                # TODO 有些公司不存在“合并资产负债表”和“母公司资产负债表”，仅存在“资产负债表”
+                # if Financial_Statement.合并资产负债表.value in d:
+                if d.endswith(f"{Financial_Statement.合并资产负债表.value}"):
                     hbzcfzb = t
                     break
             if hbzcfzb is not None:
@@ -953,9 +933,13 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
     for row in hbzcfzb_json:
         result = _map(row,lambda item: large_num_format(item))
         if result[0] in interest_items:
-            interest_bearing_liabilities_current_list.append(result[1])
+            # 如果len(result)==3,则第二列为当年对应数据，如果len(result)==4,则第三列为当年对应数据
+            if len(result) == 3:
+                interest_bearing_liabilities_current_list.append(result[1])
+            else:
+                interest_bearing_liabilities_current_list.append(result[2])
     for item in interest_bearing_liabilities_current_list:
-        item = 0 if _is_empty(item) else item
+        item = 0 if (_is_empty(item) or item == '-') else item
         interest_bearing_liabilities_current_list_new.append(item)
     interest_bearing_liabilities_current_list_new = _map(interest_bearing_liabilities_current_list_new, lambda x: float(x))
     interest_bearing_liabilities_current = sum(interest_bearing_liabilities_current_list_new)
@@ -965,14 +949,31 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
 
 def get_total_assets(hbzcfzb_json):
     fields = _map(hbzcfzb_json, lambda item: item[0])
-    key_word = _filter(fields, lambda field: field.replace('\n', '').replace('（', '').replace('）',
-                                                                                         '') in ["负债和所有者权益或股东权益总计", "负债和所有者权益总计"])
+    key_word = _filter(fields, lambda field: field.replace('\n', '').
+                       replace('（', '').replace('）', '') 
+    in 
+    ["负债和所有者权益或股东权益总计", "负债和所有者权益总计", "负债和所有者权益或股东权益", "资产总计"])
+    # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
+    # [
+    #     "负债和所有者权益（或股东",
+    #     "",
+    #     "4,536,412,952.00",
+    #     "4,480,824,564.34"
+    # ],
+    # [
+    #     "权益）总计",
+    #     "",
+    #     "",
+    #     ""
+    # ]
     for row in hbzcfzb_json:
         if row[0] in key_word:
-            row[1] = float(large_num_format(row[1]))
-    return row[1]
-        
+            if len(row) == 3:
+                row[1] = 0.01 if (_is_empty(row[1]) or row[1] == "-") else float(large_num_format(row[1]))
+                return row[1]
+            else:
+                row[2] = 0.01 if (_is_empty(row[2]) or row[2] == "-") else float(large_num_format(row[2]))
+                return row[2]
 def caculate_interest_bearing_liabilities_rate(interest_bearing_liabilities, total_assets):
     interest_bearing_liabilities_rate = interest_bearing_liabilities / total_assets 
-    print("有息负债比为：", interest_bearing_liabilities_rate*100,"%")
     return interest_bearing_liabilities_rate * 100

@@ -2,7 +2,7 @@
 import os
 from db.index import read_table
 from model.model import TableModel
-from service.report import STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement, find_table_from_page_struct, gen_hbzcfzb, get_announcement_url, parse_pdf
+from service.report import STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement, caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, find_table_from_page_struct, gen_hbzcfzb, get_announcement_url, get_total_assets, parse_pdf
 from utils.index import _map, get_path, is_exist, json, json2, large_num_format
 
 # name = "000534__万泽股份__2022年年度报告__1215991366"
@@ -14,43 +14,60 @@ from utils.index import _map, get_path, is_exist, json, json2, large_num_format
 # 后面所有的分析与提表，都基于上面两个json
 # 
 
-# r = read_table(
-#     table_name="announcements",
-#     fields=["file_title"],
-#     result_type="dict",
-#     filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 20",
-# )
-# file_title_list = _map(r, lambda item: item["file_title"])
+r = read_table(
+    table_name="announcements",
+    fields=["file_title"],
+    result_type="dict",
+    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 20",
+)
+file_title_list = _map(r, lambda item: item["file_title"])
+
 
 # json2("/mock.json", file_title_list)
 
 # file_title_list = _map(r, lambda item: item["file_title"])
-# file_title_list = ["002047__宝鹰股份__2022年年度报告__1216563514"]
-# calculate_interest_bearing_liabilities()
 
 
-file_title_list = [
-    "600481__双良节能__双良节能系统股份有限公司2022年年度报告__1216560014",
-    "003005__竞业达__2022年年度报告__1216617405",
-    # "301098__金埔园林__2022年年度报告__1216558940",
-    # "002500__山西证券__2022年年度报告__1216656433",
-    # "002282__博深股份__2022年年度报告__1216648090",
-    # "603985__恒润股份__江阴市恒润重工股份有限公司2022年年度报告__1216419056",
-    # "002581__未名医药__2022年度报告（更正后）__1217066287",
-    # "688227__品高股份__2022年年度报告__1216711726",
-    # "601788__光大证券__光大证券股份有限公司2022年年度报告__1216279948",
-    # "003040__楚天龙__2022年年度报告__1216275830",
-    # "300668__杰恩设计__2022年年度报告__1216517939",
-    # "600278__东方创业__东方创业2022年度报告__1216701140",
-    # "831305__海希通讯__2022年年度报告（更正后）__1216861207",
-    # "300097__智云股份__2022年年度报告（更新后）__1216921699",
-    # "603167__渤海轮渡__渤海轮渡集团股份有限公司2022年年度报告__1216441667",
-    # "688510__航亚科技__无锡航亚科技股份有限公司2022年年度报告__1216582882",
-    # "688288__鸿泉物联__鸿泉物联：2022年年度报告__1216687349",
-    # "600500__中化国际__中化国际2022年年度报告__1216663256",
-    # "603003__龙宇股份__龙宇股份2022年年度报告__1216645157",
-    # "688538__和辉光电__上海和辉光电股份有限公司2022年年度报告__1216623370"
-]
+
+# 其他包含“合并资产负债表”的textline有干扰
+# file_title_list = [
+#     "300503__昊志机电__2022年年度报告__1216659965"
+# ]
+
+# maybe the same table 识别有误
+# file_title_list = [
+#     "688609__九联科技__广东九联科技股份有限公司2022年年度报告__1216647734",
+#     "688553__汇宇制药__四川汇宇制药股份有限公司2022年年度报告__1216336296"
+# ]
+
+# 表格格式导致合并资产负债表识别不正确
+# file_title_list = [
+#     "000811__冰轮环境__2022年年度报告__1216390232"
+# ]
+
+
+# file_title_list = [
+#     "600481__双良节能__双良节能系统股份有限公司2022年年度报告__1216560014",
+#     "003005__竞业达__2022年年度报告__1216617405",
+#     "301098__金埔园林__2022年年度报告__1216558940",
+#     "002500__山西证券__2022年年度报告__1216656433",
+#     "002282__博深股份__2022年年度报告__1216648090",
+#     "603985__恒润股份__江阴市恒润重工股份有限公司2022年年度报告__1216419056",
+#     "002581__未名医药__2022年度报告（更正后）__1217066287",
+#     "688227__品高股份__2022年年度报告__1216711726",
+#     "601788__光大证券__光大证券股份有限公司2022年年度报告__1216279948",
+#     "003040__楚天龙__2022年年度报告__1216275830",
+#     "300668__杰恩设计__2022年年度报告__1216517939",
+#     "600278__东方创业__东方创业2022年度报告__1216701140",
+#     "831305__海希通讯__2022年年度报告（更正后）__1216861207",
+#     "300097__智云股份__2022年年度报告（更新后）__1216921699",
+#     "603167__渤海轮渡__渤海轮渡集团股份有限公司2022年年度报告__1216441667",
+#     "688510__航亚科技__无锡航亚科技股份有限公司2022年年度报告__1216582882",
+#     "688288__鸿泉物联__鸿泉物联：2022年年度报告__1216687349",
+#     "600500__中化国际__中化国际2022年年度报告__1216663256",
+#     "603003__龙宇股份__龙宇股份2022年年度报告__1216645157",
+#     "688538__和辉光电__上海和辉光电股份有限公司2022年年度报告__1216623370"
+# ]
 
 # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
 for file_title in file_title_list:
@@ -84,5 +101,24 @@ for file_title in file_title_list:
                  "file_title": file_title,
                  "reason": "table.json中没找到合并资产负债表"
             })
+        
 
 print("合并有问题的file_title_list: ", error_file_title_list)
+# 筛选有息负债符合条件的公司
+error_list = _map(error_file_title_list, lambda item: item["file_title"])
+file_title_list = set(file_title_list) - set(error_list)
+companies = []
+for file_title in file_title_list:
+    hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+    file_content = json(hbzcfzb_json_url)
+    try:
+        result = caculate_interest_bearing_liabilities_rate(calculate_interest_bearing_liabilities(file_content), get_total_assets(file_content))
+        print(f"{file_title}的有息负债占比为{result}%")   
+        if result < 60:
+            companies.append(file_title) 
+    except:
+        print(f"{file_title}无法解析总资产")
+    
+    
+print("符合有息负债占比条件的公司有：",companies)
+print(f"符合有息负债占比筛选条件的公司比例为：{len(companies)/len(file_title_list)*100}%")
