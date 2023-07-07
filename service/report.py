@@ -950,9 +950,9 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
 def get_total_assets(hbzcfzb_json):
     fields = _map(hbzcfzb_json, lambda item: item[0])
     key_word = _filter(fields, lambda field: field.replace('\n', '').
-                       replace('（', '').replace('）', '') 
+                       replace('（', '').replace('）', '').replace('：', '').replace(':', '')
     in 
-    ["负债和所有者权益或股东权益总计", "负债和所有者权益总计", "负债和所有者权益或股东权益", "资产总计"])
+    ["负债和所有者权益或股东权益总计", "负债和所有者权益总计", "负债和所有者权益或股东权益"])
     # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
     # [
     #     "负债和所有者权益（或股东",

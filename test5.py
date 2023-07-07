@@ -18,7 +18,7 @@ r = read_table(
     table_name="announcements",
     fields=["file_title"],
     result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 20",
+    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 100",
 )
 file_title_list = _map(r, lambda item: item["file_title"])
 
@@ -37,12 +37,33 @@ file_title_list = _map(r, lambda item: item["file_title"])
 # maybe the same table 识别有误
 # file_title_list = [
 #     "688609__九联科技__广东九联科技股份有限公司2022年年度报告__1216647734",
-#     "688553__汇宇制药__四川汇宇制药股份有限公司2022年年度报告__1216336296"
+#     "688553__汇宇制药__四川汇宇制药股份有限公司2022年年度报告__1216336296",
+#     "601966__玲珑轮胎__山东玲珑轮胎股份有限公司2022年年度报告__1216692817",
+#     "603070__万控智造__万控智造：2022年年度报告__1216454871",
+#     "603256__宏和科技__宏和科技2022年年度报告__1216645622",
+#     "600683__京投发展__京投发展股份有限公司2022年年度报告__1216235519",
+#     "688053__思科瑞__成都思科瑞微电子股份有限公司2022年年度报告__1216362695",
+#     "605162__新中港__浙江新中港热电股份有限公司2022年年度报告__1216616607",
+#     "688029__南微医学__南微医学科技股份有限公司2022年年度报告__1216596450",
+#     "600894__广日股份__广州广日股份有限公司2022年年度报告__1216354281",
+#     "688009__中国通号__2022年年度报告__1216203728",
+#     "603017__中衡设计__2022年年度报告__1216556176",
+#     "601100__恒立液压__江苏恒立液压股份有限公司2022年年度报告__1216561779",
+#     "601956__东贝集团__湖北东贝机电集团股份有限公司2022年年度报告__1216221059",
+#     "688351__微电生理__2022年年度报告__1216245176",
+#     "000816__智慧农业__2022年年度报告__1216692013", # 续表另有标题
+#     "601117__中国化学__中国化学2022年年度报告__1216234431" # 续表另有标题
 # ]
 
 # 表格格式导致合并资产负债表识别不正确
 # file_title_list = [
-#     "000811__冰轮环境__2022年年度报告__1216390232"
+#     "000811__冰轮环境__2022年年度报告__1216390232",
+#     "600928__西安银行__西安银行股份有限公司2022年年度报告__1216664133",
+#     "002493__荣盛石化__2022年年度报告__1216478209",
+#     "600558__大西洋__大西洋2022年年度报告__1216343924",
+#     "688137__近岸蛋白__688137_2022年_年度报告__1216630973",
+#     "002342__巨力索具__2022年年度报告__1216615314",
+#     "838171__邦德股份__2022年年度报告__1216371491" # 表格边框颜色不一致，有的蓝色，有的黑色，取的黑色为主色，取不到蓝色的合并资产负债表
 # ]
 
 
@@ -106,7 +127,7 @@ for file_title in file_title_list:
 print("合并有问题的file_title_list: ", error_file_title_list)
 # 筛选有息负债符合条件的公司
 error_list = _map(error_file_title_list, lambda item: item["file_title"])
-file_title_list = set(file_title_list) - set(error_list)
+file_title_list = list(set(file_title_list) - set(error_list))
 companies = []
 for file_title in file_title_list:
     hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
@@ -121,4 +142,5 @@ for file_title in file_title_list:
     
     
 print("符合有息负债占比条件的公司有：",companies)
-print(f"符合有息负债占比筛选条件的公司比例为：{len(companies)/len(file_title_list)*100}%")
+r = len(companies)/len(file_title_list)*100
+print(f"符合有息负债占比筛选条件的公司比例为：{r}%")
