@@ -42,13 +42,19 @@
 # print(is_exist(_path))
 
 # print("91_1".split("_")[1])
-import itertools
-from db.index import read_table
-from test import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, get_total_assets
-from utils.index import _is_empty, _map, json
+# import itertools
+# from db.index import read_table
+# from test import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, get_total_assets
+# from utils.index import _is_empty, _map, json
 
 
 
-c = "负债和所有者权益\n（或股东权益）总计"
-m = c.replace('\n', '').replace('（', '').replace('）', '') 
-print(m)
+# c = "负债和所有者权益\n（或股东权益）总计"
+# m = c.replace('\n', '').replace('（', '').replace('）', '') 
+# print(m)
+
+from utils.index import _every
+
+
+cells = [None, None,2, None]
+print(_every(cells, lambda item: item is None))

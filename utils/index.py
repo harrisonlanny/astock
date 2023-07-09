@@ -86,6 +86,14 @@ def _find(data_list, callback):
             break
     return result
 
+def _every(data_list, callback):
+    result = True
+    for data in data_list:
+        if callback(data) == False:
+            result = False
+            break
+    return result
+
 
 def _find_index(data_list, callback):
     result = None
