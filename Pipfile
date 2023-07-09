@@ -11,6 +11,9 @@ pandas = "*"
 tushare = "*"
 baostock = "*"
 pdfplumber = "*"
+markupsafe = "*"
+flask = "*"
+flask-cors = "*"
 
 [dev-packages]
 
