@@ -360,7 +360,7 @@ def json2(output_path: str, data: any = None):
         _path = output_path
     else:
         _path = get_path(output_path)
-    print("_path: ", _path)
+    # print("_path: ", _path)
     result = None
     if data is None:
         f = open(_path, 'r')

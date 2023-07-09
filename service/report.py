@@ -650,6 +650,16 @@ def parse_pdf(pdf_url, pdf_name):
                     return False
             return True
         
+        def append_same_table(prev_table_id, table_id):
+            # 获取map最后的key名
+            last_key = get_dict_key_by_index(maybe_same_tables, -1)
+            if last_key is None or prev_table_id not in maybe_same_tables[last_key]:
+                if maybe_same_tables.get(prev_table_id) is None:
+                    maybe_same_tables[prev_table_id] = [prev_table_id]
+                maybe_same_tables[prev_table_id].append(table_id)
+            else:
+                maybe_same_tables[last_key].append(table_id)
+
         # 全页面颜色扫描
         for page_index, page in enumerate(pdf.pages):
             print(f'color_scan --{pdf_name}  {page_index + 1}/{len(pdf.pages)}--', '\n')
@@ -719,24 +729,25 @@ def parse_pdf(pdf_url, pdf_name):
                     prev_table_last_row = prev_table.rows[-1]
                     current_table_first_row = table.rows[0]
 
-                    # 如果列数不一致，那么就不是同结构
-                    # prev_table必须是上一页的最后一张表
-                    # current_table必须本页的第一张表
-                    if table_index == 0 and prev_table_index + 1 == prev_table_count and \
-                            len(get_top_table_data(table_id, page_struct) + get_bottom_table_data(prev_table_id,
-                                                                                                  page_struct)) <= 2 and \
-                            is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
-
-                        # 判断table_id是否已存在于map中
-                        key = get_dict_key_by_index(maybe_same_tables, -1)
-                        # print(
-                        #     f"table_id:{table_id};prev_table_id:{prev_table_id},key:{key}, maybe_same_tables:{maybe_same_tables}")
-                        if key is None or prev_table_id not in maybe_same_tables[key]:
-                            if maybe_same_tables.get(prev_table_id) is None:
-                                maybe_same_tables[prev_table_id] = [prev_table_id]
-                            maybe_same_tables[prev_table_id].append(table_id)
-                        else:
-                            maybe_same_tables[key].append(table_id)
+                    # 如果是相同表，一定得满足的条件是：（本表是本页第一张表，上表是上页最后一张表）
+                    same_table_necessary_condition = table_index == 0 and prev_table_index + 1 == prev_table_count
+                    has_append = False
+                    # 如果符合必要条件，且当前表的top_desc中存在（续）做结尾的描述，则视为前表的续表
+                    table_desc = get_table_desc(table_id, page_struct)
+                    top_desc:list[str] = table_desc['top']
+                    for desc_item in top_desc:
+                        if desc_item.strip().endswith("（续）"):
+                            has_append = True
+                            append_same_table(prev_table_id, table_id)
+                            break
+                    
+                    if not has_append:
+                        # 如果列数不一致，那么就不是同结构
+                        if same_table_necessary_condition and \
+                                len(get_top_table_data(table_id, page_struct) + get_bottom_table_data(prev_table_id,
+                                                                                                    page_struct)) <= 2 and \
+                                is_cells_size_same(prev_table_last_row.cells, current_table_first_row.cells):
+                            append_same_table(prev_table_id, table_id)
 
                 prev_table = table
                 prev_table_id = table_id
@@ -952,7 +963,7 @@ def get_total_assets(hbzcfzb_json):
     key_word = _filter(fields, lambda field: field.replace('\n', '').
                        replace('（', '').replace('）', '').replace('：', '').replace(':', '')
     in 
-    ["负债和所有者权益或股东权益总计", "负债和所有者权益总计", "负债和所有者权益或股东权益"])
+    ["负债和所有者权益或股东权益总计", "负债及股东权益合计",  "负债和所有者权益总计", "负债和所有者权益或股东权益"])
     # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
     # [
     #     "负债和所有者权益（或股东",
