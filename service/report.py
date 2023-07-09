@@ -1000,7 +1000,7 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
     """
     计算有息负债
     """
-    interest_items = ["短期借款", "交易性金融负债", "长期借款", "应付债券", "一年内到期的非流动负债"]
+    interest_items = ["短期借款", "交易性金融负债", "长期借款", "应付债券", "一年内到期的非流动负债", "一年内到期的融资租赁负债", "长期融资租赁负债"]
     interest_bearing_liabilities_current_list = []
     interest_bearing_liabilities_current_list_new = []
     for row in hbzcfzb_json:
