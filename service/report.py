@@ -526,6 +526,7 @@ def gen_table_content_model(id: str):
 class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
     资产负债表 = "资产负债表"
+    合并及公司资产负债表 = "合并及公司资产负债表"
 
 
 # 输出 1. base.json 2.table.json 3.财务报表.json
@@ -971,7 +972,9 @@ def gen_hbzcfzb(file_title, url):
         for d in top_desc:
             # TODO 有些公司不存在“合并资产负债表”和“母公司资产负债表”，仅存在“资产负债表”
             # if Financial_Statement.合并资产负债表.value in d:
-            if d.endswith(f"{Financial_Statement.合并资产负债表.value}"):
+            if d.endswith(f"{Financial_Statement.合并资产负债表.value}") \
+            or d.endswith(f"{Financial_Statement.合并及公司资产负债表.value}") \
+            or d.endswith(f"{Financial_Statement.资产负债表.value}"):
                 hbzcfzb = t
                 break
         if hbzcfzb is not None:
