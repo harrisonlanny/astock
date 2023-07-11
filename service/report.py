@@ -1032,11 +1032,10 @@ def get_total_assets(hbzcfzb_json):
     key_word = _filter(
         fields,
         lambda field: field.replace("\n", "")
-        .replace("（", "")
-        .replace("）", "")
-        .replace("：", "")
-        .replace(":", "")
-        in ["负债和所有者权益或股东权益总计", "负债及股东权益合计", "负债和所有者权益总计", "负债和所有者权益或股东权益"],
+        .replace("（", "").replace("(","")
+        .replace("）", "").replace(")","")
+        .replace("：", "").replace(":", "")
+        in ["负债和所有者权益或股东权益总计", "负债及股东权益合计", "负债和所有者权益总计", "负债和所有者权益或股东权益"]
     )
     # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
     # [
@@ -1067,6 +1066,8 @@ def get_total_assets(hbzcfzb_json):
                     else float(large_num_format(row[2]))
                 )
                 return row[2]
+        # else:
+        #     return 1 # 避免作为除数时报错，且可以在不符合条件时直接筛掉
 
 
 def caculate_interest_bearing_liabilities_rate(
@@ -1074,3 +1075,37 @@ def caculate_interest_bearing_liabilities_rate(
 ):
     interest_bearing_liabilities_rate = interest_bearing_liabilities / total_assets
     return interest_bearing_liabilities_rate * 100
+
+
+def propotion_of_accounts_receivable(hbzcfzb_json):
+    '''
+    计算应收/总资产比例
+    '''
+    # 应收 = 资产负债表所有带“应收”两个字的科目数字总和-银行承兑汇票金额
+    # 1.筛选出合并资产负债表中包含“应收”关键字的字段值，计算其之和
+    fields = _map(hbzcfzb_json, lambda item: item[0])
+    key_word = _filter(fields, lambda field: "应收" in field)
+    # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
+    amount_of_bankers_acceptance = 0
+    # 3.计算应收/总资产比例
+    accounts_receivable_list = []
+    for row in hbzcfzb_json:
+        if row[0] in key_word:
+            if len(row) == 3:
+                row[1] = (
+                    0
+                    if (_is_empty(row[1]) or row[1] == "-")
+                    else float(large_num_format(row[1]))
+                )
+                accounts_receivable_list.append(row[1])
+            else:
+                row[2] = (
+                    0
+                    if (_is_empty(row[2]) or row[2] == "-")
+                    else float(large_num_format(row[2]))
+                )
+                accounts_receivable_list.append(row[2])
+        accounts_receivable = sum(accounts_receivable_list)
+    total_assets = get_total_assets(hbzcfzb_json)
+    propotion_of_accounts_receivable = accounts_receivable/total_assets
+    return  propotion_of_accounts_receivable * 100

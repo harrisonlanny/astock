@@ -1,4 +1,4 @@
-from service.report import STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement, caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hbzcfzb, get_announcement_url, get_total_assets, parse_pdf
+from service.report import STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement, caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hbzcfzb, get_announcement_url, get_total_assets, parse_pdf, propotion_of_accounts_receivable
 from utils.index import _map, get_path, is_exist, json
 
 # name = "000534__万泽股份__2022年年度报告__1215991366"
@@ -144,4 +144,27 @@ def filter_by_interest_bearing_liabilities(file_title_list):
 
 
 
+def filter_by_proportion_of_accounts_receivable(file_title_list):
+    error_file_title_list = generate_hbzcfzb(file_title_list)
+    error_list = _map(error_file_title_list, lambda item: item["file_title"])
+    file_title_list = list(set(file_title_list) - set(error_list))
+    target = []
+    for file_title in file_title_list:
+        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+        file_content = json(hbzcfzb_json_url)
+        try:
+            propotion = propotion_of_accounts_receivable(file_content)
+            print(f"{file_title}应收占比为{propotion}%")
+            if propotion < 30:
+                target.append(file_title)
+            else:
+                print(f"{file_title}应收占比大于等于30%，不符合条件")
+        except:
+            print(f"总资产项目不存在！{file_title}无法计算应收占比")  
 
+
+    rate = len(target)/len(file_title_list)*100
+    print(f"符合应收占比条件的公司有：{target}，比例为{rate}%")
+    
+        
+    
