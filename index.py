@@ -4,14 +4,14 @@ from service.index import refresh_table_stock_basic, create_new_d_tables, delete
     update_d_tables
 from service.report import parse_announcements, refresh_table_announcements, download_year_announcements
 
-# refresh_table_stock_basic()
+# refresh_table_stock_basic(only_live=True)
 # create_new_d_tables()
 
 
 # update_d_tables(sleep_time=0.2, update_st=False)
+
+
 # refresh_table_announcements(sleep_time=0.25)
-
 # download_year_announcements()
-
-parse_announcements(2022,2022)
+# parse_announcements(2022,2022)
 print('成功！！')

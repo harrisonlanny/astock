@@ -2,11 +2,21 @@ import math
 import os
 import threading
 import time
-from enum import Enum
 
 import pdfplumber
 import requests
 from pdfplumber.table import Table
+from config import (
+    JU_CHAO_BASE_URL,
+    JU_CHAO_COOKIE,
+    JU_CHAO_HEADERS,
+    JU_CHAO_STATIC_URL,
+    STATIC_ANNOUNCEMENTS_DIR,
+    STATIC_ANNOUNCEMENTS_PARSE_DIR,
+    Announcement_Category,
+    Announcement_Category_Options,
+    Financial_Statement,
+)
 
 from db.index import (
     clear_table,
@@ -21,6 +31,7 @@ from service.index import get_current_d_tables
 from utils.index import (
     _every,
     _is_number,
+    _safe_join,
     has_english_number,
     is_exist,
     is_list_item_same,
@@ -39,31 +50,6 @@ from utils.index import (
 )
 from datetime import date
 
-STATIC_ANNOUNCEMENTS_DIR = "/static/announcements"
-STATIC_ANNOUNCEMENTS_PARSE_DIR = "/static/parse-announcements/base"
-STATIC_ANNOUNCEMENTS_HBZCFZB_DIR = "/static/parse-announcements/hbzcfzb"
-STATIC_ANNOUNCEMENTS_HBLRB_DIR = "/static/parse-announcements/hblrb"
-
-JU_CHAO_PROTOCOL = "http://"
-JU_CHAO_HOST = "www.cninfo.com.cn"
-JU_CHAO_STATIC_HOST = "static.cninfo.com.cn"
-JU_CHAO_BASE_URL = f"{JU_CHAO_PROTOCOL}{JU_CHAO_HOST}"
-JU_CHAO_STATIC_URL = f"{JU_CHAO_PROTOCOL}{JU_CHAO_STATIC_HOST}"
-
-JU_CHAO_COOKIE = {
-    "JSESSIONID": "7BE08DF899613177F426827B251A630E",
-    "insert_cookie": "45380249",
-    "routeId": ".uc1",
-    "_sp_ses.2141": "*",
-    "_sp_id.2141": "69ba6006-a96c-4e68-8da2-1f3a56e943f2.1685969405.4.1686988217.1686383617.1042ce01-5319-4d64-a642-8b6dbd468a75",
-}
-JU_CHAO_HEADERS = {
-    "Host": "www.cninfo.com.cn",
-    "Origin": "http://www.cninfo.com.cn",
-    "Referer": "http://www.cninfo.com.cn/new/commonUrl/pageOfSearch?url=disclosure/list/search&lastPage=index",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-}
-
 
 def fetch_juchao_all_stocks(refresh: bool = True):
     if refresh:
@@ -78,9 +64,16 @@ def fetch_juchao_all_stocks(refresh: bool = True):
 
 
 def fetch_one_page_financial_statements(
-    symbol: str, org_id: str, page_num: int, page_size: int
+    symbol: str,
+    org_id: str,
+    announcement_category: list[Announcement_Category],
+    page_num: int,
+    page_size: int,
 ):
     try:
+        ann_category_option_list = _map(announcement_category, lambda item: Announcement_Category_Options[item.value])
+        juchao_category_list = _map(ann_category_option_list, lambda item: item['juchao_category'])
+        juchao_category_str = _safe_join(juchao_category_list, ";")
         response = requests.post(
             f"{JU_CHAO_BASE_URL}/new/hisAnnouncement/query",
             data={
@@ -89,7 +82,7 @@ def fetch_one_page_financial_statements(
                 "column": "szse",
                 "tabName": "fulltext",
                 "stock": f"{symbol},{org_id}",
-                "category": "category_ndbg_szsh",
+                "category": juchao_category_str,
                 "isHLtitle": True,
             },
             cookies=JU_CHAO_COOKIE,
@@ -102,10 +95,10 @@ def fetch_one_page_financial_statements(
     except requests.exceptions.ConnectionError:
         print("请求one_page_financeial_statements超负荷了，休息15s后将继续请求..")
         time.sleep(15)
-        return fetch_one_page_financial_statements(symbol, org_id, page_num, page_size)
+        return fetch_one_page_financial_statements(symbol,org_id,announcement_category,page_num,page_size)
 
 
-def fetch_financial_statements(symbol: str, org_id: str):
+def fetch_financial_statements(symbol: str, org_id: str, announcement_category: list[Announcement_Category]):
     page_num = 1
     page_size = 30
     result = []
@@ -113,7 +106,7 @@ def fetch_financial_statements(symbol: str, org_id: str):
 
     while has_more:
         page_result = fetch_one_page_financial_statements(
-            symbol, org_id, page_num, page_size
+            symbol, org_id,announcement_category, page_num, page_size
         )
         print(f"{symbol}的第{page_num}页: ", page_result)
         if is_iterable(page_result["announcements"]):
@@ -180,7 +173,15 @@ def download_announcement(url: str, title: str, skip_if_exist: bool = True):
 
 
 def refresh_table_announcements(
-    symbols: list[str] = None, start_symbol: str = None, sleep_time: float = 0.5
+    symbols: list[str] = None,
+    announcement_category: list[Announcement_Category] = [
+        Announcement_Category.一季报,
+        Announcement_Category.半年报,
+        Announcement_Category.三季报,
+        Announcement_Category.年报
+    ],
+    start_symbol: str = None, 
+    sleep_time: float = 0.5
 ):
     # 1. 得到symbols
     if _is_empty(symbols):
@@ -217,7 +218,7 @@ def refresh_table_announcements(
         org_id = stock["orgId"]
         symbol = stock["code"]
         # 请求symbol对应的所有财报
-        announcements = fetch_financial_statements(symbol, org_id)
+        announcements = fetch_financial_statements(symbol, org_id, announcement_category)
 
         # 将数据结构化 （format_item指的是symbol的所有财报数据)
         # rows: [[symbol, name, org_id, file_title, title, url]]
@@ -524,13 +525,6 @@ def gen_table_content_model(id: str):
     return {"id": id, "data": {"fields": [], "rows": [], "origin": any}}
 
 
-class Financial_Statement(Enum):
-    合并资产负债表 = "合并资产负债表"
-    资产负债表 = "资产负债表"
-    合并及公司资产负债表 = "合并及公司资产负债表"
-    合并利润表 = "合并利润表"
-
-
 # 输出 1. base.json 2.table.json 3.财务报表.json
 def parse_pdf(pdf_url, pdf_name):
     with pdfplumber.open(pdf_url) as pdf:
@@ -677,15 +671,15 @@ def parse_pdf(pdf_url, pdf_name):
                 # 第一个cell有文字，其他cell都是None
                 first_cell = row.cells[0]
                 other_cells = row.cells[1:]
-                if not (first_cell is not None and _every(
-                    other_cells, lambda item: item is None
-                )):
+                if not (
+                    first_cell is not None
+                    and _every(other_cells, lambda item: item is None)
+                ):
                     target_row = row
                     break
             if target_row:
                 return target_row
             return None
-
 
         # 全页面颜色扫描
         for page_index, page in enumerate(pdf.pages):
@@ -794,7 +788,8 @@ def parse_pdf(pdf_url, pdf_name):
 
                         if prev_table_common_row and current_table_common_row:
                             if is_cells_size_same(
-                                prev_table_common_row.cells, current_table_common_row.cells
+                                prev_table_common_row.cells,
+                                current_table_common_row.cells,
                             ):
                                 append_same_table(prev_table_id, table_id)
 
@@ -974,9 +969,11 @@ def gen_hbzcfzb(file_title, url):
         for d in top_desc:
             # TODO 有些公司不存在“合并资产负债表”和“母公司资产负债表”，仅存在“资产负债表”
             # if Financial_Statement.合并资产负债表.value in d:
-            if d.endswith(f"{Financial_Statement.合并资产负债表.value}") \
-            or d.endswith(f"{Financial_Statement.合并及公司资产负债表.value}") \
-            or d.endswith(f"{Financial_Statement.资产负债表.value}"):
+            if (
+                d.endswith(f"{Financial_Statement.合并资产负债表.value}")
+                or d.endswith(f"{Financial_Statement.合并及公司资产负债表.value}")
+                or d.endswith(f"{Financial_Statement.资产负债表.value}")
+            ):
                 hbzcfzb = t
                 break
         if hbzcfzb is not None:
@@ -1000,6 +997,7 @@ def gen_hbzcfzb(file_title, url):
         return True
     return False
 
+
 def gen_hblrb(file_title, url):
     save_content_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
@@ -1016,8 +1014,9 @@ def gen_hblrb(file_title, url):
         top_desc = t["desc"]["top"]
         for d in top_desc:
             # TODO 有些公司不存在“合并利润表”和“母公司利润表”，仅存在“利润表”
-            if d.endswith(f"{Financial_Statement.合并利润表.value}") \
-            and d.startswith(f"{Financial_Statement.合并利润表.value}"):
+            if d.endswith(f"{Financial_Statement.合并利润表.value}") and d.startswith(
+                f"{Financial_Statement.合并利润表.value}"
+            ):
                 hblrb = t
                 break
         if hblrb is not None:
@@ -1046,7 +1045,15 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
     """
     计算有息负债
     """
-    interest_items = ["短期借款", "交易性金融负债", "长期借款", "应付债券", "一年内到期的非流动负债", "一年内到期的融资租赁负债", "长期融资租赁负债"]
+    interest_items = [
+        "短期借款",
+        "交易性金融负债",
+        "长期借款",
+        "应付债券",
+        "一年内到期的非流动负债",
+        "一年内到期的融资租赁负债",
+        "长期融资租赁负债",
+    ]
     interest_bearing_liabilities_current_list = []
     interest_bearing_liabilities_current_list_new = []
     for row in hbzcfzb_json:
@@ -1075,10 +1082,13 @@ def get_total_assets(hbzcfzb_json):
     key_word = _filter(
         fields,
         lambda field: field.replace("\n", "")
-        .replace("（", "").replace("(","")
-        .replace("）", "").replace(")","")
-        .replace("：", "").replace(":", "")
-        in ["负债和所有者权益或股东权益总计", "负债及股东权益合计", "负债和所有者权益总计", "负债和所有者权益或股东权益"]
+        .replace("（", "")
+        .replace("(", "")
+        .replace("）", "")
+        .replace(")", "")
+        .replace("：", "")
+        .replace(":", "")
+        in ["负债和所有者权益或股东权益总计", "负债及股东权益合计", "负债和所有者权益总计", "负债和所有者权益或股东权益"],
     )
     # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
     # [
@@ -1112,17 +1122,20 @@ def get_total_assets(hbzcfzb_json):
 
 
 def get_operating_revenue(hblrb_json):
-    '''
+    """
     获取合并利润表中的营业收入及增长率
-    '''
+    """
     fields = _map(hblrb_json, lambda item: item[0])
     key_word = _filter(
         fields,
         lambda field: field.replace("\n", "")
-        .replace("（", "").replace("(","")
-        .replace("）", "").replace(")","")
-        .replace("：", "").replace(":", "")
-        in ["其中营业收入"]
+        .replace("（", "")
+        .replace("(", "")
+        .replace("）", "")
+        .replace(")", "")
+        .replace("：", "")
+        .replace(":", "")
+        in ["其中营业收入"],
     )
     for row in hblrb_json:
         if row[0] in key_word:
@@ -1137,7 +1150,7 @@ def get_operating_revenue(hblrb_json):
                     if (_is_empty(row[2]) or row[2] == "-")
                     else float(large_num_format(row[2]))
                 )
-                growth_rate = row[1]/row[2]*100
+                growth_rate = row[1] / row[2] * 100
                 return row[1], growth_rate  # 返回当期营业收入和营业收入增长率
             else:
                 row[2] = (
@@ -1150,25 +1163,24 @@ def get_operating_revenue(hblrb_json):
                     if (_is_empty(row[3]) or row[3] == "-")
                     else float(large_num_format(row[3]))
                 )
-                growth_rate = row[2]/row[3]*100
+                growth_rate = row[2] / row[3] * 100
                 return row[2], growth_rate
-            
+
 
 def caculate_interest_bearing_liabilities_rate(
     interest_bearing_liabilities, total_assets
 ):
-    '''
+    """
     计算有息负债占比
-    '''
+    """
     interest_bearing_liabilities_rate = interest_bearing_liabilities / total_assets
     return interest_bearing_liabilities_rate * 100
 
 
-
 def accounts_receivable(hbzcfzb_json):
-    '''
+    """
     计算应收款及应收增长率
-    '''
+    """
     # 应收 = 资产负债表所有带“应收”两个字的科目数字总和-银行承兑汇票金额
     # 1.筛选出合并资产负债表中包含“应收”关键字的字段值，计算其之和
     fields = _map(hbzcfzb_json, lambda item: item[0])
@@ -1195,7 +1207,11 @@ def accounts_receivable(hbzcfzb_json):
                 last_accounts_receivable_list.append(row[2])
                 current_accounts_receivable = sum(current_accounts_receivable_list)
                 last_accounts_receivable = sum(last_accounts_receivable_list)
-                growth_rate = (current_accounts_receivable-last_accounts_receivable)/last_accounts_receivable*100
+                growth_rate = (
+                    (current_accounts_receivable - last_accounts_receivable)
+                    / last_accounts_receivable
+                    * 100
+                )
                 return current_accounts_receivable, growth_rate
             else:
                 row[2] = (
@@ -1212,14 +1228,18 @@ def accounts_receivable(hbzcfzb_json):
                 last_accounts_receivable_list.append(row[3])
     current_accounts_receivable = sum(current_accounts_receivable_list)
     last_accounts_receivable = sum(last_accounts_receivable_list)
-    growth_rate = (current_accounts_receivable-last_accounts_receivable)/last_accounts_receivable*100
+    growth_rate = (
+        (current_accounts_receivable - last_accounts_receivable)
+        / last_accounts_receivable
+        * 100
+    )
     return current_accounts_receivable, growth_rate
 
 
 def propotion_of_accounts_receivable(hbzcfzb_json):
-    '''
+    """
     计算应收/总资产比例
-    '''
+    """
     # 应收 = 资产负债表所有带“应收”两个字的科目数字总和-银行承兑汇票金额
     # 1.筛选出合并资产负债表中包含“应收”关键字的字段值，计算其之和
     fields = _map(hbzcfzb_json, lambda item: item[0])
@@ -1246,5 +1266,5 @@ def propotion_of_accounts_receivable(hbzcfzb_json):
                 accounts_receivable_list.append(row[2])
         accounts_receivable = sum(accounts_receivable_list)
     total_assets = get_total_assets(hbzcfzb_json)
-    propotion_of_accounts_receivable = accounts_receivable/total_assets
-    return  propotion_of_accounts_receivable * 100
+    propotion_of_accounts_receivable = accounts_receivable / total_assets
+    return propotion_of_accounts_receivable * 100
