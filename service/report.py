@@ -42,6 +42,7 @@ from datetime import date
 STATIC_ANNOUNCEMENTS_DIR = "/static/announcements"
 STATIC_ANNOUNCEMENTS_PARSE_DIR = "/static/parse-announcements/base"
 STATIC_ANNOUNCEMENTS_HBZCFZB_DIR = "/static/parse-announcements/hbzcfzb"
+STATIC_ANNOUNCEMENTS_HBLRB_DIR = "/static/parse-announcements/hblrb"
 
 JU_CHAO_PROTOCOL = "http://"
 JU_CHAO_HOST = "www.cninfo.com.cn"
@@ -527,6 +528,7 @@ class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
     资产负债表 = "资产负债表"
     合并及公司资产负债表 = "合并及公司资产负债表"
+    合并利润表 = "合并利润表"
 
 
 # 输出 1. base.json 2.table.json 3.财务报表.json
@@ -995,6 +997,47 @@ def gen_hbzcfzb(file_title, url):
             if find_count == len(hbzcfzb["range"]):
                 break
         json2(f"{url}", hbzcfzb_rows)
+        return True
+    return False
+
+def gen_hblrb(file_title, url):
+    save_content_path = (
+        get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
+    )
+    save_table_path = (
+        get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__table.json"
+    )
+    file_all_tables = json2(save_table_path)
+    content = json2(save_content_path)
+
+    hblrb = None
+    hblrb_rows = []
+    for t in file_all_tables:
+        top_desc = t["desc"]["top"]
+        for d in top_desc:
+            # TODO 有些公司不存在“合并利润表”和“母公司利润表”，仅存在“利润表”
+            if d.endswith(f"{Financial_Statement.合并利润表.value}") \
+            and d.startswith(f"{Financial_Statement.合并利润表.value}"):
+                hblrb = t
+                break
+        if hblrb is not None:
+            break
+
+    if hblrb:
+        # print("嘿嘿", hbzcfzb)
+        find_count = 0
+        for p in content:
+            p_values = content[p]
+            for item in p_values:
+                if item[0] == "table" and item[1] in hblrb["range"]:
+                    # print("奇怪", item[1])
+                    find_count += 1
+                    hblrb_rows += item[2]
+                if find_count == len(hblrb["range"]):
+                    break
+            if find_count == len(hblrb["range"]):
+                break
+        json2(f"{url}", hblrb_rows)
         return True
     return False
 

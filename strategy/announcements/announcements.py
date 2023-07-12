@@ -1,4 +1,4 @@
-from service.report import STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement, caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hbzcfzb, get_announcement_url, get_total_assets, parse_pdf, propotion_of_accounts_receivable
+from service.report import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement, caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_announcement_url, get_total_assets, parse_pdf, propotion_of_accounts_receivable
 from utils.index import _map, get_path, is_exist, json
 
 # name = "000534__万泽股份__2022年年度报告__1215991366"
@@ -118,6 +118,43 @@ def generate_hbzcfzb(file_title_list):
                 })
     print("合并有问题的file_title_list: ", error_file_title_list)
     return error_file_title_list
+
+def generate_hblrb(file_title_list):
+    # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
+    for file_title in file_title_list:
+        file_url = get_announcement_url(file_title)
+        parse_pdf(file_url, file_title)
+
+    # 2. 遍历所有的file_title_list，根据table.json和content.json来生成合并利润表
+    error_file_title_list = []
+    for file_title in file_title_list:
+            # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
+            hblrb_json_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+            table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
+            content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
+        
+            # 1. 检查是否存在合并利润表，如果不存在，才进行合成
+            if is_exist(get_path(hblrb_json_url)):
+                continue
+            # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
+            # 可以收集异常的数据，并返回
+            all_exists = is_exist(get_path(table_json_url)) and is_exist(get_path(content_json_url))
+            if not all_exists:
+                error_file_title_list.append({
+                    "file_title": file_title,
+                    "reason": "缺少table.json或content.json"
+                })
+                continue
+            # 3. 进行合成
+            gen_success = gen_hblrb(file_title, hblrb_json_url)
+            if not gen_success:
+                error_file_title_list.append({
+                    "file_title": file_title,
+                    "reason": "table.json中没找到合并利润表"
+                })
+    print("合并有问题的file_title_list: ", error_file_title_list)
+    return error_file_title_list
+
 
 def filter_by_interest_bearing_liabilities(file_title_list):
 # 筛选有息负债符合条件的公司
