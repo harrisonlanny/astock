@@ -1014,9 +1014,9 @@ def gen_hblrb(file_title, url):
         top_desc = t["desc"]["top"]
         for d in top_desc:
             # TODO 有些公司不存在“合并利润表”和“母公司利润表”，仅存在“利润表”
-            if d.endswith(f"{Financial_Statement.合并利润表.value}") and d.startswith(
-                f"{Financial_Statement.合并利润表.value}"
-            ):
+            if d.endswith(f"{Financial_Statement.合并利润表.value}") \
+            or (f"、{Financial_Statement.合并利润表.value}" in d)\
+            or d.endswith(f"{Financial_Statement.合并及公司利润表.value}"):
                 hblrb = t
                 break
         if hblrb is not None:
@@ -1169,9 +1169,12 @@ def get_operating_revenue(hblrb_json):
                 last_operating_revenue_list.append(row[3])
     current_operating_revenue = sum(current_operating_revenue_list)
     last_operating_revenue = sum(last_operating_revenue_list)
-    growth_rate = (current_operating_revenue - last_operating_revenue)/last_operating_revenue*100
-    return current_operating_revenue, growth_rate  # 返回当期营业收入和营业收入增长率
-
+    try:
+        growth_rate = (current_operating_revenue - last_operating_revenue)/last_operating_revenue*100
+        return current_operating_revenue, growth_rate  # 返回当期营业收入和营业收入增长率
+    except:
+        print("无法计算营业收入增长率")
+        
 
 def caculate_interest_bearing_liabilities_rate(
     interest_bearing_liabilities, total_assets
@@ -1183,7 +1186,7 @@ def caculate_interest_bearing_liabilities_rate(
     return interest_bearing_liabilities_rate * 100
 
 
-def accounts_receivable(hbzcfzb_json):
+def get_accounts_receivable(hbzcfzb_json):
     """
     计算应收款及应收增长率
     """
@@ -1226,13 +1229,15 @@ def accounts_receivable(hbzcfzb_json):
                 last_accounts_receivable_list.append(row[3])
     current_accounts_receivable = sum(current_accounts_receivable_list)
     last_accounts_receivable = sum(last_accounts_receivable_list)
-    growth_rate = (
-        (current_accounts_receivable - last_accounts_receivable)
-        / last_accounts_receivable
-        * 100
-    )
-    return current_accounts_receivable, growth_rate
-
+    try:
+        growth_rate = (
+            (current_accounts_receivable - last_accounts_receivable)
+            / last_accounts_receivable
+            * 100
+        )
+        return current_accounts_receivable, growth_rate
+    except:
+        print("无法计算应收款增长率")
 
 def propotion_of_accounts_receivable(hbzcfzb_json):
     """
