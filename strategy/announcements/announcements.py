@@ -204,4 +204,10 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
     print(f"符合应收占比条件的公司有：{target}，比例为{rate}%")
     
         
-    
+def filter_by_increase_in_accounts_receivable(file_title_list):
+    # 1.从合并资产负债表中获取应收款增长率
+    pass
+    # 2.从合并利润表中获取营业收入增长率
+
+    # 3.比较应收款增长率和营业收入增长率，若应收款增幅<营业收入增幅，则符合条件，
+

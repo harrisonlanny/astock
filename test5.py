@@ -1,6 +1,6 @@
 from db.index import read_table
-from service.report import STATIC_ANNOUNCEMENTS_HBLRB_DIR, Financial_Statement, get_operating_revenue
-from strategy.announcements.announcements import filter_by_interest_bearing_liabilities, filter_by_proportion_of_accounts_receivable, generate_hblrb
+from service.report import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, Financial_Statement, accounts_receivable, get_operating_revenue
+from strategy.announcements.announcements import filter_by_interest_bearing_liabilities, filter_by_proportion_of_accounts_receivable, generate_hblrb, generate_hbzcfzb
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
 from utils.index import _map, get_path, json
 
@@ -34,7 +34,7 @@ from utils.index import _map, get_path, json
 # file_title_list = _map(r, lambda item: item["file_title"])
 file_title_list = [
     "605056__咸亨国际__咸亨国际：2022年年度报告__1216478420",
-    "600123__兰花科创__兰花科创2022年度报告全文__1216554351", # 应收款项不在合并资产负债表中，而在“1. 资产及负债状况 ”子表中
+    # "600123__兰花科创__兰花科创2022年度报告全文__1216554351", # 应收款项不在合并资产负债表中，而在“1. 资产及负债状况 ”子表中
     "600392__盛和资源__盛和资源2022年年度报告__1216689975", # 合并资产负债表边框有开口导致无法解析出总资产
     # "836433__大唐药业__2022年年度报告__1216619159", # 边框颜色导致无法识别合并资产负债表、合并利润表
     "688778__厦钨新能__厦门厦钨新能源材料股份有限公司2022年年度报告__1216520043", # 134-1，135-1，136-1未识别为同一张表
@@ -46,7 +46,15 @@ file_title_list = [
 # filter_by_proportion_of_accounts_receivable(file_title_list)
 
 for file_title in file_title_list:
-    pdf_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-    r = json(pdf_url)
-    print(f"{file_title}的营业收入为：{get_operating_revenue(r)}")
-# generate_hblrb(file_title_list)
+    hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+    hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+    r1 = json(hblrb_url)
+    r2 = json(hbzcfzb_url)
+    # operating_revenue_result = get_operating_revenue(r)
+    # current_operating_revenue = operating_revenue_result[0]
+    # growth_rate = operating_revenue_result[1]
+    # print(f"{file_title}的当期营业收入为：{current_operating_revenue}")
+    # print(f"营业收入增长率为：{growth_rate}%")
+    print(accounts_receivable(r2)[1])
+
+# generate_hbzcfzb(file_title_list)
