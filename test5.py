@@ -1,5 +1,6 @@
+from service.report import accounts_receivable, get_operating_revenue
+from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, Financial_Statement
 from db.index import read_table
-from service.report import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, Financial_Statement, accounts_receivable, get_operating_revenue
 from strategy.announcements.announcements import filter_by_interest_bearing_liabilities, filter_by_proportion_of_accounts_receivable, generate_hblrb, generate_hbzcfzb
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
 from utils.index import _map, get_path, json
@@ -55,6 +56,7 @@ for file_title in file_title_list:
     # growth_rate = operating_revenue_result[1]
     # print(f"{file_title}的当期营业收入为：{current_operating_revenue}")
     # print(f"营业收入增长率为：{growth_rate}%")
-    print(accounts_receivable(r2)[1])
+    # print(accounts_receivable(r2))
+    print(get_operating_revenue(r1))
 
 # generate_hbzcfzb(file_title_list)

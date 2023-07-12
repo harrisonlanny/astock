@@ -6,7 +6,7 @@ import time
 import pdfplumber
 import requests
 from pdfplumber.table import Table
-from config import (
+from service.config import (
     JU_CHAO_BASE_URL,
     JU_CHAO_COOKIE,
     JU_CHAO_HEADERS,
@@ -1137,6 +1137,8 @@ def get_operating_revenue(hblrb_json):
         .replace(":", "")
         in ["其中营业收入"],
     )
+    current_operating_revenue_list = []
+    last_operating_revenue_list = []
     for row in hblrb_json:
         if row[0] in key_word:
             if len(row) == 3:
@@ -1150,8 +1152,8 @@ def get_operating_revenue(hblrb_json):
                     if (_is_empty(row[2]) or row[2] == "-")
                     else float(large_num_format(row[2]))
                 )
-                growth_rate = row[1] / row[2] * 100
-                return row[1], growth_rate  # 返回当期营业收入和营业收入增长率
+                current_operating_revenue_list.append(row[1])
+                last_operating_revenue_list.append(row[2])
             else:
                 row[2] = (
                     0.01
@@ -1163,8 +1165,12 @@ def get_operating_revenue(hblrb_json):
                     if (_is_empty(row[3]) or row[3] == "-")
                     else float(large_num_format(row[3]))
                 )
-                growth_rate = row[2] / row[3] * 100
-                return row[2], growth_rate
+                current_operating_revenue_list.append(row[2])
+                last_operating_revenue_list.append(row[3])
+    current_operating_revenue = sum(current_operating_revenue_list)
+    last_operating_revenue = sum(last_operating_revenue_list)
+    growth_rate = (current_operating_revenue - last_operating_revenue)/last_operating_revenue*100
+    return current_operating_revenue, growth_rate  # 返回当期营业收入和营业收入增长率
 
 
 def caculate_interest_bearing_liabilities_rate(
@@ -1205,14 +1211,6 @@ def accounts_receivable(hbzcfzb_json):
                 )
                 current_accounts_receivable_list.append(row[1])
                 last_accounts_receivable_list.append(row[2])
-                current_accounts_receivable = sum(current_accounts_receivable_list)
-                last_accounts_receivable = sum(last_accounts_receivable_list)
-                growth_rate = (
-                    (current_accounts_receivable - last_accounts_receivable)
-                    / last_accounts_receivable
-                    * 100
-                )
-                return current_accounts_receivable, growth_rate
             else:
                 row[2] = (
                     0

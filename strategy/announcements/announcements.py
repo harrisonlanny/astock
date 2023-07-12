@@ -1,4 +1,5 @@
-from service.report import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement, caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_announcement_url, get_total_assets, parse_pdf, propotion_of_accounts_receivable
+from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement
+from service.report import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_announcement_url, get_total_assets, parse_pdf
 from utils.index import _map, get_path, is_exist, json
 
 # name = "000534__万泽股份__2022年年度报告__1215991366"
@@ -182,6 +183,9 @@ def filter_by_interest_bearing_liabilities(file_title_list):
 
 
 def filter_by_proportion_of_accounts_receivable(file_title_list):
+    '''
+    筛选应收占比符合条件的公司
+    '''
     error_file_title_list = generate_hbzcfzb(file_title_list)
     error_list = _map(error_file_title_list, lambda item: item["file_title"])
     file_title_list = list(set(file_title_list) - set(error_list))
