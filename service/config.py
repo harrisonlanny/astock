@@ -28,6 +28,7 @@ class Financial_Statement(Enum):
     合并及公司资产负债表 = "合并及公司资产负债表"
     合并利润表 = "合并利润表"
     合并及公司利润表 = "合并及公司利润表"
+    利润表 = "利润表"
 
 STATIC_ANNOUNCEMENTS_DIR = "/static/announcements"
 STATIC_ANNOUNCEMENTS_PARSE_DIR = "/static/parse-announcements/base"

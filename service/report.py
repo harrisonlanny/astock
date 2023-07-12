@@ -967,8 +967,6 @@ def gen_hbzcfzb(file_title, url):
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
-            # TODO 有些公司不存在“合并资产负债表”和“母公司资产负债表”，仅存在“资产负债表”
-            # if Financial_Statement.合并资产负债表.value in d:
             if (
                 d.endswith(f"{Financial_Statement.合并资产负债表.value}")
                 or d.endswith(f"{Financial_Statement.合并及公司资产负债表.value}")
@@ -1016,20 +1014,19 @@ def gen_hblrb(file_title, url):
             # TODO 有些公司不存在“合并利润表”和“母公司利润表”，仅存在“利润表”
             if d.endswith(f"{Financial_Statement.合并利润表.value}") \
             or (f"、{Financial_Statement.合并利润表.value}" in d)\
-            or d.endswith(f"{Financial_Statement.合并及公司利润表.value}"):
+            or d.endswith(f"{Financial_Statement.合并及公司利润表.value}")\
+            or d.endswith(f"{Financial_Statement.利润表.value}"):
                 hblrb = t
                 break
         if hblrb is not None:
             break
 
     if hblrb:
-        # print("嘿嘿", hbzcfzb)
         find_count = 0
         for p in content:
             p_values = content[p]
             for item in p_values:
                 if item[0] == "table" and item[1] in hblrb["range"]:
-                    # print("奇怪", item[1])
                     find_count += 1
                     hblrb_rows += item[2]
                 if find_count == len(hblrb["range"]):
@@ -1135,7 +1132,8 @@ def get_operating_revenue(hblrb_json):
         .replace(")", "")
         .replace("：", "")
         .replace(":", "")
-        in ["其中营业收入"],
+        .replace("、", "")
+        in ["其中营业收入", "一营业收入"],
     )
     current_operating_revenue_list = []
     last_operating_revenue_list = []
