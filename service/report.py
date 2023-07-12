@@ -1109,13 +1109,45 @@ def get_total_assets(hbzcfzb_json):
                     else float(large_num_format(row[2]))
                 )
                 return row[2]
-        # else:
-        #     return 1 # 避免作为除数时报错，且可以在不符合条件时直接筛掉
 
+
+def get_operating_revenue(hblrb_json):
+    '''
+    获取合并利润表中的营业收入
+    '''
+    fields = _map(hblrb_json, lambda item: item[0])
+    key_word = _filter(
+        fields,
+        lambda field: field.replace("\n", "")
+        .replace("（", "").replace("(","")
+        .replace("）", "").replace(")","")
+        .replace("：", "").replace(":", "")
+        in ["其中营业收入"]
+    )
+    for row in hblrb_json:
+        if row[0] in key_word:
+            if len(row) == 3:
+                row[1] = (
+                    0.01
+                    if (_is_empty(row[1]) or row[1] == "-")
+                    else float(large_num_format(row[1]))
+                )
+                return row[1]
+            else:
+                row[2] = (
+                    0.01
+                    if (_is_empty(row[2]) or row[2] == "-")
+                    else float(large_num_format(row[2]))
+                )
+                return row[2]
+            
 
 def caculate_interest_bearing_liabilities_rate(
     interest_bearing_liabilities, total_assets
 ):
+    '''
+    计算有息负债占比
+    '''
     interest_bearing_liabilities_rate = interest_bearing_liabilities / total_assets
     return interest_bearing_liabilities_rate * 100
 
