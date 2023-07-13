@@ -51,7 +51,7 @@ file_title_list = [
 # filter_by_interest_bearing_liabilities(file_title_list)
 # filter_by_proportion_of_accounts_receivable(file_title_list)
 
-generate_hbzcfzb(file_title_list)
+generate_hbzcfzb(file_title_list, False)
 # generate_hblrb(file_title_list)
 # x = filter_by_increase_in_accounts_receivable(file_title_list)
 # print(x)

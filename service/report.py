@@ -4,6 +4,7 @@ import threading
 import time
 
 import pdfplumber
+import fitz
 import requests
 from pdfplumber.table import Table
 from service.config import (
@@ -73,8 +74,13 @@ def fetch_one_page_financial_statements(
     page_size: int,
 ):
     try:
-        ann_category_option_list = _map(announcement_category, lambda item: Announcement_Category_Options[item.value])
-        juchao_category_list = _map(ann_category_option_list, lambda item: item['juchao_category'])
+        ann_category_option_list = _map(
+            announcement_category,
+            lambda item: Announcement_Category_Options[item.value],
+        )
+        juchao_category_list = _map(
+            ann_category_option_list, lambda item: item["juchao_category"]
+        )
         juchao_category_str = _safe_join(juchao_category_list, ";")
         response = requests.post(
             f"{JU_CHAO_BASE_URL}/new/hisAnnouncement/query",
@@ -97,10 +103,14 @@ def fetch_one_page_financial_statements(
     except requests.exceptions.ConnectionError:
         print("请求one_page_financeial_statements超负荷了，休息15s后将继续请求..")
         time.sleep(15)
-        return fetch_one_page_financial_statements(symbol,org_id,announcement_category,page_num,page_size)
+        return fetch_one_page_financial_statements(
+            symbol, org_id, announcement_category, page_num, page_size
+        )
 
 
-def fetch_financial_statements(symbol: str, org_id: str, announcement_category: list[Announcement_Category]):
+def fetch_financial_statements(
+    symbol: str, org_id: str, announcement_category: list[Announcement_Category]
+):
     page_num = 1
     page_size = 30
     result = []
@@ -108,7 +118,7 @@ def fetch_financial_statements(symbol: str, org_id: str, announcement_category: 
 
     while has_more:
         page_result = fetch_one_page_financial_statements(
-            symbol, org_id,announcement_category, page_num, page_size
+            symbol, org_id, announcement_category, page_num, page_size
         )
         print(f"{symbol}的第{page_num}页: ", page_result)
         if is_iterable(page_result["announcements"]):
@@ -180,10 +190,10 @@ def refresh_table_announcements(
         Announcement_Category.一季报,
         Announcement_Category.半年报,
         Announcement_Category.三季报,
-        Announcement_Category.年报
+        Announcement_Category.年报,
     ],
-    start_symbol: str = None, 
-    sleep_time: float = 0.5
+    start_symbol: str = None,
+    sleep_time: float = 0.5,
 ):
     # 1. 得到symbols
     if _is_empty(symbols):
@@ -220,7 +230,9 @@ def refresh_table_announcements(
         org_id = stock["orgId"]
         symbol = stock["code"]
         # 请求symbol对应的所有财报
-        announcements = fetch_financial_statements(symbol, org_id, announcement_category)
+        announcements = fetch_financial_statements(
+            symbol, org_id, announcement_category
+        )
 
         # 将数据结构化 （format_item指的是symbol的所有财报数据)
         # rows: [[symbol, name, org_id, file_title, title, url]]
@@ -433,7 +445,7 @@ def get_table_top_desc(table_id: str, page_struct: any):
                 # print(f"有效topdesc统计 {table_id}: {effective_count}")
 
                 if effective_count <= 2:
-                    print(f"有效top_desc很少的table: {table_id}")
+                    # print(f"有效top_desc很少的table: {table_id}")
                     prev_page_num = page_num - 1
                     # 改：第一页无需上溯
                     if prev_page_num > 0:
@@ -528,337 +540,400 @@ def gen_table_content_model(id: str):
 
 
 # 输出 1. base.json 2.table.json 3.财务报表.json
-def parse_pdf(pdf_url, pdf_name):
-    with pdfplumber.open(pdf_url) as pdf:
-        table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__table.json"
-        content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__content.json"
-
-        # 如果table.json和content.json都存在，则不进行parse，直接return
-
-        all_exists = is_exist(get_path(table_json_url)) and is_exist(
-            get_path(content_json_url)
-        )
-        if all_exists:
-            print(f"{pdf_name} 已经parse过了，不需要parse了!!")
-            return
-        print(f"{pdf_name} 开始parse!")
-        prev_table = None
-        prev_table_id = None
-        prev_table_index = None
-        prev_table_count = None
-
-        page_struct = {}
-        maybe_same_tables = {}
-        # _pages = [pdf.pages[150], pdf.pages[151]]
-        _pages = pdf.pages
-        # _pages = pdf.pages[26:27]
-        # _pages = pdf.pages
-        table_id_list = []
-        color_info = {
-            "name": pdf_name,
-            "line": {"count": 0, "non_stroking_color": {}, "stroking_color": {}},
-            "rect": {"count": 0, "non_stroking_color": {}, "stroking_color": {}},
-        }
-        analysis_color = {
-            "name": pdf_name,
-            "leading_colors": [],
-            "rect_color_empty": True,
-            "line_small": True,
-        }
-
-        # 将color格式由dict改为逆序的二维数组[[color, count]]
-        # dict : {color:count, ...}
-        def get_color_list(color_dict: dict):
-            arr: list[list] = []
-            for color in color_dict:
-                count = color_dict[color]
-                arr.append([color, count])
-            arr.sort(reverse=True, key=lambda item: (item[1]))
-            return arr
-
-        # 如果是相同元素的元组，返回元组第一个值
-        # 如(0,0)返回0
-        def format_color(color):
-            if isinstance(color, list):
-                color = tuple(color)
-                if is_list_item_same(color):
-                    return color[0]
-            return color
-
-        def color_distribution(obj):
-            type = obj["object_type"]
-            if type in ("rect", "line"):
-                color_info[type]["count"] += 1
-                # color_empty_count = 0
-                for color_type in ["stroking_color", "non_stroking_color"]:
-                    color = format_color(obj[color_type])
-                    color_map = color_info[type][color_type]
-                    if color_map.get(color) is None:
-                        color_map[color] = 0
-                    color_map[color] += 1
-
-            return True
-
-        def analysis_color_info(color_info):
-            def is_color_empty(arr: list[list]):
-                if len(arr) == 0:
-                    return True
-                elif len(arr) == 1 and arr[0][0] == None:
-                    return True
-                return False
-
-            line_count = color_info["line"]["count"]
-            rect_count = color_info["rect"]["count"]
-            leading_colors = []
-
-            line_non_color = color_info["line"]["non_stroking_color"]
-            line_color = color_info["line"]["stroking_color"]
-
-            rect_non_color = color_info["rect"]["non_stroking_color"]
-            rect_color = color_info["rect"]["stroking_color"]
-
-            # rect按道理是不应该有stroking_color的
-            analysis_color["rect_color_empty"] = is_color_empty(rect_color)
-
-            # line_count==0或者不到rect数量1/10，占据了(81+24)/120 = 87.5%的情况
-            analysis_color["line_small"] = (
-                line_count == 0 or rect_count / line_count >= 10
+def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
+    with fitz.open(pdf_url) as fitz_pdf:
+        with pdfplumber.open(pdf_url) as pdf:
+            table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__table.json"
+            content_json_url = (
+                f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__content.json"
             )
-            if analysis_color["line_small"]:
-                leading_colors = []
-                main_color = rect_non_color[0]
-                leading_colors.append(main_color[0])
-                if len(rect_non_color) >= 2:
-                    second_color = rect_non_color[1]
-                    if second_color[1] / main_color[1] >= 0.5:
-                        leading_colors.append(second_color[0])
-            # line比rect多 占据 12/120 = 10%的情况
-            elif line_count > rect_count:
-                leading_colors = []
-                main_color = line_color[0]
-                leading_colors.append(main_color[0])
-            # rect比line稍微多一点 占据3/120 = 2.5%的情况
-            else:
-                leading_colors = []
-                print("react比line稍微多一点：", line_color)
-                main_color = line_color[0]
-                leading_colors.append(main_color[0])
 
-            analysis_color["leading_colors"] = leading_colors
-            return analysis_color
+            # 如果table.json和content.json都存在，则不进行parse，直接return
 
-        def keep_visible_lines(obj):
-            if obj["object_type"] == "rect":
-                non_color = format_color(obj["non_stroking_color"])
-                leading_colors = analysis_color["leading_colors"]
-                if non_color in leading_colors:
-                    return True
-                else:
+            all_exists = is_exist(get_path(table_json_url)) and is_exist(
+                get_path(content_json_url)
+            )
+            if use_cache and all_exists:
+                print(f"{pdf_name} 已经parse过了，不需要parse了!!")
+                return
+            print(f"{pdf_name} 开始parse!")
+            prev_table = None
+            prev_table_id = None
+            prev_table_index = None
+            prev_table_count = None
+
+            page_struct = {}
+            maybe_same_tables = {}
+            # _pages = [pdf.pages[150], pdf.pages[151]]
+            _pages = pdf.pages
+            # _pages = pdf.pages[26:27]
+            # _pages = pdf.pages
+            table_id_list = []
+            color_info = {
+                "name": pdf_name,
+                "line": {"count": 0, "non_stroking_color": {}, "stroking_color": {}},
+                "rect": {"count": 0, "non_stroking_color": {}, "stroking_color": {}},
+            }
+            analysis_color = {
+                "name": pdf_name,
+                "leading_colors": [],
+                "rect_color_empty": True,
+                "line_small": True,
+            }
+
+            # 将color格式由dict改为逆序的二维数组[[color, count]]
+            # dict : {color:count, ...}
+            def get_color_list(color_dict: dict):
+                arr: list[list] = []
+                for color in color_dict:
+                    count = color_dict[color]
+                    arr.append([color, count])
+                arr.sort(reverse=True, key=lambda item: (item[1]))
+                return arr
+
+            # 如果是相同元素的元组，返回元组第一个值
+            # 如(0,0)返回0
+            def format_color(color):
+                if isinstance(color, list):
+                    color = tuple(color)
+                    if is_list_item_same(color):
+                        return color[0]
+                return color
+
+            def color_distribution(obj):
+                type = obj["object_type"]
+                if type in ("rect", "line"):
+                    color_info[type]["count"] += 1
+                    # color_empty_count = 0
+                    for color_type in ["stroking_color", "non_stroking_color"]:
+                        color = format_color(obj[color_type])
+                        color_map = color_info[type][color_type]
+                        if color_map.get(color) is None:
+                            color_map[color] = 0
+                        color_map[color] += 1
+
+                return True
+
+            def analysis_color_info(color_info):
+                def is_color_empty(arr: list[list]):
+                    if len(arr) == 0:
+                        return True
+                    elif len(arr) == 1 and arr[0][0] == None:
+                        return True
                     return False
-            return True
 
-        def append_same_table(prev_table_id, table_id):
-            # 获取map最后的key名
-            last_key = get_dict_key_by_index(maybe_same_tables, -1)
-            if last_key is None or prev_table_id not in maybe_same_tables[last_key]:
-                if maybe_same_tables.get(prev_table_id) is None:
-                    maybe_same_tables[prev_table_id] = [prev_table_id]
-                maybe_same_tables[prev_table_id].append(table_id)
-            else:
-                maybe_same_tables[last_key].append(table_id)
+                line_count = color_info["line"]["count"]
+                rect_count = color_info["rect"]["count"]
+                leading_colors = []
 
-        def get_common_row(rows):
-            target_row = None
-            for row in rows:
-                # 第一个cell有文字，其他cell都是None
-                first_cell = row.cells[0]
-                other_cells = row.cells[1:]
-                if not (
-                    first_cell is not None
-                    and _every(other_cells, lambda item: item is None)
-                ):
-                    target_row = row
-                    break
-            if target_row:
-                return target_row
-            return None
+                line_non_color = color_info["line"]["non_stroking_color"]
+                line_color = color_info["line"]["stroking_color"]
 
-        # 全页面颜色扫描
-        for page_index, page in enumerate(pdf.pages):
-            print(f"color_scan --{pdf_name}  {page_index + 1}/{len(pdf.pages)}--", "\n")
-            page = page.filter(color_distribution)
-            page.find_tables()
-        # 将color格式由dict改为逆序的二维数组[[color, count]]
-        for type in ["line", "rect"]:
-            for color_type in ["stroking_color", "non_stroking_color"]:
-                color_dict = color_info[type][color_type]
-                color_arr = get_color_list(color_dict)
-                color_info[type][color_type] = color_arr
-        print("color_info: ", color_info)
-        analysis_color = analysis_color_info(color_info)
-        # return color_info, analysis_color
-        # json("/demo1.json", color_info)
-        # json("/demo2.json", analysis_color)
+                rect_non_color = color_info["rect"]["non_stroking_color"]
+                rect_color = color_info["rect"]["stroking_color"]
 
-        # 数据提取
-        for page_index, page in enumerate(_pages):
-            print(f"--{pdf_name}  {page_index + 1}/{len(_pages)}--", "\n")
-            # Filter out hidden lines.
-            page = page.filter(keep_visible_lines)
-            tables = page.find_tables()
-            # print(len(tables))
-            # if len(tables):
-            #     im = page.to_image()
-            #     im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+                # rect按道理是不应该有stroking_color的
+                analysis_color["rect_color_empty"] = is_color_empty(rect_color)
 
-            # continue
+                # line_count==0或者不到rect数量1/10，占据了(81+24)/120 = 87.5%的情况
+                analysis_color["line_small"] = (
+                    line_count == 0 or rect_count / line_count >= 10
+                )
+                if analysis_color["line_small"]:
+                    leading_colors = []
+                    main_color = rect_non_color[0]
+                    leading_colors.append(main_color[0])
+                    if len(rect_non_color) >= 2:
+                        second_color = rect_non_color[1]
+                        if second_color[1] / main_color[1] >= 0.5:
+                            leading_colors.append(second_color[0])
+                # line比rect多 占据 12/120 = 10%的情况
+                elif line_count > rect_count:
+                    leading_colors = []
+                    main_color = line_color[0]
+                    leading_colors.append(main_color[0])
+                # rect比line稍微多一点 占据3/120 = 2.5%的情况
+                else:
+                    leading_colors = []
+                    print("react比line稍微多一点：", line_color)
+                    main_color = line_color[0]
+                    leading_colors.append(main_color[0])
 
-            # 提取页面的文字
-            text_lines = page.extract_text_lines()
+                analysis_color["leading_colors"] = leading_colors
+                return analysis_color
 
-            # 确定页面里文字和表格关系
-            if page_struct.get(page_index + 1) is None:
-                page_struct[page_index + 1] = []
-                current_page_struct = page_struct[page_index + 1]
-            table_index = 0
-            for text_line in text_lines:
+            def keep_visible_lines(obj):
+                if obj["object_type"] == "rect":
+                    non_color = format_color(obj["non_stroking_color"])
+                    leading_colors = analysis_color["leading_colors"]
+                    if non_color in leading_colors:
+                        return True
+                    else:
+                        return False
+                # if obj['object_type'] == 'char':
+                #     top = obj["top"]
+                #     bottom = obj["bottom"]
+                #     x0 = obj["x0"]
+                #     x1 = obj["x1"]
+                #     bbox = (x0, top, x1, bottom)
+                #     # 生成像素图，从而判断文本是否可见
+                #     pix = fitz_page.get_pixmap(clip=bbox)
+                #     topusage = pix.color_topusage()[0]
+                #     if topusage >= 0.7:
+                #         print(f"【{obj['text']}】topusage: ", topusage)
+                return True
+
+            def append_same_table(prev_table_id, table_id):
+                # 获取map最后的key名
+                last_key = get_dict_key_by_index(maybe_same_tables, -1)
+                if last_key is None or prev_table_id not in maybe_same_tables[last_key]:
+                    if maybe_same_tables.get(prev_table_id) is None:
+                        maybe_same_tables[prev_table_id] = [prev_table_id]
+                    maybe_same_tables[prev_table_id].append(table_id)
+                else:
+                    maybe_same_tables[last_key].append(table_id)
+
+            def get_common_row(rows):
+                target_row = None
+                for row in rows:
+                    # 第一个cell有文字，其他cell都是None
+                    first_cell = row.cells[0]
+                    other_cells = row.cells[1:]
+                    if not (
+                        first_cell is not None
+                        and _every(other_cells, lambda item: item is None)
+                    ):
+                        target_row = row
+                        break
+                if target_row:
+                    return target_row
+                return None
+
+            def append_text_line_to_struct(text_line):
+                # 这里的text_line不在表格里，所以可以用pix检测法来检测是否visible（table里一行文字可能有太多空格，导致visible误判断）
+                # pix 之所以不敢直接提升到1 而是用0.8是担心不可见元素如果覆盖在看得见元素上
+                # 如果能获取bbox内的所有object，遍历他们：遍历到1，就filter其他元素；遍历到2，就filter其他元素。
+                # 遍历的时候，检查pix值。
+                # 比如bbox内有1，2，3 三个obj
+                # 遍历1（遮住2、3），pix为1 => 说明1一定是不可见元素
+                # 遍历2（遮住1、3），pix为0.9 => 说明2一定是可见元素（虽然0.9已经很高了，但还是可见的）
                 top = text_line["top"]
                 bottom = text_line["bottom"]
                 x0 = text_line["x0"]
                 x1 = text_line["x1"]
+                line_width = x1 - x0
 
-                if table_index <= len(tables) - 1:
-                    table = tables[table_index]
-                    [t_x0, t_top, t_x1, t_bottom] = table.bbox
-                    # 在表格上方
-                    if bottom < t_top:
-                        current_page_struct.append(page_obj("text_line", text_line))
-                    # 在表格下方
-                    elif top > t_bottom:
-                        current_page_struct.append(
-                            page_obj(
-                                "table", table, gen_table_id(page_index, table_index)
-                            )
-                        )
-                        current_page_struct.append(page_obj("text_line", text_line))
-                        table_index += 1
-                else:
-                    current_page_struct.append(page_obj("text_line", text_line))
+                bbox = (x0, top, x1, bottom)
+                # # 生成像素图，从而判断文本是否可见
+                pix = fitz_page.get_pixmap(clip=bbox)
+                topusage = pix.color_topusage()[0]
 
-            for table_index, table in enumerate(tables):
-                table_id = gen_table_id(page_index, table_index)
-                table_id_list.append(table_id)
+                if topusage >= 0.8:
+                    # 检测空白占比(用来排除因为空白太多导致topusage过高)
+                    total_width = 0
+                    for char in text_line['chars']:
+                        total_width += char['width']
+                    word_percent = total_width / line_width
+                    if word_percent >= 0.5:
+                        if text_line['text'] != "告":
+                            print(f"{text_line['text']} 不可见,topusage: ", topusage, word_percent)
+                        return
+                
+                current_page_struct.append(page_obj("text_line", text_line))
+                    
 
-                # 不同页面的相同表合并
-                if prev_table:
-                    # print('前一张表的最后一行', prev_table.rows[-1].cells)
-                    # print('当前表的第一行', table.rows[0].cells, '\n')
-                    prev_table_first_row = prev_table.rows[0]
-                    prev_table_last_row = prev_table.rows[-1]
-                    current_table_first_row = table.rows[0]
-                    # if page_index + 1 == 115:
-                    #     print("当前表第一行", table.rows[0].cells)
-                    #     print("当前表第二行", table.rows[1].cells)
-
-                    # 如果是相同表，一定得满足的条件是：（本表是本页第一张表，上表是上页最后一张表）
-                    same_table_necessary_condition = (
-                        table_index == 0 and 
-                        prev_table_index + 1 == prev_table_count and
-                        int(table_id.split("_")[0]) == int(prev_table_id.split("_")[0]) + 1
-                    )
-                    print(f"{table_id} {prev_table_id}必要条件是否满足: ", same_table_necessary_condition)
-                    has_append = False
-                    # 如果符合必要条件，且当前表的top_desc中存在（续）做结尾的描述，则视为前表的续表
-                    if same_table_necessary_condition:
-                        table_desc = get_table_desc(table_id, page_struct)
-                        top_desc: list[str] = table_desc["top"]
-                        for desc_item in top_desc:
-                            if desc_item.strip().endswith("（续）"):
-                                has_append = True
-                                append_same_table(prev_table_id, table_id)
-                                break
-
-                    if (
-                        same_table_necessary_condition
-                        and not has_append
-                        # 这里出现了问题，上下内容中间不止两条 TODO FIXED
-                        and len(
-                            get_top_table_data(table_id, page_struct)
-                            + get_bottom_table_data(prev_table_id, page_struct)
-                        )
-                        <= 2
-                    ):
-                        # 如果列数一致，那么就是同结构
-                        # 如果不是同结构，就再判断下，是否是因为有【归纳行】（占一整行的文字做归纳）
-                        prev_table_common_row = get_common_row(prev_table.rows)
-                        current_table_common_row = get_common_row(table.rows)
-
-                        if prev_table_common_row and current_table_common_row:
-                            if is_cells_size_same(
-                                prev_table_common_row.cells,
-                                current_table_common_row.cells,
-                            ):
-                                append_same_table(prev_table_id, table_id)
-
-                        # if is_cells_size_same(prev_table_first_row.cells, current_table_first_row.cells):
-                        #     append_same_table(prev_table_id, table_id)
-
-                prev_table = table
-                prev_table_id = table_id
-                prev_table_index = table_index
-                prev_table_count = len(tables)
-
-        # 将maybe_same_tables降为一维数组
-        same_tables = []
-        for key in maybe_same_tables:
-            same_tables += maybe_same_tables[key]
-
-        # json('maybe_same_tables.json', maybe_same_tables)
-
-        # 将逻辑统一的tables和单独的tables归纳到一起 ['1-1', ['2-1','2-2'], ...]
-        all_tables = []
-        for table_id in table_id_list:
-            if table_id not in same_tables:
-                # 获取table上面的text_lines，从而给出一个推测的name
-                # table_name = gen_table_name(table_id, page_struct)
-                table_desc = get_table_desc(table_id, page_struct)
-                all_tables.append(
-                    gen_table_model(table_id, [table_id], desc=table_desc)
+            # 全页面颜色扫描
+            for page_index, page in enumerate(pdf.pages):
+                print(
+                    f"color_scan --{pdf_name}  {page_index + 1}/{len(pdf.pages)}--",
+                    "\n",
                 )
-            else:
-                same_ids = maybe_same_tables.get(table_id)
-                # 为空说明不是逻辑表的第一张表，所以不需要管，不为空说明是头表，直接加入all_tables即可
-                if same_ids is not None:
+                page = page.filter(color_distribution)
+                page.find_tables()
+            # 将color格式由dict改为逆序的二维数组[[color, count]]
+            for type in ["line", "rect"]:
+                for color_type in ["stroking_color", "non_stroking_color"]:
+                    color_dict = color_info[type][color_type]
+                    color_arr = get_color_list(color_dict)
+                    color_info[type][color_type] = color_arr
+            print("color_info: ", color_info)
+            analysis_color = analysis_color_info(color_info)
+            # return color_info, analysis_color
+            # json("/demo1.json", color_info)
+            # json("/demo2.json", analysis_color)
+
+            # 数据提取
+            for page_index, page in enumerate(_pages):
+                print(f"--{pdf_name}  {page_index + 1}/{len(_pages)}--", "\n")
+                # Filter out hidden lines.
+                fitz_page = fitz_pdf[page_index]
+                page = page.filter(keep_visible_lines)
+                tables = page.find_tables()
+                # print(len(tables))
+                # if len(tables):
+                #     im = page.to_image()
+                #     im.debug_tablefinder(tf={"vertical_strategy": 'lines', "horizontal_strategy": "lines"}).show()
+
+                # continue
+
+                # 提取页面的文字
+                text_lines = page.extract_text_lines()
+
+                # 确定页面里文字和表格关系
+                if page_struct.get(page_index + 1) is None:
+                    page_struct[page_index + 1] = []
+                    current_page_struct = page_struct[page_index + 1]
+                table_index = 0
+                for text_line in text_lines:
+                    # if text_line['text'] == "告":
+                    #     print("【text_lines】: ",text_line)
+
+                    top = text_line["top"]
+                    bottom = text_line["bottom"]
+                    x0 = text_line["x0"]
+                    x1 = text_line["x1"]
+
+                    if table_index <= len(tables) - 1:
+                        table = tables[table_index]
+                        [t_x0, t_top, t_x1, t_bottom] = table.bbox
+                        # 在表格上方
+                        if bottom < t_top:
+                            append_text_line_to_struct(text_line)
+                        # 在表格下方
+                        elif top > t_bottom:
+                            current_page_struct.append(
+                                page_obj(
+                                    "table",
+                                    table,
+                                    gen_table_id(page_index, table_index),
+                                )
+                            )
+                            append_text_line_to_struct(text_line)
+                            table_index += 1
+                    else:
+                        append_text_line_to_struct(text_line)
+
+                for table_index, table in enumerate(tables):
+                    table_id = gen_table_id(page_index, table_index)
+                    table_id_list.append(table_id)
+
+                    # 不同页面的相同表合并
+                    if prev_table:
+                        # print('前一张表的最后一行', prev_table.rows[-1].cells)
+                        # print('当前表的第一行', table.rows[0].cells, '\n')
+                        prev_table_first_row = prev_table.rows[0]
+                        prev_table_last_row = prev_table.rows[-1]
+                        current_table_first_row = table.rows[0]
+                        # if page_index + 1 == 115:
+                        #     print("当前表第一行", table.rows[0].cells)
+                        #     print("当前表第二行", table.rows[1].cells)
+
+                        # 如果是相同表，一定得满足的条件是：（本表是本页第一张表，上表是上页最后一张表）
+                        same_table_necessary_condition = (
+                            table_index == 0
+                            and prev_table_index + 1 == prev_table_count
+                            and int(table_id.split("_")[0])
+                            == int(prev_table_id.split("_")[0]) + 1
+                        )
+                        print(
+                            f"{table_id} {prev_table_id}必要条件是否满足: ",
+                            same_table_necessary_condition,
+                        )
+                        has_append = False
+                        # 如果符合必要条件，且当前表的top_desc中存在（续）做结尾的描述，则视为前表的续表
+                        if same_table_necessary_condition:
+                            table_desc = get_table_desc(table_id, page_struct)
+                            top_desc: list[str] = table_desc["top"]
+                            for desc_item in top_desc:
+                                if desc_item.strip().endswith("（续）"):
+                                    has_append = True
+                                    append_same_table(prev_table_id, table_id)
+                                    break
+
+                        if (
+                            same_table_necessary_condition
+                            and not has_append
+                            # 这里出现了问题，上下内容中间不止两条 TODO FIXED
+                            and len(
+                                get_top_table_data(table_id, page_struct)
+                                + get_bottom_table_data(prev_table_id, page_struct)
+                            )
+                            <= 2
+                        ):
+                            # 如果列数一致，那么就是同结构
+                            # 如果不是同结构，就再判断下，是否是因为有【归纳行】（占一整行的文字做归纳）
+                            prev_table_common_row = get_common_row(prev_table.rows)
+                            current_table_common_row = get_common_row(table.rows)
+
+                            if prev_table_common_row and current_table_common_row:
+                                if is_cells_size_same(
+                                    prev_table_common_row.cells,
+                                    current_table_common_row.cells,
+                                ):
+                                    append_same_table(prev_table_id, table_id)
+
+                            # if is_cells_size_same(prev_table_first_row.cells, current_table_first_row.cells):
+                            #     append_same_table(prev_table_id, table_id)
+
+                    prev_table = table
+                    prev_table_id = table_id
+                    prev_table_index = table_index
+                    prev_table_count = len(tables)
+
+            # 将maybe_same_tables降为一维数组
+            same_tables = []
+            for key in maybe_same_tables:
+                same_tables += maybe_same_tables[key]
+
+            # json('maybe_same_tables.json', maybe_same_tables)
+
+            # 将逻辑统一的tables和单独的tables归纳到一起 ['1-1', ['2-1','2-2'], ...]
+            all_tables = []
+            for table_id in table_id_list:
+                if table_id not in same_tables:
                     # 获取table上面的text_lines，从而给出一个推测的name
                     # table_name = gen_table_name(table_id, page_struct)
-                    table_top_desc = get_table_desc(table_id, page_struct)["top"]
-                    table_bottom_desc = get_table_desc(same_ids[-1], page_struct)[
-                        "bottom"
-                    ]
-                    table_desc = {"top": table_top_desc, "bottom": table_bottom_desc}
+                    table_desc = get_table_desc(table_id, page_struct)
                     all_tables.append(
-                        gen_table_model(table_id, same_ids, desc=table_desc)
+                        gen_table_model(table_id, [table_id], desc=table_desc)
                     )
+                else:
+                    same_ids = maybe_same_tables.get(table_id)
+                    # 为空说明不是逻辑表的第一张表，所以不需要管，不为空说明是头表，直接加入all_tables即可
+                    if same_ids is not None:
+                        # 获取table上面的text_lines，从而给出一个推测的name
+                        # table_name = gen_table_name(table_id, page_struct)
+                        table_top_desc = get_table_desc(table_id, page_struct)["top"]
+                        table_bottom_desc = get_table_desc(same_ids[-1], page_struct)[
+                            "bottom"
+                        ]
+                        table_desc = {
+                            "top": table_top_desc,
+                            "bottom": table_bottom_desc,
+                        }
+                        all_tables.append(
+                            gen_table_model(table_id, same_ids, desc=table_desc)
+                        )
 
-        # 输出json
-        json(table_json_url, all_tables)
-        # page_struct中的table替换为table.extract的文本
-        base_content = {}
-        for page_num in page_struct:
-            page_info_list = page_struct[page_num]
-            base_content[page_num] = []
-            for item in page_info_list:
-                if item["type"] == "table":
-                    item["data"] = _map(item["data"].extract(), lambda item: item)
-                elif item["type"] == "text_line":
-                    item["data"] = item["data"]["text"]
-                base_content[page_num].append(list(item.values()))
+            # 输出json
+            json(table_json_url, all_tables)
+            # page_struct中的table替换为table.extract的文本
+            base_content = {}
+            for page_num in page_struct:
+                page_info_list = page_struct[page_num]
+                base_content[page_num] = []
+                for item in page_info_list:
+                    if item["type"] == "table":
+                        item["data"] = _map(item["data"].extract(), lambda item: item)
+                    elif item["type"] == "text_line":
+                        item["data"] = item["data"]["text"]
+                    base_content[page_num].append(list(item.values()))
 
-                # item['data'] = item['data'].extract()
-                # [type, id, data]
-        json(content_json_url, base_content)
+                    # item['data'] = item['data'].extract()
+                    # [type, id, data]
+            json(content_json_url, base_content)
 
-        # return page_struct
+            # return page_struct
 
 
 def get_color_statistic(pdf_url):
@@ -1019,10 +1094,12 @@ def gen_hblrb(file_title, url):
         top_desc = t["desc"]["top"]
         for d in top_desc:
             # TODO 有些公司不存在“合并利润表”和“母公司利润表”，仅存在“利润表”
-            if d.endswith(f"{Financial_Statement.合并利润表.value}") \
-            or (f"、{Financial_Statement.合并利润表.value}" in d)\
-            or d.endswith(f"{Financial_Statement.合并及公司利润表.value}")\
-            or d.endswith(f"{Financial_Statement.利润表.value}"):
+            if (
+                d.endswith(f"{Financial_Statement.合并利润表.value}")
+                or (f"、{Financial_Statement.合并利润表.value}" in d)
+                or d.endswith(f"{Financial_Statement.合并及公司利润表.value}")
+                or d.endswith(f"{Financial_Statement.利润表.value}")
+            ):
                 hblrb = t
                 break
         if hblrb is not None:
@@ -1134,17 +1211,17 @@ def get_operating_revenue(file_title):
         hblrb_json = json(hblrb_url)
         fields = _map(hblrb_json, lambda item: item[0])
         key_word = _filter(
-        fields,
-        lambda field: field.replace("\n", "")
-        .replace("（", "")
-        .replace("(", "")
-        .replace("）", "")
-        .replace(")", "")
-        .replace("：", "")
-        .replace(":", "")
-        .replace("、", "")
-        in ["其中营业收入", "一营业收入"],
-    )
+            fields,
+            lambda field: field.replace("\n", "")
+            .replace("（", "")
+            .replace("(", "")
+            .replace("）", "")
+            .replace(")", "")
+            .replace("：", "")
+            .replace(":", "")
+            .replace("、", "")
+            in ["其中营业收入", "一营业收入"],
+        )
         current_operating_revenue_list = []
         last_operating_revenue_list = []
         for row in hblrb_json:
@@ -1178,16 +1255,20 @@ def get_operating_revenue(file_title):
         current_operating_revenue = sum(current_operating_revenue_list)
         last_operating_revenue = sum(last_operating_revenue_list)
         try:
-            growth_rate = (current_operating_revenue - last_operating_revenue)/last_operating_revenue*100
-            print(f"{file_title}的当期营业收入和营业收入增长率分别为{current_operating_revenue},{growth_rate}%")
+            growth_rate = (
+                (current_operating_revenue - last_operating_revenue)
+                / last_operating_revenue
+                * 100
+            )
+            print(
+                f"{file_title}的当期营业收入和营业收入增长率分别为{current_operating_revenue},{growth_rate}%"
+            )
             return current_operating_revenue, growth_rate  # 返回当期营业收入和营业收入增长率
         except:
             print(f"{file_title}无法计算营业收入增长率")
     except:
         print(f"{file_title}无法获取合并利润表数据")
-    
-    
-        
+
 
 def caculate_interest_bearing_liabilities_rate(
     interest_bearing_liabilities, total_assets
@@ -1256,6 +1337,7 @@ def get_accounts_receivable(file_title):
             print(f"{file_title}无法计算应收款增长率")
     except:
         print(f"{file_title}无法获取合并资产负债表数据")
+
 
 def propotion_of_accounts_receivable(hbzcfzb_json):
     """

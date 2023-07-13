@@ -84,11 +84,11 @@ file_title_list = [
     "688538__和辉光电__上海和辉光电股份有限公司2022年年度报告__1216623370"
 ]
 
-def generate_hbzcfzb(file_title_list):
+def generate_hbzcfzb(file_title_list, use_cache: bool = True):
     # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
     for file_title in file_title_list:
         file_url = get_announcement_url(file_title)
-        parse_pdf(file_url, file_title)
+        parse_pdf(file_url, file_title, use_cache)
 
     # 2. 遍历所有的file_title_list，根据table.json和content.json来生成合并资产负债表
     error_file_title_list = []
@@ -99,12 +99,12 @@ def generate_hbzcfzb(file_title_list):
             content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
         
             # 1. 检查是否存在合并资产负债表，如果不存在，才进行合成
-            if is_exist(get_path(hbzcfzb_json_url)):
+            if use_cache and is_exist(get_path(hbzcfzb_json_url)):
                 continue
             # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
             # 可以收集异常的数据，并返回
             all_exists = is_exist(get_path(table_json_url)) and is_exist(get_path(content_json_url))
-            if not all_exists:
+            if use_cache and not all_exists:
                 error_file_title_list.append({
                     "file_title": file_title,
                     "reason": "缺少table.json或content.json"

@@ -53,8 +53,11 @@
 # m = c.replace('\n', '').replace('（', '').replace('）', '') 
 # print(m)
 
-from utils.index import _every
+# from utils.index import _every
 
 
-cells = [None, None,2, None]
-print(_every(cells, lambda item: item is None))
+# cells = [None, None,2, None]
+# print(_every(cells, lambda item: item is None))
+
+text = "      "
+print(text.strip() == "")
