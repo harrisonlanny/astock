@@ -1,4 +1,5 @@
 from db.index import read_table
+from service.report import get_operating_revenue
 from strategy.announcements.announcements import filter_by_increase_in_accounts_receivable, filter_by_interest_bearing_liabilities, filter_by_proportion_of_accounts_receivable, generate_hblrb, generate_hbzcfzb
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
 from utils.index import _map, get_path, json
@@ -23,7 +24,7 @@ from utils.index import _map, get_path, json
 #     "688288__鸿泉物联__鸿泉物联：2022年年度报告__1216687349",
 #     "600500__中化国际__中化国际2022年年度报告__1216663256",
 #     "603003__龙宇股份__龙宇股份2022年年度报告__1216645157"
-# # ]
+#  ]
 # r = read_table(
 #     table_name="announcements",
 #     fields=["file_title"],
@@ -64,7 +65,7 @@ file_title_list = [
     "600475__华光环能__无锡华光环保能源集团股份有限公司2022年年度报告__1216594937", 
     "600590__泰豪科技__2022年年度报告__1216690767", 
     "300045__华力创通__2022年年度报告__1216496633", 
-    # "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
+    "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
     "601117__中国化学__中国化学2022年年度报告__1216234431", 
     "600163__中闽能源__中闽能源2022年年度报告__1216475081", 
     "688048__长光华芯__2022年年度报告__1216596481", 
@@ -93,7 +94,7 @@ file_title_list = [
     "000096__广聚能源__2022年年度报告__1216438315", 
     "301106__骏成科技__2022年年度报告（更正后）__1216234185", 
     "300710__万隆光电__杭州万隆光电设备股份有限公司2022年年度报告（更新后）__1216616546", 
-    # "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
+    "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
     "002496__辉丰股份__2022年年度报告__1216650364", 
     "688063__派能科技__上海派能能源科技股份有限公司2022年年度报告__1216381410", 
     "300677__英科医疗__2022年年度报告__1216651766", 
@@ -115,7 +116,7 @@ file_title_list = [
     "605006__山东玻纤__605006_山东玻纤集团股份有限公司2022年年度报告__1216442345", 
     "688234__天岳先进__山东天岳先进科技股份有限公司2022年年度报告__1216631018", 
     "688510__航亚科技__无锡航亚科技股份有限公司2022年年度报告__1216582882", 
-    # "688265__南模生物__2022年年度报告__1216671531", # 无利润表
+    "688265__南模生物__2022年年度报告__1216671531", # 无利润表
     "688179__阿拉丁__阿拉丁2022年年度报告__1216582019", 
     "000668__荣丰控股__2022年年度报告__1216663264", 
     "000971__ST高升__2022年年度报告__1216657361", 
@@ -160,7 +161,8 @@ file_title_list = [
     # print(get_accounts_receivable(r2))
     # print(get_operating_revenue(r1))
 
-generate_hbzcfzb(file_title_list)
-generate_hblrb(file_title_list)
+# generate_hbzcfzb(file_title_list)
+# generate_hblrb(file_title_list)
 x = filter_by_increase_in_accounts_receivable(file_title_list)
-print(x)
+# print(x)
+

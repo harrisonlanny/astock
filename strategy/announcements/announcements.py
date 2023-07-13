@@ -210,24 +210,25 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
         
 def filter_by_increase_in_accounts_receivable(file_title_list):
     target = []
+    abnormal_count = 0
     for file_title in file_title_list:
-        hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-        hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
-        hblrb_result = json(hblrb_url)
-        hbzcfzb_result = json(hbzcfzb_url)
-    # 1.从合并资产负债表中获取应收款增长率
-        accounts_receivable_success = get_accounts_receivable(hbzcfzb_result)
-        if accounts_receivable_success:
-            growth_rate_of_account_receivable = accounts_receivable_success[1]
-            print(f"{file_title}的应收款增长率为{growth_rate_of_account_receivable}%")
-    # 2.从合并利润表中获取营业收入增长率
-        operating_revenue_success = get_operating_revenue(hblrb_result)
-        if operating_revenue_success:
-            growth_rate_of_operating_revenue = operating_revenue_success[1]
-            print(f"{file_title}的营业收入增长率为{growth_rate_of_operating_revenue}%")
-    # 3.比较应收款增长率和营业收入增长率，若应收款增幅<营业收入增幅，则符合条件
-        if accounts_receivable_success and operating_revenue_success:
-            if growth_rate_of_account_receivable < growth_rate_of_operating_revenue:
-                target.append(file_title)
-    print(f"符合应收款增幅<营业收入增幅的比例是{len(target)/len(file_title_list)*100}%")
+        try: 
+        # 1.从合并资产负债表中获取应收款增长率
+            accounts_receivable_success = get_accounts_receivable(file_title)
+            if accounts_receivable_success:
+                growth_rate_of_account_receivable = accounts_receivable_success[1]
+                print(f"{file_title}的应收款增长率为{growth_rate_of_account_receivable}%")
+        # 2.从合并利润表中获取营业收入增长率
+            operating_revenue_success = get_operating_revenue(file_title)
+            if operating_revenue_success:
+                growth_rate_of_operating_revenue = operating_revenue_success[1]
+                print(f"{file_title}的营业收入增长率为{growth_rate_of_operating_revenue}%")
+        # 3.比较应收款增长率和营业收入增长率，若应收款增幅<营业收入增幅，则符合条件
+            if accounts_receivable_success and operating_revenue_success:
+                if growth_rate_of_account_receivable < growth_rate_of_operating_revenue:
+                    target.append(file_title)
+        except:
+            print(f"{file_title}缺少必要的合并资产负债表或合并利润表")
+            abnormal_count += 1
+    print(f"符合应收款增幅<营业收入增幅的比例是{len(target)/(len(file_title_list)-abnormal_count)*100}%")
     return target

@@ -12,6 +12,8 @@ from service.config import (
     JU_CHAO_HEADERS,
     JU_CHAO_STATIC_URL,
     STATIC_ANNOUNCEMENTS_DIR,
+    STATIC_ANNOUNCEMENTS_HBLRB_DIR,
+    STATIC_ANNOUNCEMENTS_HBZCFZB_DIR,
     STATIC_ANNOUNCEMENTS_PARSE_DIR,
     Announcement_Category,
     Announcement_Category_Options,
@@ -1118,12 +1120,15 @@ def get_total_assets(hbzcfzb_json):
                 return row[2]
 
 
-def get_operating_revenue(hblrb_json):
+def get_operating_revenue(file_title):
     """
     获取合并利润表中的营业收入及增长率
     """
-    fields = _map(hblrb_json, lambda item: item[0])
-    key_word = _filter(
+    hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+    try:
+        hblrb_json = json(hblrb_url)
+        fields = _map(hblrb_json, lambda item: item[0])
+        key_word = _filter(
         fields,
         lambda field: field.replace("\n", "")
         .replace("（", "")
@@ -1135,43 +1140,48 @@ def get_operating_revenue(hblrb_json):
         .replace("、", "")
         in ["其中营业收入", "一营业收入"],
     )
-    current_operating_revenue_list = []
-    last_operating_revenue_list = []
-    for row in hblrb_json:
-        if row[0] in key_word:
-            if len(row) == 3:
-                row[1] = (
-                    0.01
-                    if (_is_empty(row[1]) or row[1] == "-")
-                    else float(large_num_format(row[1]))
-                )
-                row[2] = (
-                    0.01
-                    if (_is_empty(row[2]) or row[2] == "-")
-                    else float(large_num_format(row[2]))
-                )
-                current_operating_revenue_list.append(row[1])
-                last_operating_revenue_list.append(row[2])
-            else:
-                row[2] = (
-                    0.01
-                    if (_is_empty(row[2]) or row[2] == "-")
-                    else float(large_num_format(row[2]))
-                )
-                row[3] = (
-                    0.01
-                    if (_is_empty(row[3]) or row[3] == "-")
-                    else float(large_num_format(row[3]))
-                )
-                current_operating_revenue_list.append(row[2])
-                last_operating_revenue_list.append(row[3])
-    current_operating_revenue = sum(current_operating_revenue_list)
-    last_operating_revenue = sum(last_operating_revenue_list)
-    try:
-        growth_rate = (current_operating_revenue - last_operating_revenue)/last_operating_revenue*100
-        return current_operating_revenue, growth_rate  # 返回当期营业收入和营业收入增长率
+        current_operating_revenue_list = []
+        last_operating_revenue_list = []
+        for row in hblrb_json:
+            if row[0] in key_word:
+                if len(row) == 3:
+                    row[1] = (
+                        0.01
+                        if (_is_empty(row[1]) or row[1] == "-")
+                        else float(large_num_format(row[1]))
+                    )
+                    row[2] = (
+                        0.01
+                        if (_is_empty(row[2]) or row[2] == "-")
+                        else float(large_num_format(row[2]))
+                    )
+                    current_operating_revenue_list.append(row[1])
+                    last_operating_revenue_list.append(row[2])
+                else:
+                    row[2] = (
+                        0.01
+                        if (_is_empty(row[2]) or row[2] == "-")
+                        else float(large_num_format(row[2]))
+                    )
+                    row[3] = (
+                        0.01
+                        if (_is_empty(row[3]) or row[3] == "-")
+                        else float(large_num_format(row[3]))
+                    )
+                    current_operating_revenue_list.append(row[2])
+                    last_operating_revenue_list.append(row[3])
+        current_operating_revenue = sum(current_operating_revenue_list)
+        last_operating_revenue = sum(last_operating_revenue_list)
+        try:
+            growth_rate = (current_operating_revenue - last_operating_revenue)/last_operating_revenue*100
+            print(f"{file_title}的当期营业收入和营业收入增长率分别为{current_operating_revenue},{growth_rate}%")
+            return current_operating_revenue, growth_rate  # 返回当期营业收入和营业收入增长率
+        except:
+            print(f"{file_title}无法计算营业收入增长率")
     except:
-        print("无法计算营业收入增长率")
+        print(f"{file_title}无法获取合并利润表数据")
+    
+    
         
 
 def caculate_interest_bearing_liabilities_rate(
@@ -1184,58 +1194,63 @@ def caculate_interest_bearing_liabilities_rate(
     return interest_bearing_liabilities_rate * 100
 
 
-def get_accounts_receivable(hbzcfzb_json):
+def get_accounts_receivable(file_title):
     """
     计算应收款及应收增长率
     """
     # 应收 = 资产负债表所有带“应收”两个字的科目数字总和-银行承兑汇票金额
+    hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
     # 1.筛选出合并资产负债表中包含“应收”关键字的字段值，计算其之和
-    fields = _map(hbzcfzb_json, lambda item: item[0])
-    key_word = _filter(fields, lambda field: "应收" in field)
-    # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
-    amount_of_bankers_acceptance = 0
-    # 3.计算当期应收及应收增长率
-    current_accounts_receivable_list = []
-    last_accounts_receivable_list = []
-    for row in hbzcfzb_json:
-        if row[0] in key_word:
-            if len(row) == 3:
-                row[1] = (
-                    0
-                    if (_is_empty(row[1]) or row[1] == "-")
-                    else float(large_num_format(row[1]))
-                )
-                row[2] = (
-                    0
-                    if (_is_empty(row[2]) or row[2] == "-")
-                    else float(large_num_format(row[2]))
-                )
-                current_accounts_receivable_list.append(row[1])
-                last_accounts_receivable_list.append(row[2])
-            else:
-                row[2] = (
-                    0
-                    if (_is_empty(row[2]) or row[2] == "-")
-                    else float(large_num_format(row[2]))
-                )
-                row[3] = (
-                    0
-                    if (_is_empty(row[3]) or row[3] == "-")
-                    else float(large_num_format(row[3]))
-                )
-                current_accounts_receivable_list.append(row[2])
-                last_accounts_receivable_list.append(row[3])
-    current_accounts_receivable = sum(current_accounts_receivable_list)
-    last_accounts_receivable = sum(last_accounts_receivable_list)
     try:
-        growth_rate = (
-            (current_accounts_receivable - last_accounts_receivable)
-            / last_accounts_receivable
-            * 100
-        )
-        return current_accounts_receivable, growth_rate
+        hbzcfzb_json = json(hbzcfzb_url)
+        fields = _map(hbzcfzb_json, lambda item: item[0])
+        key_word = _filter(fields, lambda field: "应收" in field)
+        # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
+        amount_of_bankers_acceptance = 0
+        # 3.计算当期应收及应收增长率
+        current_accounts_receivable_list = []
+        last_accounts_receivable_list = []
+        for row in hbzcfzb_json:
+            if row[0] in key_word:
+                if len(row) == 3:
+                    row[1] = (
+                        0
+                        if (_is_empty(row[1]) or row[1] == "-")
+                        else float(large_num_format(row[1]))
+                    )
+                    row[2] = (
+                        0
+                        if (_is_empty(row[2]) or row[2] == "-")
+                        else float(large_num_format(row[2]))
+                    )
+                    current_accounts_receivable_list.append(row[1])
+                    last_accounts_receivable_list.append(row[2])
+                else:
+                    row[2] = (
+                        0
+                        if (_is_empty(row[2]) or row[2] == "-")
+                        else float(large_num_format(row[2]))
+                    )
+                    row[3] = (
+                        0
+                        if (_is_empty(row[3]) or row[3] == "-")
+                        else float(large_num_format(row[3]))
+                    )
+                    current_accounts_receivable_list.append(row[2])
+                    last_accounts_receivable_list.append(row[3])
+        current_accounts_receivable = sum(current_accounts_receivable_list)
+        last_accounts_receivable = sum(last_accounts_receivable_list)
+        try:
+            growth_rate = (
+                (current_accounts_receivable - last_accounts_receivable)
+                / last_accounts_receivable
+                * 100
+            )
+            return current_accounts_receivable, growth_rate
+        except:
+            print(f"{file_title}无法计算应收款增长率")
     except:
-        print("无法计算应收款增长率")
+        print(f"{file_title}无法获取合并资产负债表数据")
 
 def propotion_of_accounts_receivable(hbzcfzb_json):
     """
