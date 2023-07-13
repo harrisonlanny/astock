@@ -25,34 +25,34 @@ from utils.index import _map, get_path, json
 #     "600500__中化国际__中化国际2022年年度报告__1216663256",
 #     "603003__龙宇股份__龙宇股份2022年年度报告__1216645157"
 #  ]
-r = read_table(
-    table_name="announcements",
-    fields=["file_title"],
-    result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 30",
-)
-file_title_list = _map(r, lambda item: item["file_title"])
+# r = read_table(
+#     table_name="announcements",
+#     fields=["file_title"],
+#     result_type="dict",
+#     filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 30",
+# )
+# file_title_list = _map(r, lambda item: item["file_title"])
 # file_title_list = [
 #     "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
 #     "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
 #     "688265__南模生物__2022年年度报告__1216671531"# 无利润表
 # ]
 
-# file_title_list = [
-#     "605056__咸亨国际__咸亨国际：2022年年度报告__1216478420",
-#     # "600123__兰花科创__兰花科创2022年度报告全文__1216554351", # 应收款项不在合并资产负债表中，而在“1. 资产及负债状况 ”子表中
-#     "600392__盛和资源__盛和资源2022年年度报告__1216689975", # 合并资产负债表边框有开口导致无法解析出总资产
-#     # "836433__大唐药业__2022年年度报告__1216619159", # 边框颜色导致无法识别合并资产负债表、合并利润表
-#     "688778__厦钨新能__厦门厦钨新能源材料股份有限公司2022年年度报告__1216520043", # 134-1，135-1，136-1未识别为同一张表
-#     "688121__卓然股份__2022年年度报告（修订版）__1217053279" # 129-1,130-1,131-1未识别为同一张表
+file_title_list = [
+    # "605056__咸亨国际__咸亨国际：2022年年度报告__1216478420",
+    # "600123__兰花科创__兰花科创2022年度报告全文__1216554351", # 应收款项不在合并资产负债表中，而在“1. 资产及负债状况 ”子表中
+    # "600392__盛和资源__盛和资源2022年年度报告__1216689975", # 合并资产负债表边框有开口导致无法解析出总资产
+    # "836433__大唐药业__2022年年度报告__1216619159", # 边框颜色导致无法识别合并资产负债表、合并利润表
+    "688778__厦钨新能__厦门厦钨新能源材料股份有限公司2022年年度报告__1216520043", # 134-1，135-1，136-1未识别为同一张表
+    # "688121__卓然股份__2022年年度报告（修订版）__1217053279" # 129-1,130-1,131-1未识别为同一张表
 
-# ]
+]
 
 # filter_by_interest_bearing_liabilities(file_title_list)
 # filter_by_proportion_of_accounts_receivable(file_title_list)
 
 generate_hbzcfzb(file_title_list)
-generate_hblrb(file_title_list)
-x = filter_by_increase_in_accounts_receivable(file_title_list)
+# generate_hblrb(file_title_list)
+# x = filter_by_increase_in_accounts_receivable(file_title_list)
 # print(x)
 

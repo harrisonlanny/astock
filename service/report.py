@@ -762,21 +762,26 @@ def parse_pdf(pdf_url, pdf_name):
 
                     # 如果是相同表，一定得满足的条件是：（本表是本页第一张表，上表是上页最后一张表）
                     same_table_necessary_condition = (
-                        table_index == 0 and prev_table_index + 1 == prev_table_count
+                        table_index == 0 and 
+                        prev_table_index + 1 == prev_table_count and
+                        int(table_id.split("_")[0]) == int(prev_table_id.split("_")[0]) + 1
                     )
+                    print(f"{table_id} {prev_table_id}必要条件是否满足: ", same_table_necessary_condition)
                     has_append = False
                     # 如果符合必要条件，且当前表的top_desc中存在（续）做结尾的描述，则视为前表的续表
-                    table_desc = get_table_desc(table_id, page_struct)
-                    top_desc: list[str] = table_desc["top"]
-                    for desc_item in top_desc:
-                        if desc_item.strip().endswith("（续）"):
-                            has_append = True
-                            append_same_table(prev_table_id, table_id)
-                            break
+                    if same_table_necessary_condition:
+                        table_desc = get_table_desc(table_id, page_struct)
+                        top_desc: list[str] = table_desc["top"]
+                        for desc_item in top_desc:
+                            if desc_item.strip().endswith("（续）"):
+                                has_append = True
+                                append_same_table(prev_table_id, table_id)
+                                break
 
                     if (
                         same_table_necessary_condition
                         and not has_append
+                        # 这里出现了问题，上下内容中间不止两条 TODO FIXED
                         and len(
                             get_top_table_data(table_id, page_struct)
                             + get_bottom_table_data(prev_table_id, page_struct)
