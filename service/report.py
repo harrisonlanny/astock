@@ -1367,7 +1367,7 @@ def propotion_of_accounts_receivable(hbzcfzb_json):
                     else float(large_num_format(row[2]))
                 )
                 accounts_receivable_list.append(row[2])
-        accounts_receivable = sum(accounts_receivable_list)
+    accounts_receivable = sum(accounts_receivable_list)
     total_assets = get_total_assets(hbzcfzb_json)
     propotion_of_accounts_receivable = accounts_receivable / total_assets
     return propotion_of_accounts_receivable * 100
@@ -1395,4 +1395,4 @@ def get_industry(file_title_list):
     return industries
 
 # def get_companies_in_the_same_industry(industries:list):
-#     for 
+#  
