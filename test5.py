@@ -1,14 +1,15 @@
+from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, Financial_Statement
 from db.index import read_table
-from service.report import get_industry, get_operating_revenue
+from service.report import get_accounts_receivable, get_industry, get_operating_revenue
 from strategy.announcements.announcements import filter_by_increase_in_accounts_receivable, filter_by_interest_bearing_liabilities, filter_by_proportion_of_accounts_receivable, generate_hblrb, generate_hbzcfzb
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
-from utils.index import _map, get_path, json
+from utils.index import _filter, _is_empty, _map, get_path, json, large_num_format
 
 file_title_list = [
     "600481__双良节能__双良节能系统股份有限公司2022年年度报告__1216560014",
     "003005__竞业达__2022年年度报告__1216617405",
     "301098__金埔园林__2022年年度报告__1216558940",
-    # "002500__山西证券__2022年年度报告__1216656433",
+    "002500__山西证券__2022年年度报告__1216656433",
     # "002282__博深股份__2022年年度报告__1216648090",
     # "603985__恒润股份__江阴市恒润重工股份有限公司2022年年度报告__1216419056",
     # "002581__未名医药__2022年度报告（更正后）__1217066287",
@@ -55,6 +56,18 @@ filter_by_proportion_of_accounts_receivable(file_title_list)
 # generate_hblrb(file_title_list, False)
 # filter_by_increase_in_accounts_receivable(file_title_list)
 
+
+# for file_title in file_title_list:
+#     target_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+#     target_json = json(target_url)
+#     fields = _map(target_json, lambda item: item[0])
+#     key_word = _filter(fields, lambda field: "应收" in field)
+#     print(format_target_table_json(key_word, target_json))
+
+
+# for file_title in file_title_list:
+#     # get_accounts_receivable(file_title)
+#     get_operating_revenue(file_title)
 
 
 

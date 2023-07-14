@@ -395,17 +395,21 @@ def is_cell_size_same(cell1, cell2, empty_is_same: bool = True):
     if is_cell1_empty or is_cell2_empty:
         return empty_is_same
 
-    if abs(size1["width"] - size2["width"]) <= same_precision:
+    width_gap = abs(size1["width"] - size2["width"])
+    if width_gap <= same_precision:
         return True
+    print("cell size超过误差：", width_gap, cell1, cell2, )
     return False
 
 
 def is_cells_size_same(cells1, cells2):
+    print("cell数", len(cells1), len(cells2))
     if len(cells1) != len(cells2):
         return False
     for index, cell1 in enumerate(cells1):
         cell2 = cells2[index]
         if not is_cell_size_same(cell1, cell2):
+            print("cell size不相同的cell_index：", index)
             return False
     return True
 
@@ -709,7 +713,7 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                     return target_row
                 return None
 
-            def append_text_line_to_struct(text_line):
+            def append_text_line_to_struct(text_line, page_index):
                 # 这里的text_line不在表格里，所以可以用pix检测法来检测是否visible（table里一行文字可能有太多空格，导致visible误判断）
                 # pix 之所以不敢直接提升到1 而是用0.8是担心不可见元素如果覆盖在看得见元素上
                 # 如果能获取bbox内的所有object，遍历他们：遍历到1，就filter其他元素；遍历到2，就filter其他元素。
@@ -731,16 +735,23 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                 if topusage >= 0.8:
                     # 检测空白占比(用来排除因为空白太多导致topusage过高)
                     total_width = 0
-                    for char in text_line['chars']:
-                        total_width += char['width']
+                    for char in text_line["chars"]:
+                        total_width += char["width"]
                     word_percent = total_width / line_width
-                    if word_percent >= 0.5:
-                        if text_line['text'] != "告":
-                            print(f"{text_line['text']} 不可见,topusage: ", topusage, word_percent)
-                        return
-                
+                    if word_percent >= 0.6:
+                        # if text_line['text'] != "告":
+                        # 判断是否含有：。”这三个特殊小字符，不包含才算隐形
+                        if _is_empty(
+                            set(["。", "，", "“", "”", "：", "；"])
+                            & set(list(text_line["text"]))
+                        ):
+                            error_text = f"{pdf_name} {page_index + 1}页 {text_line['text']}: {topusage} {word_percent}"
+                            print(error_text)
+                            with open("./不可见.txt", "a") as t:
+                                t.write(f"{error_text}\n")
+                            return
+
                 current_page_struct.append(page_obj("text_line", text_line))
-                    
 
             # 全页面颜色扫描
             for page_index, page in enumerate(pdf.pages):
@@ -798,7 +809,7 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                         [t_x0, t_top, t_x1, t_bottom] = table.bbox
                         # 在表格上方
                         if bottom < t_top:
-                            append_text_line_to_struct(text_line)
+                            append_text_line_to_struct(text_line, page_index)
                         # 在表格下方
                         elif top > t_bottom:
                             current_page_struct.append(
@@ -808,10 +819,10 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                                     gen_table_id(page_index, table_index),
                                 )
                             )
-                            append_text_line_to_struct(text_line)
+                            append_text_line_to_struct(text_line, page_index)
                             table_index += 1
                     else:
-                        append_text_line_to_struct(text_line)
+                        append_text_line_to_struct(text_line, page_index)
 
                 for table_index, table in enumerate(tables):
                     table_id = gen_table_id(page_index, table_index)
@@ -836,7 +847,7 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                             == int(prev_table_id.split("_")[0]) + 1
                         )
                         print(
-                            f"{table_id} {prev_table_id}必要条件是否满足: ",
+                            f"{table_id} 必要条件是否满足: ",
                             same_table_necessary_condition,
                         )
                         has_append = False
@@ -850,15 +861,24 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                                     append_same_table(prev_table_id, table_id)
                                     break
 
-                        if (
-                            same_table_necessary_condition
-                            and not has_append
-                            # 这里出现了问题，上下内容中间不止两条 TODO FIXED
-                            and len(
+                        between_content_limit_condition = (
+                            len(
                                 get_top_table_data(table_id, page_struct)
                                 + get_bottom_table_data(prev_table_id, page_struct)
                             )
                             <= 2
+                        )
+
+                        print(
+                            f"{table_id} 两表间的内容不超过2条 是否满足： ",
+                            same_table_necessary_condition,
+                        )
+
+                        if (
+                            same_table_necessary_condition
+                            and not has_append
+                            # 这里出现了问题，上下内容中间不止两条 TODO FIXED
+                            and between_content_limit_condition
                         ):
                             # 如果列数一致，那么就是同结构
                             # 如果不是同结构，就再判断下，是否是因为有【归纳行】（占一整行的文字做归纳）
@@ -866,10 +886,15 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                             current_table_common_row = get_common_row(table.rows)
 
                             if prev_table_common_row and current_table_common_row:
-                                if is_cells_size_same(
+                                same_size_condition = is_cells_size_same(
                                     prev_table_common_row.cells,
                                     current_table_common_row.cells,
-                                ):
+                                )
+                                print(
+                                    f"{table_id} cell_size相同 是否满足： ",
+                                    same_size_condition,
+                                )
+                                if same_size_condition:
                                     append_same_table(prev_table_id, table_id)
 
                             # if is_cells_size_same(prev_table_first_row.cells, current_table_first_row.cells):
@@ -1158,48 +1183,69 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
     return interest_bearing_liabilities_current
 
 
-def get_total_assets(hbzcfzb_json):
-    fields = _map(hbzcfzb_json, lambda item: item[0])
-    key_word = _filter(
-        fields,
-        lambda field: field.replace("\n", "")
-        .replace("（", "")
-        .replace("(", "")
-        .replace("）", "")
-        .replace(")", "")
-        .replace("：", "")
-        .replace(":", "")
-        in ["负债和所有者权益或股东权益总计", "负债及股东权益合计", "负债和所有者权益总计", "负债和所有者权益或股东权益"],
-    )
-    # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
-    # [
-    #     "负债和所有者权益（或股东",
-    #     "",
-    #     "4,536,412,952.00",
-    #     "4,480,824,564.34"
-    # ],
-    # [
-    #     "权益）总计",
-    #     "",
-    #     "",
-    #     ""
-    # ]
-    for row in hbzcfzb_json:
-        if row[0] in key_word:
-            if len(row) == 3:
-                row[1] = (
+def get_total_assets(file_title):
+    hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+    try:
+        hbzcfzb_json = json(hbzcfzb_url)
+        fields = _map(hbzcfzb_json, lambda item: item[0])
+        key_word = _filter(
+            fields,
+            lambda field: field.replace("\n", "")
+            .replace("（", "")
+            .replace("(", "")
+            .replace("）", "")
+            .replace(")", "")
+            .replace("：", "")
+            .replace(":", "")
+            in ["负债和所有者权益或股东权益总计", "负债及股东权益合计", "负债和所有者权益总计", "负债和所有者权益或股东权益"],
+        )
+        # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
+        # [
+        #     "负债和所有者权益（或股东",
+        #     "",
+        #     "4,536,412,952.00",
+        #     "4,480,824,564.34"
+        # ],
+        # [
+        #     "权益）总计",
+        #     "",
+        #     "",
+        #     ""
+        # ]
+        for row in hbzcfzb_json:
+            if row[0] in key_word:
+                row[-2] = (
                     0.01
                     if (_is_empty(row[1]) or row[1] == "-")
                     else float(large_num_format(row[1]))
                 )
-                return row[1]
-            else:
-                row[2] = (
-                    0.01
-                    if (_is_empty(row[2]) or row[2] == "-")
-                    else float(large_num_format(row[2]))
-                )
-                return row[2]
+                return row[-2]
+    except:
+        print(f"{file_title}无法获取资产负债表")
+
+def format_target_table_json_and_growth_rate(key_word:list, target_json):
+    '''
+    将符合关键字字段的table值由str转化为float,并求出当期金额总和及增长率
+    '''
+    format_result = []
+    for row in target_json:
+        if row[0] in key_word:
+            row[-2] = (
+                0
+                if (_is_empty(row[-2]) or row[-2] == "-")
+                else float(large_num_format(row[-2]))
+            )
+            row[-1] = (
+                0
+                if (_is_empty(row[-1]) or row[-1] == "-")
+                else float(large_num_format(row[-1]))
+            )
+            format_result.append(row)
+        current_target_list = _map(format_result, lambda item: item[-2])
+        last_target_list = _map(format_result, lambda item: item[-1])
+        current_target = sum(current_target_list)
+        last_target = sum(last_target_list)
+    return format_result,current_target,last_target
 
 
 def get_operating_revenue(file_title):
@@ -1222,48 +1268,17 @@ def get_operating_revenue(file_title):
             .replace("、", "")
             in ["其中营业收入", "一营业收入"],
         )
-        current_operating_revenue_list = []
-        last_operating_revenue_list = []
-        for row in hblrb_json:
-            if row[0] in key_word:
-                if len(row) == 3:
-                    row[1] = (
-                        0.01
-                        if (_is_empty(row[1]) or row[1] == "-")
-                        else float(large_num_format(row[1]))
-                    )
-                    row[2] = (
-                        0.01
-                        if (_is_empty(row[2]) or row[2] == "-")
-                        else float(large_num_format(row[2]))
-                    )
-                    current_operating_revenue_list.append(row[1])
-                    last_operating_revenue_list.append(row[2])
-                else:
-                    row[2] = (
-                        0.01
-                        if (_is_empty(row[2]) or row[2] == "-")
-                        else float(large_num_format(row[2]))
-                    )
-                    row[3] = (
-                        0.01
-                        if (_is_empty(row[3]) or row[3] == "-")
-                        else float(large_num_format(row[3]))
-                    )
-                    current_operating_revenue_list.append(row[2])
-                    last_operating_revenue_list.append(row[3])
-        current_operating_revenue = sum(current_operating_revenue_list)
-        last_operating_revenue = sum(last_operating_revenue_list)
+        operating_revenue_info = format_target_table_json_and_growth_rate(key_word, hblrb_json)
         try:
             growth_rate = (
-                (current_operating_revenue - last_operating_revenue)
-                / last_operating_revenue
+                (operating_revenue_info[1] - operating_revenue_info[2])
+                / operating_revenue_info[2]
                 * 100
             )
             print(
-                f"{file_title}的当期营业收入和营业收入增长率分别为{current_operating_revenue},{growth_rate}%"
+                f"{file_title}的当期营业收入为{operating_revenue_info[1]}，营业收入增长率为{growth_rate}%"
             )
-            return current_operating_revenue, growth_rate  # 返回当期营业收入和营业收入增长率
+            return operating_revenue_info[1], growth_rate  # 返回当期营业收入和营业收入增长率
         except:
             print(f"{file_title}无法计算营业收入增长率")
     except:
@@ -1294,89 +1309,47 @@ def get_accounts_receivable(file_title):
         # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
         amount_of_bankers_acceptance = 0
         # 3.计算当期应收及应收增长率
-        current_accounts_receivable_list = []
-        last_accounts_receivable_list = []
-        for row in hbzcfzb_json:
-            if row[0] in key_word:
-                if len(row) == 3:
-                    row[1] = (
-                        0
-                        if (_is_empty(row[1]) or row[1] == "-")
-                        else float(large_num_format(row[1]))
-                    )
-                    row[2] = (
-                        0
-                        if (_is_empty(row[2]) or row[2] == "-")
-                        else float(large_num_format(row[2]))
-                    )
-                    current_accounts_receivable_list.append(row[1])
-                    last_accounts_receivable_list.append(row[2])
-                else:
-                    row[2] = (
-                        0
-                        if (_is_empty(row[2]) or row[2] == "-")
-                        else float(large_num_format(row[2]))
-                    )
-                    row[3] = (
-                        0
-                        if (_is_empty(row[3]) or row[3] == "-")
-                        else float(large_num_format(row[3]))
-                    )
-                    current_accounts_receivable_list.append(row[2])
-                    last_accounts_receivable_list.append(row[3])
-        current_accounts_receivable = sum(current_accounts_receivable_list)
-        last_accounts_receivable = sum(last_accounts_receivable_list)
+        accounts_receivable_info = format_target_table_json_and_growth_rate(key_word, hbzcfzb_json)
         try:
             growth_rate = (
-                (current_accounts_receivable - last_accounts_receivable)
-                / last_accounts_receivable
+                (accounts_receivable_info[1] - accounts_receivable_info[2])
+                / accounts_receivable_info[2]
                 * 100
             )
-            return current_accounts_receivable, growth_rate
+            print(f"{file_title}的当期应收款为{accounts_receivable_info[1]},增长率为{growth_rate}%")
+            return accounts_receivable_info[1], growth_rate
+
         except:
             print(f"{file_title}无法计算应收款增长率")
     except:
         print(f"{file_title}无法获取合并资产负债表数据")
 
 
-def propotion_of_accounts_receivable(hbzcfzb_json):
+def propotion_of_accounts_receivable(file_title):
     """
     计算应收/总资产比例
     """
     # 应收 = 资产负债表所有带“应收”两个字的科目数字总和-银行承兑汇票金额
     # 1.筛选出合并资产负债表中包含“应收”关键字的字段值，计算其之和
-    fields = _map(hbzcfzb_json, lambda item: item[0])
-    key_word = _filter(fields, lambda field: "应收" in field)
+    accounts_receivable = get_accounts_receivable(file_title)[0]
     # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
     amount_of_bankers_acceptance = 0
     # 3.计算应收/总资产比例
-    accounts_receivable_list = []
-    for row in hbzcfzb_json:
-        if row[0] in key_word:
-            if len(row) == 3:
-                row[1] = (
-                    0
-                    if (_is_empty(row[1]) or row[1] == "-")
-                    else float(large_num_format(row[1]))
-                )
-                accounts_receivable_list.append(row[1])
-            else:
-                row[2] = (
-                    0
-                    if (_is_empty(row[2]) or row[2] == "-")
-                    else float(large_num_format(row[2]))
-                )
-                accounts_receivable_list.append(row[2])
-    accounts_receivable = sum(accounts_receivable_list)
-    total_assets = get_total_assets(hbzcfzb_json)
-    propotion_of_accounts_receivable = accounts_receivable / total_assets
-    return propotion_of_accounts_receivable * 100
+    try:
+        total_assets = get_total_assets(file_title)
+        propotion_of_accounts_receivable = accounts_receivable / total_assets *100 
+    except:
+        print(f"{file_title}无法计算总资产")
+    return propotion_of_accounts_receivable
+
+
 
 # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
 # 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
 # 2.通过行业列表查询每个行业下属的公司列表
 # 3.传入2中公司列表，再次计算应收账款/月均营业收入
 # 4.对已经拿到的3进行排序（二维数组的item），取中位数，与传入的公司计算值比较大小，filter
+
 
 def get_industry(file_title_list):
     industries = {}
@@ -1388,11 +1361,10 @@ def get_industry(file_title_list):
             result_type="dict",
             filter_str=f"where name = '{name}'",
         )
-        industry_info = {
-            name: industry[0]['industry']
-        }
+        industry_info = {name: industry[0]["industry"]}
         industries.update(industry_info)
     return industries
 
+
 # def get_companies_in_the_same_industry(industries:list):
-#  
+#

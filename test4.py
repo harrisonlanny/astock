@@ -59,5 +59,10 @@
 # cells = [None, None,2, None]
 # print(_every(cells, lambda item: item is None))
 
-text = "      "
-print(text.strip() == "")
+from utils.index import _is_empty
+
+
+text = set(list("哈哈哈"))
+chars = set(["。", "，", '“', "”", "："])
+
+print(_is_empty(text & chars))

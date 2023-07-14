@@ -191,10 +191,8 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
     file_title_list = list(set(file_title_list) - set(error_list))
     target = []
     for file_title in file_title_list:
-        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
-        file_content = json(hbzcfzb_json_url)
         try:
-            propotion = propotion_of_accounts_receivable(file_content)
+            propotion = propotion_of_accounts_receivable(file_title)
             print(f"{file_title}应收占比为{propotion}%")
             if propotion < 30:
                 target.append(file_title)
@@ -216,13 +214,11 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
         # 1.从合并资产负债表中获取应收款增长率
             accounts_receivable_success = get_accounts_receivable(file_title)
             if accounts_receivable_success:
-                growth_rate_of_account_receivable = accounts_receivable_success[1]
-                print(f"{file_title}的应收款增长率为{growth_rate_of_account_receivable}%")
+                growth_rate_of_account_receivable = accounts_receivable_success[2]
         # 2.从合并利润表中获取营业收入增长率
             operating_revenue_success = get_operating_revenue(file_title)
             if operating_revenue_success:
-                growth_rate_of_operating_revenue = operating_revenue_success[1]
-                print(f"{file_title}的营业收入增长率为{growth_rate_of_operating_revenue}%")
+                growth_rate_of_operating_revenue = operating_revenue_success[2]
         # 3.比较应收款增长率和营业收入增长率，若应收款增幅<营业收入增幅，则符合条件
             if accounts_receivable_success and operating_revenue_success:
                 if growth_rate_of_account_receivable < growth_rate_of_operating_revenue:
