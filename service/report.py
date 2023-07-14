@@ -1371,3 +1371,28 @@ def propotion_of_accounts_receivable(hbzcfzb_json):
     total_assets = get_total_assets(hbzcfzb_json)
     propotion_of_accounts_receivable = accounts_receivable / total_assets
     return propotion_of_accounts_receivable * 100
+
+# 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
+# 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
+# 2.通过行业列表查询每个行业下属的公司列表
+# 3.传入2中公司列表，再次计算应收账款/月均营业收入
+# 4.对已经拿到的3进行排序（二维数组的item），取中位数，与传入的公司计算值比较大小，filter
+
+def get_industry(file_title_list):
+    industries = {}
+    for file_title in file_title_list:
+        name = file_title.split("__")[1]
+        industry = read_table(
+            table_name="stock_basic",
+            fields=["industry"],
+            result_type="dict",
+            filter_str=f"where name = '{name}'",
+        )
+        industry_info = {
+            name: industry[0]['industry']
+        }
+        industries.update(industry_info)
+    return industries
+
+# def get_companies_in_the_same_industry(industries:list):
+#     for 
