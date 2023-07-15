@@ -27,6 +27,7 @@ from db.index import (
     get_total,
     delete_rows,
     read_table,
+    sql,
     update_table,
 )
 from model.index import describe_json
@@ -1359,27 +1360,37 @@ def get_industry(file_title_list):
         industries.update(industry_info)
     return industries
 
-def get_companies_in_the_same_industry(industries:list):
+def get_companies_in_the_same_industry(file_title, industries:list):
     '''
-    通过行业列表查询每个行业下属的公司列表
+    通过行业列表查询每个行业下属的公司列表(相同时间的file_title)
     '''
+    # 1.通过file_title拿到当前报告的时间--2022年年度报告
+    report_time = file_title.split('__')[-2]
+    # 2.拿到industries列表中每个industry下所有公司在当前时间报告的file_title
     all_result = []
     for industry in industries:
-        result = read_table(
-            table_name="stock_basic",
-            fields=["symbol","name"],
-            filter_str=f"where industry = '{industry}'"
-        )
-        print(f"{industry}行业下的公司有：{result}")
-        all_result.append(result)        
+        read_sql = f"SELECT title, file_title from announcements where symbol in (SELECT symbol from stock_basic where industry = '{industry}')"
+        row_list = sql([read_sql], lambda cursor: cursor.fetchall())
+        same_time_file_list = _filter(row_list, lambda item:report_time[-9:] in item[0] and "摘要" not in report_time)
+        same_time_file_titles = _map(same_time_file_list, lambda item: item[-1])
+        all_result.append(same_time_file_titles)
     return all_result
         
+def receivable_balance_propotion_of_monthly_average_operating_income(file_title):
+    '''
+    计算应收账款余额/月均营业收入
+    '''
+    gen_hblrb
+    try:
+        receivable_balance = get_accounts_receivable(file_title)[0]
+        monthly_average_operating_income = get_operating_revenue(file_title)[0]
+        propotion_of_receivable_balance = receivable_balance/(monthly_average_operating_income/12)
+        print(f"{file_title}应收账款余额/月均营业收入的值为{propotion_of_receivable_balance}")
+        return propotion_of_receivable_balance
+    except:
+        print(f"{file_title}无法计算应收账款余额/月均营业收入！")
+    
 
-# 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
-# 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
-# 2.通过行业列表查询每个行业下属的公司列表
-# 3.传入2中公司列表，再次计算应收账款/月均营业收入,加入到tuple中
-# 4.对已经拿到的3进行排序（二维数组的item），取中位数，与传入的公司计算值比较大小，filter
 
 
 

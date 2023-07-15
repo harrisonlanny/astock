@@ -1,6 +1,6 @@
 from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement
-from service.report import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_accounts_receivable, get_announcement_url, get_operating_revenue, get_total_assets, parse_pdf, propotion_of_accounts_receivable
-from utils.index import _map, get_path, is_exist, json
+from service.report import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_accounts_receivable, get_announcement_url, get_companies_in_the_same_industry, get_industry, get_operating_revenue, get_total_assets, parse_pdf, propotion_of_accounts_receivable, receivable_balance_propotion_of_monthly_average_operating_income
+from utils.index import _map, get_median, get_path, is_exist, json
 
 # name = "000534__万泽股份__2022年年度报告__1215991366"
 # pdf_url = get_announcement_url(name)
@@ -228,3 +228,20 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
             abnormal_count += 1
     print(f"符合应收款增幅<营业收入增幅的比例是{len(target)/(len(file_title_list)-abnormal_count)*100}%")
     return target
+
+def filter_by_receivable_balance(file_title_list):
+    for file_title in file_title_list:
+        # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
+        same_industry_propotion = [] 
+        # 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
+        industry = list(get_industry([file_title]).values())
+        same_industry_companies = get_companies_in_the_same_industry(file_title,industry)
+        generate_hblrb(same_industry_companies[0])
+        gen_hbzcfzb(same_industry_companies[0])
+        for company in same_industry_companies[0]:
+            propotion = (receivable_balance_propotion_of_monthly_average_operating_income(company),)
+            company = company + propotion
+            print(company)
+        # 2.通过行业列表查询每个行业下属的公司列表
+        # 3.传入2中公司列表，再次计算应收账款/月均营业收入,加入到tuple中
+        # 4.对已经拿到的3进行排序（二维数组的item），取中位数，与传入的公司计算值比较大小，filter
