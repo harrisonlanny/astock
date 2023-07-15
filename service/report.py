@@ -1342,16 +1342,10 @@ def propotion_of_accounts_receivable(file_title):
         print(f"{file_title}无法计算总资产")
     return propotion_of_accounts_receivable
 
-
-
-# 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
-# 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
-# 2.通过行业列表查询每个行业下属的公司列表
-# 3.传入2中公司列表，再次计算应收账款/月均营业收入
-# 4.对已经拿到的3进行排序（二维数组的item），取中位数，与传入的公司计算值比较大小，filter
-
-
 def get_industry(file_title_list):
+    '''
+    获取每个公司所在的行业
+    '''
     industries = {}
     for file_title in file_title_list:
         name = file_title.split("__")[1]
@@ -1365,6 +1359,30 @@ def get_industry(file_title_list):
         industries.update(industry_info)
     return industries
 
+def get_companies_in_the_same_industry(industries:list):
+    '''
+    通过行业列表查询每个行业下属的公司列表
+    '''
+    all_result = []
+    for industry in industries:
+        result = read_table(
+            table_name="stock_basic",
+            fields=["symbol","name"],
+            filter_str=f"where industry = '{industry}'"
+        )
+        print(f"{industry}行业下的公司有：{result}")
+        all_result.append(result)        
+    return all_result
+        
 
-# def get_companies_in_the_same_industry(industries:list):
-#
+# 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
+# 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
+# 2.通过行业列表查询每个行业下属的公司列表
+# 3.传入2中公司列表，再次计算应收账款/月均营业收入,加入到tuple中
+# 4.对已经拿到的3进行排序（二维数组的item），取中位数，与传入的公司计算值比较大小，filter
+
+
+
+
+
+

@@ -1,6 +1,6 @@
 from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, Financial_Statement
 from db.index import read_table
-from service.report import get_accounts_receivable, get_industry, get_operating_revenue
+from service.report import get_accounts_receivable, get_companies_in_the_same_industry, get_industry, get_operating_revenue
 from strategy.announcements.announcements import filter_by_increase_in_accounts_receivable, filter_by_interest_bearing_liabilities, filter_by_proportion_of_accounts_receivable, generate_hblrb, generate_hbzcfzb
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
 from utils.index import _filter, _is_empty, _map, get_path, json, large_num_format
@@ -50,7 +50,7 @@ file_title_list = [
 # ]
 
 # filter_by_interest_bearing_liabilities(file_title_list)
-filter_by_proportion_of_accounts_receivable(file_title_list)
+# filter_by_proportion_of_accounts_receivable(file_title_list)
 
 # generate_hbzcfzb(file_title_list, False)
 # generate_hblrb(file_title_list, False)
@@ -68,6 +68,5 @@ filter_by_proportion_of_accounts_receivable(file_title_list)
 # for file_title in file_title_list:
 #     # get_accounts_receivable(file_title)
 #     get_operating_revenue(file_title)
-
-
+get_companies_in_the_same_industry(["银行","软件服务","全国地产"])
 
