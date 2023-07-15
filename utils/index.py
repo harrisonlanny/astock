@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from json import dump, load
+import statistics
 import threading
 import time
 
@@ -440,3 +441,7 @@ def concurrency(run, arr:list|tuple,count=2):
 #     print(get_path('/model/tables.json'))
 
 #     print(",".join(_map([1, 2, 3], lambda item: str(item))))
+
+def get_median(iter:list[float]|tuple[float]):
+    median_value = statistics.median(iter)
+    return median_value

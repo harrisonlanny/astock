@@ -1,9 +1,10 @@
+import statistics
 from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, Financial_Statement
 from db.index import read_table
 from service.report import get_accounts_receivable, get_companies_in_the_same_industry, get_industry, get_operating_revenue
 from strategy.announcements.announcements import filter_by_increase_in_accounts_receivable, filter_by_interest_bearing_liabilities, filter_by_proportion_of_accounts_receivable, generate_hblrb, generate_hbzcfzb
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
-from utils.index import _filter, _is_empty, _map, get_path, json, large_num_format
+from utils.index import _filter, _is_empty, _map, get_median, get_path, json, large_num_format
 
 file_title_list = [
     "600481__双良节能__双良节能系统股份有限公司2022年年度报告__1216560014",
@@ -68,5 +69,5 @@ file_title_list = [
 # for file_title in file_title_list:
 #     # get_accounts_receivable(file_title)
 #     get_operating_revenue(file_title)
-get_companies_in_the_same_industry(["银行","软件服务","全国地产"])
+# get_companies_in_the_same_industry(["银行","软件服务","全国地产"])
 
