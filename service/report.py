@@ -1369,9 +1369,9 @@ def get_companies_in_the_same_industry(file_title, industries:list):
     # 2.拿到industries列表中每个industry下所有公司在当前时间报告的file_title
     all_result = []
     for industry in industries:
-        read_sql = f"SELECT title, file_title from announcements where symbol in (SELECT symbol from stock_basic where industry = '{industry}')"
+        read_sql = f"SELECT title, file_title from announcements where title not like '%英文%'  and title not like '%（已取消）%' and title not like '%摘要%' and symbol in (SELECT symbol from stock_basic where industry = '{industry}')"
         row_list = sql([read_sql], lambda cursor: cursor.fetchall())
-        same_time_file_list = _filter(row_list, lambda item:report_time[-9:] in item[0] and "摘要" not in report_time)
+        same_time_file_list = _filter(row_list, lambda item:report_time[-9:] in item[0])
         same_time_file_titles = _map(same_time_file_list, lambda item: item[-1])
         all_result.append(same_time_file_titles)
     return all_result

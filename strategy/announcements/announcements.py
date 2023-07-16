@@ -230,18 +230,30 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
     return target
 
 def filter_by_receivable_balance(file_title_list):
+    target = []
     for file_title in file_title_list:
+        companies_info = {}
         # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
         same_industry_propotion = [] 
         # 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
         industry = list(get_industry([file_title]).values())
         same_industry_companies = get_companies_in_the_same_industry(file_title,industry)
-        generate_hblrb(same_industry_companies[0])
-        gen_hbzcfzb(same_industry_companies[0])
-        for company in same_industry_companies[0]:
-            propotion = (receivable_balance_propotion_of_monthly_average_operating_income(company),)
-            company = company + propotion
-            print(company)
-        # 2.通过行业列表查询每个行业下属的公司列表
-        # 3.传入2中公司列表，再次计算应收账款/月均营业收入,加入到tuple中
-        # 4.对已经拿到的3进行排序（二维数组的item），取中位数，与传入的公司计算值比较大小，filter
+        if same_industry_companies[0]:
+            generate_hblrb(same_industry_companies[0])
+            generate_hbzcfzb(same_industry_companies[0])
+            for company in same_industry_companies[0]:
+                propotion = receivable_balance_propotion_of_monthly_average_operating_income(company)
+                company_info = {company: propotion}
+                companies_info.update(company_info)
+            for key in companies_info:
+                if companies_info[key] == None:
+                    companies_info[key] = 0
+            median =get_median(companies_info.values())
+            if companies_info[file_title] < median:           
+                target.append(file_title)
+            else:
+                print(f"{file_title}不符合应收账款/月均营业收入<中位数条件！")
+            print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
+            print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
+           
+            
