@@ -1380,7 +1380,8 @@ def receivable_balance_propotion_of_monthly_average_operating_income(file_title)
     '''
     计算应收账款余额/月均营业收入
     '''
-    gen_hblrb(file_title)
+    hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+    gen_hblrb(file_title,hblrb_url)
     try:
         receivable_balance = get_accounts_receivable(file_title)[0]
         monthly_average_operating_income = get_operating_revenue(file_title)[0]

@@ -1,7 +1,7 @@
 import statistics
 from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, Financial_Statement
 from db.index import read_table
-from service.report import get_accounts_receivable, get_companies_in_the_same_industry, get_industry, get_monetary_fund, get_operating_revenue
+from service.report import get_accounts_receivable, get_companies_in_the_same_industry, get_industry, get_monetary_fund, get_operating_revenue, receivable_balance_propotion_of_monthly_average_operating_income
 from strategy.announcements.announcements import filter_by_increase_in_accounts_receivable, filter_by_interest_bearing_liabilities, filter_by_monetary_funds, filter_by_proportion_of_accounts_receivable, filter_by_receivable_balance, generate_hblrb, generate_hbzcfzb
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
 from utils.index import _filter, _is_empty, _map, get_median, get_path, json, large_num_format
@@ -72,5 +72,7 @@ generate_hbzcfzb(file_title_list, False)
 
 
 # filter_by_receivable_balance(file_title_list)
-filter_by_monetary_funds(file_title_list)
+# filter_by_monetary_funds(file_title_list)
 # generate_hbzcfzb(file_title_list)
+for file_title in file_title_list:
+    receivable_balance_propotion_of_monthly_average_operating_income(file_title)
