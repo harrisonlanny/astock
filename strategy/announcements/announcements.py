@@ -1,5 +1,5 @@
 from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement
-from service.report import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_accounts_receivable, get_announcement_url, get_companies_in_the_same_industry, get_industry, get_operating_revenue, get_total_assets, parse_pdf, propotion_of_accounts_receivable, receivable_balance_propotion_of_monthly_average_operating_income
+from service.report import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_accounts_receivable, get_announcement_url, get_companies_in_the_same_industry, get_industry, get_monetary_fund, get_operating_revenue, get_total_assets, parse_pdf, propotion_of_accounts_receivable, receivable_balance_propotion_of_monthly_average_operating_income
 from utils.index import _map, get_median, get_path, is_exist, json
 
 # name = "000534__万泽股份__2022年年度报告__1215991366"
@@ -256,4 +256,20 @@ def filter_by_receivable_balance(file_title_list):
             print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
             print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
            
-            
+def filter_by_monetary_funds(file_title_list):
+    '''
+    货币资金大于等于有息负债
+    '''
+    target = []
+    for file_title in file_title_list:
+        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+        file_content = json(hbzcfzb_json_url)
+    # 1.获取合并资产负债表中的货币资金
+        current_monetary_funds = get_monetary_fund(file_title)
+    # 2.获取合并资产负债表中的有息负债
+        current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_content)
+    # 3.将符合条件的公司加入target
+        if current_monetary_funds >= current_interest_bearing_liabilities:
+            target.append(file_title)
+    print(f"{target}符合货币资金大于等于有息负债的条件")
+    print(f"符合货币资金大于等于有息负债条件的公司比例为{len(target)/len(file_title_list)*100}%")

@@ -1180,7 +1180,7 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
     interest_bearing_liabilities_current = sum(
         interest_bearing_liabilities_current_list_new
     )
-
+    print(f"当期有息负债金额为{interest_bearing_liabilities_current}")
     return interest_bearing_liabilities_current
 
 
@@ -1380,7 +1380,7 @@ def receivable_balance_propotion_of_monthly_average_operating_income(file_title)
     '''
     计算应收账款余额/月均营业收入
     '''
-    gen_hblrb
+    gen_hblrb(file_title)
     try:
         receivable_balance = get_accounts_receivable(file_title)[0]
         monthly_average_operating_income = get_operating_revenue(file_title)[0]
@@ -1390,7 +1390,22 @@ def receivable_balance_propotion_of_monthly_average_operating_income(file_title)
     except:
         print(f"{file_title}无法计算应收账款余额/月均营业收入！")
     
-
+def get_monetary_fund(file_title):
+    hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+    # 1.筛选出合并资产负债表中包含“货币资金”关键字的字段值
+    try:
+        hbzcfzb_json = json(hbzcfzb_url)
+        fields = _map(hbzcfzb_json, lambda item: item[0])
+        key_word = _filter(fields, lambda field: "货币资金" in field)
+    # 2.获取当期货币资金
+        for rows in hbzcfzb_json:
+            if rows[0] in key_word:
+                rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
+                current_monetary_funds = large_num_format(rows[-2])
+                print(f"{file_title}的合并资产负债表中，当期货币资金金额为{current_monetary_funds}")
+                return current_monetary_funds
+    except:
+        print(f"{file_title}的合并资产负债表未找到货币资金项目")
 
 
 
