@@ -59,7 +59,10 @@ file_title_list = _map(r, lambda item: item["file_title"])
 # filter_by_interest_bearing_liabilities(file_title_list)
 # filter_by_proportion_of_accounts_receivable(file_title_list)
 
-generate_hbzcfzb(file_title_list, False)
+generate_hbzcfzb([
+    '000001__平安银行__2007年年度报告__38090685'
+    # '605056__咸亨国际__咸亨国际：2022年年度报告__1216478420'
+], False)
 # generate_hblrb(file_title_list, False)
 # filter_by_increase_in_accounts_receivable(file_title_list)
 
@@ -74,5 +77,5 @@ generate_hbzcfzb(file_title_list, False)
 # filter_by_receivable_balance(file_title_list)
 # filter_by_monetary_funds(file_title_list)
 # generate_hbzcfzb(file_title_list)
-for file_title in file_title_list:
-    receivable_balance_propotion_of_monthly_average_operating_income(file_title)
+# for file_title in file_title_list:
+#     receivable_balance_propotion_of_monthly_average_operating_income(file_title)

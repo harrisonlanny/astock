@@ -423,6 +423,8 @@ def get_table_top_desc(table_id: str, page_struct: any):
         get_top_table_data(table_id, page_struct)[1:],
         lambda item: item["type"] == "text_line",
     )
+    # if table_id == '73_1':
+    #     print('【top_data】', _map(top_data, lambda item: item['data']['text']))
 
     # print(f"table_id: {table_id}, page_num: {page_num}")
     if table is not None:
@@ -430,15 +432,24 @@ def get_table_top_desc(table_id: str, page_struct: any):
             [t_x0, t_top, t_x1, t_bottom] = table["data"].bbox
             prev_item = {"x0": t_x0, "x1": t_x1, "top": t_top, "bottom": t_bottom}
             # 算出每个item的间距（第一个是table，然后是最靠着table的text，依次外推）
-            for index, item in enumerate(top_data[::-1]):
-                gap = prev_item["top"] - item["data"]["bottom"]
-                if gap <= GAP:
-                    # print(table_id, 'top', gap)
-                    result.append(item)
-                else:
-                    break
-                prev_item = item["data"]
+            # for index, item in enumerate(top_data[::-1]):
+            #     gap = prev_item["top"] - item["data"]["bottom"]
+            #     if gap <= GAP:
+            #         # print(table_id, 'top', gap)
+            #         result.append(item)
+            #     else:
+            #         break
+            #     prev_item = item["data"]
+            # result.reverse()
+
+            result = top_data
             result.reverse()
+
+            if len(result) > 8:
+                result = result[0:8]
+            
+            # if table_id == '73_1':
+            #     print('考虑间距后 剩下的【top_data】', result)
             # TODO 需要上溯的表一定是当前页的第一张表，id以_1结尾
             if table_id.split("_")[1] == "1":
                 # 这里判断下，如果result数量很少，比如只有1个，而且是“单位：元”这种，就继续翻上一页，找到类似1、或者一、这种结束
@@ -722,35 +733,35 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
                 # 比如bbox内有1，2，3 三个obj
                 # 遍历1（遮住2、3），pix为1 => 说明1一定是不可见元素
                 # 遍历2（遮住1、3），pix为0.9 => 说明2一定是可见元素（虽然0.9已经很高了，但还是可见的）
-                top = text_line["top"]
-                bottom = text_line["bottom"]
-                x0 = text_line["x0"]
-                x1 = text_line["x1"]
-                line_width = x1 - x0
+                # top = text_line["top"]
+                # bottom = text_line["bottom"]
+                # x0 = text_line["x0"]
+                # x1 = text_line["x1"]
+                # line_width = x1 - x0
 
-                bbox = (x0, top, x1, bottom)
-                # # 生成像素图，从而判断文本是否可见
-                pix = fitz_page.get_pixmap(clip=bbox)
-                topusage = pix.color_topusage()[0]
+                # bbox = (x0, top, x1, bottom)
+                # # # 生成像素图，从而判断文本是否可见
+                # pix = fitz_page.get_pixmap(clip=bbox)
+                # topusage = pix.color_topusage()[0]
 
-                if topusage >= 0.8:
-                    # 检测空白占比(用来排除因为空白太多导致topusage过高)
-                    total_width = 0
-                    for char in text_line["chars"]:
-                        total_width += char["width"]
-                    word_percent = total_width / line_width
-                    if word_percent >= 0.6:
-                        # if text_line['text'] != "告":
-                        # 判断是否含有：。”这三个特殊小字符，不包含才算隐形
-                        if _is_empty(
-                            set(["。", "，", "“", "”", "：", "；"])
-                            & set(list(text_line["text"]))
-                        ):
-                            error_text = f"{pdf_name} {page_index + 1}页 {text_line['text']}: {topusage} {word_percent}"
-                            print(error_text)
-                            with open("./不可见.txt", "a") as t:
-                                t.write(f"{error_text}\n")
-                            return
+                # if topusage >= 0.8:
+                #     # 检测空白占比(用来排除因为空白太多导致topusage过高)
+                #     total_width = 0
+                #     for char in text_line["chars"]:
+                #         total_width += char["width"]
+                #     word_percent = total_width / line_width
+                #     if word_percent >= 0.6:
+                #         # if text_line['text'] != "告":
+                #         # 判断是否含有：。”这三个特殊小字符，不包含才算隐形
+                #         if _is_empty(
+                #             set(["。", "，", "“", "”", "：", "；"])
+                #             & set(list(text_line["text"]))
+                #         ):
+                #             error_text = f"{pdf_name} {page_index + 1}页 {text_line['text']}: {topusage} {word_percent}"
+                #             print(error_text)
+                #             with open("./不可见.txt", "a") as t:
+                #                 t.write(f"{error_text}\n")
+                #             return
 
                 current_page_struct.append(page_obj("text_line", text_line))
 
