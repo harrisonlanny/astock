@@ -29,11 +29,13 @@ class Financial_Statement(Enum):
     合并利润表 = "合并利润表"
     合并及公司利润表 = "合并及公司利润表"
     利润表 = "利润表"
+    现金和现金等价物的构成 = "现金和现金等价物的构成"
 
 STATIC_ANNOUNCEMENTS_DIR = "/static/announcements"
 STATIC_ANNOUNCEMENTS_PARSE_DIR = "/static/parse-announcements/base"
 STATIC_ANNOUNCEMENTS_HBZCFZB_DIR = "/static/parse-announcements/hbzcfzb"
 STATIC_ANNOUNCEMENTS_HBLRB_DIR = "/static/parse-announcements/hblrb"
+STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR="/static/parse-announcements/xjjxjdjw"
 
 JU_CHAO_PROTOCOL = "http://"
 JU_CHAO_HOST = "www.cninfo.com.cn"

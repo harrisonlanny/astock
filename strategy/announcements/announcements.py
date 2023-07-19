@@ -1,5 +1,5 @@
-from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, Financial_Statement
-from service.report import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_hblrb, gen_hbzcfzb, get_accounts_receivable, get_announcement_url, get_companies_in_the_same_industry, get_industry, get_monetary_fund, get_operating_revenue, get_total_assets, parse_pdf, propotion_of_accounts_receivable, receivable_balance_propotion_of_monthly_average_operating_income
+from service.config import STATIC_ANNOUNCEMENTS_HBLRB_DIR, STATIC_ANNOUNCEMENTS_HBZCFZB_DIR, STATIC_ANNOUNCEMENTS_PARSE_DIR, STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR, Financial_Statement
+from service.report import caculate_interest_bearing_liabilities_rate, calculate_interest_bearing_liabilities, gen_cash_equivalents, gen_hblrb, gen_hbzcfzb, get_accounts_receivable, get_announcement_url, get_cash_and_cash_equivalents, get_companies_in_the_same_industry, get_industry, get_monetary_fund, get_operating_revenue, get_total_assets, parse_pdf, propotion_of_accounts_receivable, receivable_balance_propotion_of_monthly_average_operating_income
 from utils.index import _map, get_median, get_path, is_exist, json
 
 # name = "000534__万泽股份__2022年年度报告__1215991366"
@@ -156,6 +156,42 @@ def generate_hblrb(file_title_list, use_cache: bool = True):
     print("合并利润表有问题的file_title_list: ", error_file_title_list)
     return error_file_title_list
 
+def generate_xjjxjdjw(file_title_list, use_cache: bool = True):
+    # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
+    for file_title in file_title_list:
+        file_url = get_announcement_url(file_title)
+        parse_pdf(file_url, file_title, use_cache)
+
+    # 2. 遍历所有的file_title_list，根据table.json和content.json来生成现金及现金等价物表
+    error_file_title_list = []
+    for file_title in file_title_list:
+        # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
+        xjjxjdjw_json_url = f"{STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR}/{file_title}__{Financial_Statement.现金和现金等价物的构成.value}.json"
+        table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
+        content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
+    
+        # 1. 检查是否存在现金及现金等价物表，如果不存在，才进行合成
+        if use_cache and is_exist(get_path(xjjxjdjw_json_url)):
+            continue
+        # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
+        # 可以收集异常的数据，并返回
+        all_exists = is_exist(get_path(table_json_url)) and is_exist(get_path(content_json_url))
+        if use_cache and not all_exists:
+            error_file_title_list.append({
+                "file_title": file_title,
+                "reason": "缺少table.json或content.json"
+            })
+            continue
+        # 3. 进行合成
+        gen_success = gen_cash_equivalents(file_title, xjjxjdjw_json_url)
+        if not gen_success:
+            error_file_title_list.append({
+                "file_title": file_title,
+                "reason": "table.json中没找到现金及现金等价物表"
+            })
+    print("现金及现金等价物表有问题的file_title_list: ", error_file_title_list)
+    return error_file_title_list
+
 
 def filter_by_interest_bearing_liabilities(file_title_list):
 # 筛选有息负债符合条件的公司
@@ -273,3 +309,22 @@ def filter_by_monetary_funds(file_title_list):
             target.append(file_title)
     print(f"{target}符合货币资金大于等于有息负债的条件")
     print(f"符合货币资金大于等于有息负债条件的公司比例为{len(target)/len(file_title_list)*100}%")
+
+
+def filter_by_cash_to_debt_ratio(file_title_list):
+    '''
+    从安全性角度出发，筛选 现金债务比=现金及现金等价物/有息负债>1的公司
+    '''
+    target = []
+    for file_title in file_title_list:
+        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+        file_content = json(hbzcfzb_json_url)
+    # 1.获取现金和现金等价物的构成表中的期末现金及现金等价物余额
+        current_cash_equivalents = get_cash_and_cash_equivalents(file_title)
+    # 2.获取合并资产负债表中的有息负债
+        current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_content)
+    # 3.将符合条件的公司加入target
+        if current_cash_equivalents >= current_interest_bearing_liabilities:
+            target.append(file_title)
+    print(f"{target}符合现金债务比>1的条件")
+    print(f"符合现金债务比>1的公司比例为{len(target)/len(file_title_list)*100}%")

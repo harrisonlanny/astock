@@ -16,6 +16,7 @@ from service.config import (
     STATIC_ANNOUNCEMENTS_HBLRB_DIR,
     STATIC_ANNOUNCEMENTS_HBZCFZB_DIR,
     STATIC_ANNOUNCEMENTS_PARSE_DIR,
+    STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR,
     Announcement_Category,
     Announcement_Category_Options,
     Financial_Statement,
@@ -1158,6 +1159,45 @@ def gen_hblrb(file_title, url):
         return True
     return False
 
+def gen_cash_equivalents(file_title, url):
+    save_content_path = (
+        get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
+    )
+    save_table_path = (
+        get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__table.json"
+    )
+    file_all_tables = json2(save_table_path)
+    content = json2(save_content_path)
+
+    xjjxjdjw = None
+    xjjxjdjw_rows = []
+    for t in file_all_tables:
+        top_desc = t["desc"]["top"]
+        for d in top_desc:
+            if (
+                d.endswith(f"{Financial_Statement.现金和现金等价物的构成.value}")
+                or (f"、{Financial_Statement.现金和现金等价物的构成.value}" in d)
+            ):
+                xjjxjdjw = t
+                break
+        if xjjxjdjw is not None:
+            break
+
+    if xjjxjdjw:
+        find_count = 0
+        for p in content:
+            p_values = content[p]
+            for item in p_values:
+                if item[0] == "table" and item[1] in xjjxjdjw["range"]:
+                    find_count += 1
+                    xjjxjdjw_rows += item[2]
+                if find_count == len(xjjxjdjw["range"]):
+                    break
+            if find_count == len(xjjxjdjw["range"]):
+                break
+        json2(f"{url}", xjjxjdjw_rows)
+        return True
+    return False
 
 def calculate_interest_bearing_liabilities(hbzcfzb_json):
     """
@@ -1420,7 +1460,24 @@ def get_monetary_fund(file_title):
         print(f"{file_title}的合并资产负债表未找到货币资金项目")
 
 
-
-
+def get_cash_and_cash_equivalents(file_title):
+    '''
+    获取【现金及现金等价物】表中的现金及现金等价物值
+    '''
+    xjjxjdjw_url = f"{STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR}/{file_title}__{Financial_Statement.现金和现金等价物的构成.value}.json"
+    # 1.筛选出现金和现金等价物构成表中包含“期末现金及现金等价物余额”关键字的字段值
+    try:
+        xjjxjdjw_json = json(xjjxjdjw_url)
+        fields = _map(xjjxjdjw_json, lambda item: item[0])
+        key_word = _filter(fields, lambda field: "期末现金及现金等价物余额" in field)
+    # 2.获取期末现金及现金等价物余额
+        for rows in xjjxjdjw_json:
+            if rows[0] in key_word:
+                rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
+                current_cash_equivalents = large_num_format(rows[-2])
+                print(f"{file_title}的现金和现金等价物构成表中，期末现金及现金等价物余额为{current_cash_equivalents}")
+                return current_cash_equivalents
+    except:
+        print(f"{file_title}的现金和现金等价物构成表未找到「期末现金及现金等价物余额」项目")
 
 
