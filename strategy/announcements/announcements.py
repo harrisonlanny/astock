@@ -201,20 +201,22 @@ def filter_by_interest_bearing_liabilities(file_title_list):
     companies = []
     for file_title in file_title_list:
         hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
-        file_content = json(hbzcfzb_json_url)
         try:
-            result = caculate_interest_bearing_liabilities_rate(calculate_interest_bearing_liabilities(file_content), get_total_assets(file_content))
-            print(f"{file_title}的有息负债占比为{result}%")   
-            if result < 60:
-                companies.append(file_title) 
+            file_content = json(hbzcfzb_json_url)
+            try:
+                result = caculate_interest_bearing_liabilities_rate(calculate_interest_bearing_liabilities(file_title), get_total_assets(file_title))
+                # print(f"{file_title}的有息负债占比为{result}%")   
+                if result < 60:
+                    companies.append(file_title) 
+            except:
+                print(f"{file_title}无法计算有息负债占比")  
         except:
-            print(f"{file_title}无法解析总资产")  
-        
+            print(f"{file_title}未找到合并资产负债表")
     print("符合有息负债占比条件的公司有：",companies)
-    r = len(companies)/len(file_title_list)*100
-    print(f"符合有息负债占比筛选条件的公司比例为：{r}%")
+    # r = len(companies)/len(file_title_list)*100
+    # print(f"符合有息负债占比筛选条件的公司比例为：{r}%")
+    print(f"符合有息负债占比筛选条件的公司比例为：{len(companies)/len(file_title_list)*100}%")
 
-    return companies, r
 
 
 
@@ -299,14 +301,17 @@ def filter_by_monetary_funds(file_title_list):
     target = []
     for file_title in file_title_list:
         hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
-        file_content = json(hbzcfzb_json_url)
-    # 1.获取合并资产负债表中的货币资金
-        current_monetary_funds = get_monetary_fund(file_title)
-    # 2.获取合并资产负债表中的有息负债
-        current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_content)
-    # 3.将符合条件的公司加入target
-        if current_monetary_funds >= current_interest_bearing_liabilities:
-            target.append(file_title)
+        try:
+            file_content = json(hbzcfzb_json_url)
+        # 1.获取合并资产负债表中的货币资金
+            current_monetary_funds = get_monetary_fund(file_title)
+        # 2.获取合并资产负债表中的有息负债
+            current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_content)
+        # 3.将符合条件的公司加入target
+            if current_monetary_funds >= current_interest_bearing_liabilities:
+                target.append(file_title)
+        except:
+            print(f"{file_title}未生成合并资产负债表")
     print(f"{target}符合货币资金大于等于有息负债的条件")
     print(f"符合货币资金大于等于有息负债条件的公司比例为{len(target)/len(file_title_list)*100}%")
 
@@ -318,13 +323,16 @@ def filter_by_cash_to_debt_ratio(file_title_list):
     target = []
     for file_title in file_title_list:
         hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
-        file_content = json(hbzcfzb_json_url)
-    # 1.获取现金和现金等价物的构成表中的期末现金及现金等价物余额
-        current_cash_equivalents = get_cash_and_cash_equivalents(file_title)
-    # 2.获取合并资产负债表中的有息负债
-        current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_content)
-    # 3.将符合条件的公司加入target
-        if current_cash_equivalents >= current_interest_bearing_liabilities:
-            target.append(file_title)
+        try:
+            file_content = json(hbzcfzb_json_url)
+        # 1.获取现金和现金等价物的构成表中的期末现金及现金等价物余额
+            current_cash_equivalents = get_cash_and_cash_equivalents(file_title)
+        # 2.获取合并资产负债表中的有息负债
+            current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_content)
+        # 3.将符合条件的公司加入target
+            if current_cash_equivalents >= current_interest_bearing_liabilities:
+                target.append(file_title)
+        except:
+            print(f"{file_title}")
     print(f"{target}符合现金债务比>1的条件")
     print(f"符合现金债务比>1的公司比例为{len(target)/len(file_title_list)*100}%")

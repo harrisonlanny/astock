@@ -1199,10 +1199,11 @@ def gen_cash_equivalents(file_title, url):
         return True
     return False
 
-def calculate_interest_bearing_liabilities(hbzcfzb_json):
+def calculate_interest_bearing_liabilities(file_title):
     """
     计算有息负债
     """
+    hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
     interest_items = [
         "短期借款",
         "交易性金融负债",
@@ -1214,25 +1215,30 @@ def calculate_interest_bearing_liabilities(hbzcfzb_json):
     ]
     interest_bearing_liabilities_current_list = []
     interest_bearing_liabilities_current_list_new = []
-    for row in hbzcfzb_json:
-        result = _map(row, lambda item: large_num_format(item))
-        if result[0] in interest_items:
-            # 如果len(result)==3,则第二列为当年对应数据，如果len(result)==4,则第三列为当年对应数据
-            if len(result) == 3:
-                interest_bearing_liabilities_current_list.append(result[1])
-            else:
-                interest_bearing_liabilities_current_list.append(result[2])
-    for item in interest_bearing_liabilities_current_list:
-        item = 0 if (_is_empty(item) or item == "-") else item
-        interest_bearing_liabilities_current_list_new.append(item)
-    interest_bearing_liabilities_current_list_new = _map(
-        interest_bearing_liabilities_current_list_new, lambda x: float(x)
-    )
-    interest_bearing_liabilities_current = sum(
-        interest_bearing_liabilities_current_list_new
-    )
-    print(f"当期有息负债金额为{interest_bearing_liabilities_current}")
-    return interest_bearing_liabilities_current
+    try:
+        hbzcfzb_json = json(hbzcfzb_url)
+        fields = _map(hbzcfzb_json, lambda item: item[0])
+        key_word = _filter(
+            fields,
+            lambda field: field in interest_items
+        )
+        for row in hbzcfzb_json:
+            result = _map(row, lambda item: large_num_format(item))
+            if result[0] in key_word:
+                interest_bearing_liabilities_current_list.append(result[-2])
+        for item in interest_bearing_liabilities_current_list:
+            item = 0 if (_is_empty(item) or item == "-") else item
+            interest_bearing_liabilities_current_list_new.append(item)
+        interest_bearing_liabilities_current_list_new = _map(
+            interest_bearing_liabilities_current_list_new, lambda x: float(x)
+        )
+        interest_bearing_liabilities_current = sum(
+            interest_bearing_liabilities_current_list_new
+        )
+        print(f"{file_title}的当期有息负债金额为{interest_bearing_liabilities_current}")
+        return interest_bearing_liabilities_current
+    except:
+        print(f"{file_title}未找到合并资产负债表")
 
 
 def get_total_assets(file_title):
@@ -1479,5 +1485,6 @@ def get_cash_and_cash_equivalents(file_title):
                 return current_cash_equivalents
     except:
         print(f"{file_title}的现金和现金等价物构成表未找到「期末现金及现金等价物余额」项目")
+        return 0
 
 
