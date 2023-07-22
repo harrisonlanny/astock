@@ -115,15 +115,15 @@ def generate_hbzcfzb(file_title_list, use_cache: bool = True):
             if not gen_success:
                 error_file_title_list.append({
                     "file_title": file_title,
-                    "reason": "table.json中没找到合并资产负债表"
+                    "reason": "合并资产负债表生成失败"
                 })
-            # 4.检查是否成功生成合并资产负债表
-            if is_exist(get_path(hbzcfzb_json_url)):
-                continue
-            else:
-                # 如果未合成，则通过content.json合成合并资产负债表
-                # 从“合并资产负债表”开始，到“负债和股东权益总计”结束（可跨页）
-                pass
+            # # 4.检查是否成功生成合并资产负债表
+            # if is_exist(get_path(hbzcfzb_json_url)):
+            #     continue
+            # else:
+            #     # 如果未合成，则通过content.json合成合并资产负债表
+            #     # 从“合并资产负债表”开始，到“负债和股东权益总计”结束（可跨页）
+            #     pass
     print("合并资产负债表有问题的file_title_list: ", error_file_title_list)
     return error_file_title_list
 

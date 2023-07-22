@@ -400,7 +400,12 @@ def is_cell_size_same(cell1, cell2, empty_is_same: bool = True):
     width_gap = abs(size1["width"] - size2["width"])
     if width_gap <= same_precision:
         return True
-    print("cell size超过误差：", width_gap, cell1, cell2, )
+    print(
+        "cell size超过误差：",
+        width_gap,
+        cell1,
+        cell2,
+    )
     return False
 
 
@@ -448,7 +453,7 @@ def get_table_top_desc(table_id: str, page_struct: any):
 
             if len(result) > 8:
                 result = result[0:8]
-            
+
             # if table_id == '73_1':
             #     print('考虑间距后 剩下的【top_data】', result)
             # TODO 需要上溯的表一定是当前页的第一张表，id以_1结尾
@@ -1082,36 +1087,65 @@ def gen_hbzcfzb(file_title, url):
     file_all_tables = json2(save_table_path)
     content = json2(save_content_path)
 
-    hbzcfzb = None
-    hbzcfzb_rows = []
+    target = None
+    rows = []
+
+    def find_target(text: str):
+        if (
+            text.endswith(f"{Financial_Statement.合并资产负债表.value}")
+            or text.endswith(f"{Financial_Statement.合并及公司资产负债表.value}")
+            or text.endswith(f"{Financial_Statement.资产负债表.value}")
+        ):
+            return True
+        return False
+
+    # 在table.json里找目标
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
-            if (
-                d.endswith(f"{Financial_Statement.合并资产负债表.value}")
-                or d.endswith(f"{Financial_Statement.合并及公司资产负债表.value}")
-                or d.endswith(f"{Financial_Statement.资产负债表.value}")
-            ):
-                hbzcfzb = t
+            if find_target(d):
+                target = t
                 break
-        if hbzcfzb is not None:
+        if target is not None:
             break
 
-    if hbzcfzb:
-        # print("嘿嘿", hbzcfzb)
+    if target:
         find_count = 0
         for p in content:
             p_values = content[p]
             for item in p_values:
-                if item[0] == "table" and item[1] in hbzcfzb["range"]:
-                    # print("奇怪", item[1])
+                if item[0] == "table" and item[1] in target["range"]:
                     find_count += 1
-                    hbzcfzb_rows += item[2]
-                if find_count == len(hbzcfzb["range"]):
+                    rows += item[2]
+                if find_count == len(target["range"]):
                     break
-            if find_count == len(hbzcfzb["range"]):
+            if find_count == len(target["range"]):
                 break
-        json2(f"{url}", hbzcfzb_rows)
+    else:
+        # TODO table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
+        # 就去content.json里去找
+        should_start = False
+        should_end = False
+        for page in content:
+            page_values = content[page]
+            for item in page_values:
+                [type, id, value] = item
+                # start
+                if type == "text_line" and find_target(value):
+                    should_start = True
+                # collect data
+                if should_start and not should_end:
+                    # 将value根据空格分成数组
+                    rows.append(value.split(" "))
+                # end
+                if should_start and find_total_assets(value):
+                    should_end = True
+                    break
+            if should_end:
+                break
+
+    if len(rows) > 5:
+        json2(f"{url}", rows)
         return True
     return False
 
@@ -1159,6 +1193,7 @@ def gen_hblrb(file_title, url):
         return True
     return False
 
+
 def gen_cash_equivalents(file_title, url):
     save_content_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
@@ -1174,9 +1209,8 @@ def gen_cash_equivalents(file_title, url):
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
-            if (
-                d.endswith(f"{Financial_Statement.现金和现金等价物的构成.value}")
-                or (f"、{Financial_Statement.现金和现金等价物的构成.value}" in d)
+            if d.endswith(f"{Financial_Statement.现金和现金等价物的构成.value}") or (
+                f"、{Financial_Statement.现金和现金等价物的构成.value}" in d
             ):
                 xjjxjdjw = t
                 break
@@ -1199,6 +1233,7 @@ def gen_cash_equivalents(file_title, url):
         return True
     return False
 
+
 def calculate_interest_bearing_liabilities(file_title):
     """
     计算有息负债
@@ -1218,10 +1253,7 @@ def calculate_interest_bearing_liabilities(file_title):
     try:
         hbzcfzb_json = json(hbzcfzb_url)
         fields = _map(hbzcfzb_json, lambda item: item[0])
-        key_word = _filter(
-            fields,
-            lambda field: field in interest_items
-        )
+        key_word = _filter(fields, lambda field: field in interest_items)
         for row in hbzcfzb_json:
             result = _map(row, lambda item: large_num_format(item))
             if result[0] in key_word:
@@ -1241,6 +1273,26 @@ def calculate_interest_bearing_liabilities(file_title):
         print(f"{file_title}未找到合并资产负债表")
 
 
+def find_total_assets(text: str):
+    # format_text = (
+    #     text.replace("\n", "")
+    #     .replace("（", "")
+    #     .replace("(", "")
+    #     .replace("）", "")
+    #     .replace(")", "")
+    #     .replace("：", "")
+    #     .replace(":", "")
+    # )
+    # return format_text in [
+    #     "负债和所有者权益或股东权益总计",
+    #     "负债及股东权益合计",
+    #     "负债和股东权益总计",
+    #     "负债和所有者权益总计",
+    #     "负债和所有者权益或股东权益",
+    # ]
+    return "负债" in text and ("所有者权益" in text or "股东权益" in text)
+
+
 def get_total_assets(file_title):
     hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
     try:
@@ -1248,14 +1300,7 @@ def get_total_assets(file_title):
         fields = _map(hbzcfzb_json, lambda item: item[0])
         key_word = _filter(
             fields,
-            lambda field: field.replace("\n", "")
-            .replace("（", "")
-            .replace("(", "")
-            .replace("）", "")
-            .replace(")", "")
-            .replace("：", "")
-            .replace(":", "")
-            in ["负债和所有者权益或股东权益总计", "负债及股东权益合计", "负债和所有者权益总计", "负债和所有者权益或股东权益"],
+            lambda field: find_total_assets(field)
         )
         # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
         # [
@@ -1281,10 +1326,11 @@ def get_total_assets(file_title):
     except:
         print(f"{file_title}无法获取资产负债表")
 
-def format_target_table_json_and_growth_rate(key_word:list, target_json):
-    '''
+
+def format_target_table_json_and_growth_rate(key_word: list, target_json):
+    """
     将符合关键字字段的table值由str转化为float,并求出当期金额总和及增长率
-    '''
+    """
     format_result = []
     for row in target_json:
         if row[0] in key_word:
@@ -1303,7 +1349,7 @@ def format_target_table_json_and_growth_rate(key_word:list, target_json):
         last_target_list = _map(format_result, lambda item: item[-1])
         current_target = sum(current_target_list)
         last_target = sum(last_target_list)
-    return format_result,current_target,last_target
+    return format_result, current_target, last_target
 
 
 def get_operating_revenue(file_title):
@@ -1326,7 +1372,9 @@ def get_operating_revenue(file_title):
             .replace("、", "")
             in ["其中营业收入", "一营业收入"],
         )
-        operating_revenue_info = format_target_table_json_and_growth_rate(key_word, hblrb_json)
+        operating_revenue_info = format_target_table_json_and_growth_rate(
+            key_word, hblrb_json
+        )
         try:
             growth_rate = (
                 (operating_revenue_info[1] - operating_revenue_info[2])
@@ -1367,14 +1415,18 @@ def get_accounts_receivable(file_title):
         # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
         amount_of_bankers_acceptance = 0
         # 3.计算当期应收及应收增长率
-        accounts_receivable_info = format_target_table_json_and_growth_rate(key_word, hbzcfzb_json)
+        accounts_receivable_info = format_target_table_json_and_growth_rate(
+            key_word, hbzcfzb_json
+        )
         try:
             growth_rate = (
                 (accounts_receivable_info[1] - accounts_receivable_info[2])
                 / accounts_receivable_info[2]
                 * 100
             )
-            print(f"{file_title}的当期应收款为{accounts_receivable_info[1]},增长率为{growth_rate}%")
+            print(
+                f"{file_title}的当期应收款为{accounts_receivable_info[1]},增长率为{growth_rate}%"
+            )
             return accounts_receivable_info[1], growth_rate
 
         except:
@@ -1395,15 +1447,16 @@ def propotion_of_accounts_receivable(file_title):
     # 3.计算应收/总资产比例
     try:
         total_assets = get_total_assets(file_title)
-        propotion_of_accounts_receivable = accounts_receivable / total_assets *100 
+        propotion_of_accounts_receivable = accounts_receivable / total_assets * 100
     except:
         print(f"{file_title}无法计算总资产")
     return propotion_of_accounts_receivable
 
+
 def get_industry(file_title_list):
-    '''
+    """
     获取每个公司所在的行业
-    '''
+    """
     industries = {}
     for file_title in file_title_list:
         name = file_title.split("__")[1]
@@ -1417,37 +1470,44 @@ def get_industry(file_title_list):
         industries.update(industry_info)
     return industries
 
-def get_companies_in_the_same_industry(file_title, industries:list):
-    '''
+
+def get_companies_in_the_same_industry(file_title, industries: list):
+    """
     通过行业列表查询每个行业下属的公司列表(相同时间的file_title)
-    '''
+    """
     # 1.通过file_title拿到当前报告的时间--2022年年度报告
-    report_time = file_title.split('__')[-2]
+    report_time = file_title.split("__")[-2]
     # 2.拿到industries列表中每个industry下所有公司在当前时间报告的file_title
     all_result = []
     for industry in industries:
         read_sql = f"SELECT title, file_title from announcements where title not like '%英文%'  and title not like '%（已取消）%' and title not like '%摘要%' and symbol in (SELECT symbol from stock_basic where industry = '{industry}')"
         row_list = sql([read_sql], lambda cursor: cursor.fetchall())
-        same_time_file_list = _filter(row_list, lambda item:report_time[-9:] in item[0])
+        same_time_file_list = _filter(
+            row_list, lambda item: report_time[-9:] in item[0]
+        )
         same_time_file_titles = _map(same_time_file_list, lambda item: item[-1])
         all_result.append(same_time_file_titles)
     return all_result
-        
+
+
 def receivable_balance_propotion_of_monthly_average_operating_income(file_title):
-    '''
+    """
     计算应收账款余额/月均营业收入
-    '''
+    """
     hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-    gen_hblrb(file_title,hblrb_url)
+    gen_hblrb(file_title, hblrb_url)
     try:
         receivable_balance = get_accounts_receivable(file_title)[0]
         monthly_average_operating_income = get_operating_revenue(file_title)[0]
-        propotion_of_receivable_balance = receivable_balance/(monthly_average_operating_income/12)
+        propotion_of_receivable_balance = receivable_balance / (
+            monthly_average_operating_income / 12
+        )
         print(f"{file_title}应收账款余额/月均营业收入的值为{propotion_of_receivable_balance}")
         return propotion_of_receivable_balance
     except:
         print(f"{file_title}无法计算应收账款余额/月均营业收入！")
-    
+
+
 def get_monetary_fund(file_title):
     hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
     # 1.筛选出合并资产负债表中包含“货币资金”关键字的字段值
@@ -1455,7 +1515,7 @@ def get_monetary_fund(file_title):
         hbzcfzb_json = json(hbzcfzb_url)
         fields = _map(hbzcfzb_json, lambda item: item[0])
         key_word = _filter(fields, lambda field: "货币资金" in field)
-    # 2.获取当期货币资金
+        # 2.获取当期货币资金
         for rows in hbzcfzb_json:
             if rows[0] in key_word:
                 rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
@@ -1467,24 +1527,24 @@ def get_monetary_fund(file_title):
 
 
 def get_cash_and_cash_equivalents(file_title):
-    '''
+    """
     获取【现金及现金等价物】表中的现金及现金等价物值
-    '''
+    """
     xjjxjdjw_url = f"{STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR}/{file_title}__{Financial_Statement.现金和现金等价物的构成.value}.json"
     # 1.筛选出现金和现金等价物构成表中包含“期末现金及现金等价物余额”关键字的字段值
     try:
         xjjxjdjw_json = json(xjjxjdjw_url)
         fields = _map(xjjxjdjw_json, lambda item: item[0])
         key_word = _filter(fields, lambda field: "期末现金及现金等价物余额" in field)
-    # 2.获取期末现金及现金等价物余额
+        # 2.获取期末现金及现金等价物余额
         for rows in xjjxjdjw_json:
             if rows[0] in key_word:
                 rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
                 current_cash_equivalents = large_num_format(rows[-2])
-                print(f"{file_title}的现金和现金等价物构成表中，期末现金及现金等价物余额为{current_cash_equivalents}")
+                print(
+                    f"{file_title}的现金和现金等价物构成表中，期末现金及现金等价物余额为{current_cash_equivalents}"
+                )
                 return current_cash_equivalents
     except:
         print(f"{file_title}的现金和现金等价物构成表未找到「期末现金及现金等价物余额」项目")
         return 0
-
-
