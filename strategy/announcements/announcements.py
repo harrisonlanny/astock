@@ -117,6 +117,13 @@ def generate_hbzcfzb(file_title_list, use_cache: bool = True):
                     "file_title": file_title,
                     "reason": "table.json中没找到合并资产负债表"
                 })
+            # 4.检查是否成功生成合并资产负债表
+            if is_exist(get_path(hbzcfzb_json_url)):
+                continue
+            else:
+                # 如果未合成，则通过content.json合成合并资产负债表
+                # 从“合并资产负债表”开始，到“负债和股东权益总计”结束（可跨页）
+                pass
     print("合并资产负债表有问题的file_title_list: ", error_file_title_list)
     return error_file_title_list
 
@@ -328,11 +335,11 @@ def filter_by_cash_to_debt_ratio(file_title_list):
         # 1.获取现金和现金等价物的构成表中的期末现金及现金等价物余额
             current_cash_equivalents = get_cash_and_cash_equivalents(file_title)
         # 2.获取合并资产负债表中的有息负债
-            current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_content)
+            current_interest_bearing_liabilities = calculate_interest_bearing_liabilities(file_title)
         # 3.将符合条件的公司加入target
             if current_cash_equivalents >= current_interest_bearing_liabilities:
                 target.append(file_title)
         except:
-            print(f"{file_title}")
+            print(f"{file_title}未找到合并资产负债表")
     print(f"{target}符合现金债务比>1的条件")
     print(f"符合现金债务比>1的公司比例为{len(target)/len(file_title_list)*100}%")
