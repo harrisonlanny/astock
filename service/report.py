@@ -35,9 +35,11 @@ from model.index import describe_json
 from service.index import get_current_d_tables
 from utils.index import (
     _every,
+    _find_index,
     _is_number,
     _safe_join,
     has_english_number,
+    is_chinese_number_prefix,
     is_exist,
     is_list_item_same,
     json,
@@ -1091,23 +1093,39 @@ def gen_hbzcfzb(file_title, url):
     rows = []
 
     def find_target(text: str):
-        if (
-            text.endswith(f"{Financial_Statement.合并资产负债表.value}")
-            or text.endswith(f"{Financial_Statement.合并及公司资产负债表.value}")
-            or text.endswith(f"{Financial_Statement.资产负债表.value}")
-        ):
+        # 必要条件
+        keys = [
+            Financial_Statement.合并资产负债表.value,
+            Financial_Statement.合并及公司资产负债表.value,
+            Financial_Statement.资产负债表.value
+        ]
+        # 找出index
+        index = _find_index(keys, lambda key: text.endswith(key))
+        if index == None:
+            return False
+        # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
+        # 满足标题的条件：关键字之前的内容要么是要么是、（）
+        key_str = keys[index]
+        # 获取关键字前缀，并消除前缀的前后的不可见字符
+        prefix = text[0:-len(key_str)].strip()
+        # 如果前缀为空字符串或者是中文数字序列，则返回True
+        if _is_empty(prefix) or is_chinese_number_prefix(prefix):
             return True
         return False
+        
 
     # 在table.json里找目标
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
             if find_target(d):
+                print("在table.json里找到target了！", t)
                 target = t
                 break
         if target is not None:
             break
+
+    
 
     if target:
         find_count = 0
@@ -1122,6 +1140,7 @@ def gen_hbzcfzb(file_title, url):
             if find_count == len(target["range"]):
                 break
     else:
+        print("在table.json里没有target，开始用content.json寻找！")
         # TODO table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
         # 就去content.json里去找
         should_start = False

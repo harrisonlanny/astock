@@ -283,6 +283,21 @@ def large_num_format(large_num: str):
         return float(new_large_num)
     return large_num
 
+# 一、xxx 或 （一）xxx 或（一）、xxx
+# consider_content: 是否考虑数字前缀后面的文本内容
+# 如果为True -> 一、xxx这种ok；如果为False，则不ok
+def is_chinese_number_prefix(text:str, consider_content:bool = True):
+    regular_suffix = "" if consider_content else "$"
+    # 顿号
+    result = not _is_empty(re.findall(f'^[\u4e00-\u9fa5]+\u3001{regular_suffix}', text))
+    if result:
+        return True
+    # 括号（）
+    result = not _is_empty(re.findall(f'^\uff08[\u4e00-\u9fa5]+\uff09\u3001?{regular_suffix}', text))
+    if result:
+        return True
+    
+    return False
 
 
 def mul_str(data: str, count: int):

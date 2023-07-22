@@ -59,10 +59,21 @@
 # cells = [None, None,2, None]
 # print(_every(cells, lambda item: item is None))
 
-from utils.index import _is_empty
+# from utils.index import _is_empty
 
 
-text = set(list("哈哈哈"))
-chars = set(["。", "，", '“', "”", "："])
+# text = set(list("哈哈哈"))
+# chars = set(["。", "，", '“', "”", "："])
 
-print(_is_empty(text & chars))
+# print(_is_empty(text & chars))
+
+# text = "反倒是佛菩萨福建师大批发哈合并资产负债表"
+# key = "合并资产负债表"
+# print(text[0:-len(key)])
+
+from utils.index import is_chinese_number_prefix
+
+
+text = "二十五、哈哈哈"
+text1 = "（f一）xxx"
+print(is_chinese_number_prefix(text1, False))
