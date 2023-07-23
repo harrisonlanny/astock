@@ -20,6 +20,8 @@ from service.config import (
     Announcement_Category,
     Announcement_Category_Options,
     Financial_Statement,
+    Financial_Statement_DataSource,
+    Find_ANNOUNCE_MSG,
 )
 
 from db.index import (
@@ -982,6 +984,99 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
             # return page_struct
 
 
+def parse_pdf_to_content_json(pdf_url, pdf_name, use_cache: bool = True):
+    with pdfplumber.open(pdf_url) as pdf:
+        content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{pdf_name}__content.json"
+
+        # 如果content.json存在，则不进行parse，直接return
+        if use_cache and is_exist(get_path(content_json_url)):
+            return
+        page_struct = {}
+        _pages = pdf.pages
+
+        def append_text_line_to_struct(text_line, page_index):
+            if page_struct.get(page_index + 1) is None:
+                page_struct[page_index + 1] = []
+            page_struct[page_index + 1].append(
+                list(page_obj("text_line", text_line["text"]).values())
+            )
+
+        # 数据提取
+        for page_index, page in enumerate(_pages):
+            print(f"--{pdf_name}  {page_index + 1}/{len(_pages)}--", "\n")
+            # 提取页面的文字
+            text_lines = page.extract_text_lines()
+            for text_line in text_lines:
+                append_text_line_to_struct(text_line, page_index)
+        json(content_json_url, page_struct)
+
+
+# target_name: Financial_Statement.合并资产负债表.value
+# file_title_list: ['xxx', 'xxx']
+# gen_table: gen_hbzcfzb
+def generate_announcement(
+    announcement_type: Financial_Statement,
+    file_title_list,
+    gen_table,
+    use_cache: bool = True,
+    consider_table: bool = False,
+):
+    # 0. 根据announcement_type得到financial_statement_item
+    financial_statement_item = Financial_Statement_DataSource[announcement_type.value]
+    dir_path = financial_statement_item["path"]
+
+    # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
+    for file_title in file_title_list:
+        file_url = get_announcement_url(file_title)
+        if consider_table:
+            parse_pdf(file_url, file_title, use_cache)
+        else:
+            parse_pdf_to_content_json(file_url, file_title, use_cache)
+
+    # 2. 遍历所有的file_title_list，根据json来生成合并资产负债表
+    error_file_title_list = []
+    for file_title in file_title_list:
+        # 缺乏必要的json，而无法合成目标表的file_title_list
+        # target_json_url = (
+        #     f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{target_name}.json"
+        # )
+        target_json_url = f"{dir_path}/{file_title}__{announcement_type.value}.json"
+        (table_json_url, content_json_url) = pdf_json_url(file_title)
+
+        # 1. 检查是否存在合并资产负债表，如果不存在，才进行合成
+        if use_cache and is_exist(get_path(target_json_url)):
+            continue
+        # 2. 如果需要合成，检查必要的合成元素 table.json(consider_table)和content.json是否存在，如果存在 才进行合成，如果不存在
+        # 可以收集异常的数据，并返回
+        all_exists = is_exist(get_path(content_json_url)) and (
+            is_exist(get_path(table_json_url)) if consider_table else True
+        )
+
+        if use_cache and not all_exists:
+            error_file_title_list.append(
+                {"file_title": file_title, "reason": "缺少必要的原料json"}
+            )
+            continue
+        # 3. 进行合成
+        (gen_success, gen_msg) = gen_table(file_title, target_json_url)
+        if not gen_success:
+            error_file_title_list.append(
+                {
+                    "文件名": file_title,
+                    "生成结果": f"{announcement_type.value}表{'成功' if gen_success else '失败'}",
+                    "原因": gen_msg,
+                }
+            )
+    print("有问题的file_title_list: ", error_file_title_list)
+    return error_file_title_list
+
+
+def pdf_json_url(file_title: str):
+    table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
+    content_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
+    return table_json_url, content_json_url
+
+
 def get_color_statistic(pdf_url):
     result = {}
 
@@ -1080,35 +1175,38 @@ def get_announcement_url(name):
     return get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{name}.pdf")
 
 
-def gen_hbzcfzb(file_title, url):
+def gen_hbzcfzb(file_title, url, consider_table: bool = False):
+    financial_statement_item = Financial_Statement_DataSource[
+        Financial_Statement.合并资产负债表.value
+    ]
+
     save_content_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
     )
     save_table_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__table.json"
     )
-    file_all_tables = json2(save_table_path)
+    if consider_table:
+        file_all_tables = json2(save_table_path)
+    else:
+        file_all_tables = []
     content = json2(save_content_path)
 
     target = None
     rows = []
+    reason = ""
 
     def find_target(text: str):
         # 必要条件
-        keys = [
-            Financial_Statement.合并资产负债表.value,
-            Financial_Statement.合并及公司资产负债表.value,
-            Financial_Statement.合并资产负债表和资产负债表.value,
-            Financial_Statement.资产负债表.value
-        ]
+        keywords = financial_statement_item["keywords"]
         # 找出index
-        index = _find_index(keys, lambda key: text.endswith(key))
+        index = _find_index(keywords, lambda key: text.endswith(key))
         if index == None:
-            return False
-        print("index:",index)
+            # print(f"**{text}**, index为None")
+            return (False, Find_ANNOUNCE_MSG.index为None.value)
         # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
         # 满足标题的条件：关键字之前的内容要么是要么是、（）
-        key_str = keys[index]
+        key_str = keywords[index]
         # 获取关键字前缀，并消除前缀的前后的不可见字符
         prefix = text[0 : -len(key_str)].strip()
         # 如果前缀为空字符串或者是中文数字序列，则返回True
@@ -1117,8 +1215,11 @@ def gen_hbzcfzb(file_title, url):
             or is_chinese_number_prefix(prefix, consider_content=False)
             or is_alabo_number_prefix(prefix, consider_content=False)
         ):
-            return True
-        return False
+            return (True, "SUCCESS!!")
+        return (
+            False,
+            f"text: {text}, key: {key_str} , {Find_ANNOUNCE_MSG.text_line不符合数字序号或者不为空}",
+        )
 
     # 在table.json里找目标
     for t in file_all_tables:
@@ -1145,7 +1246,7 @@ def gen_hbzcfzb(file_title, url):
                 break
     else:
         # print("在table.json里没有target，开始用content.json寻找！")
-        # TODO table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
+        # table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
         # 就去content.json里去找
         should_start = False
         should_end = False
@@ -1154,7 +1255,16 @@ def gen_hbzcfzb(file_title, url):
             for item in page_values:
                 [type, id, value] = item
                 # start
-                if type == "text_line" and find_target(value):
+                (find_success, find_msg) = find_target(value)
+                # 收集特殊的msg
+                if (
+                    not find_success
+                    and find_msg
+                    and find_msg != Find_ANNOUNCE_MSG.index为None.value
+                ):
+                    reason += find_msg + "\n"
+
+                if type == "text_line" and find_success:
                     should_start = True
                 # collect data
                 if should_start and not should_end:
@@ -1169,8 +1279,10 @@ def gen_hbzcfzb(file_title, url):
 
     if len(rows) > 5:
         json2(f"{url}", rows)
-        return True
-    return False
+        return True, "SUCCESS"
+    if reason == "":
+        reason = Find_ANNOUNCE_MSG.index为None.value
+    return False, reason
 
 
 def gen_hblrb(file_title, url):

@@ -24,13 +24,39 @@ Announcement_Category_Options = {
 
 class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
-    资产负债表 = "资产负债表"
-    合并及公司资产负债表 = "合并及公司资产负债表"
-    合并资产负债表和资产负债表 = "合并资产负债表和资产负债表"
     合并利润表 = "合并利润表"
-    合并及公司利润表 = "合并及公司利润表"
-    利润表 = "利润表"
     现金和现金等价物的构成 = "现金和现金等价物的构成"
+
+Financial_Statement_DataSource = {
+    Financial_Statement.合并资产负债表.value: {
+        "keywords": [
+            "合并资产负债表",
+            "合并及公司资产负债表",
+            "合并资产负债表和资产负债表",
+            "资产负债表",
+        ],
+        "path": "/static/parse-announcements/hbzcfzb"
+    },
+    Financial_Statement.合并利润表.value: {
+        "keywords": [
+            "合并利润表",
+            "合并及公司利润表",
+            "利润表",
+        ],
+        "path": "/static/parse-announcements/hblrb"
+    },
+    Financial_Statement.现金和现金等价物的构成.value: {
+        "keywords": [
+            "现金和现金等价物的构成"
+        ],
+        "path": "/static/parse-announcements/xjjxjdjw"
+    }
+}
+
+
+class Find_ANNOUNCE_MSG(Enum):
+    index为None="index为None"
+    text_line不符合数字序号或者不为空="text_line不符合数字序号或者不为空"
 
 STATIC_ANNOUNCEMENTS_DIR = "/static/announcements"
 STATIC_ANNOUNCEMENTS_PARSE_DIR = "/static/parse-announcements/base"

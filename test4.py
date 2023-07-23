@@ -78,5 +78,13 @@ from utils.index import is_alabo_number_prefix, is_chinese_number_prefix
 # text1 = "（f一）xxx"
 # print(is_chinese_number_prefix(text1, False))
 
-text = "（1） ddd"
-print(is_alabo_number_prefix(text))
+# text = "（1） ddd"
+# print(is_alabo_number_prefix(text))
+
+obj = {
+        "type": "text_line",
+        "id": None,
+        "data": "hahaha",
+    }
+
+print(list(obj.values()))
