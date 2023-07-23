@@ -71,9 +71,12 @@
 # key = "合并资产负债表"
 # print(text[0:-len(key)])
 
-from utils.index import is_chinese_number_prefix
+from utils.index import is_alabo_number_prefix, is_chinese_number_prefix
 
 
-text = "二十五、哈哈哈"
-text1 = "（f一）xxx"
-print(is_chinese_number_prefix(text1, False))
+# text = "二十五、哈哈哈"
+# text1 = "（f一）xxx"
+# print(is_chinese_number_prefix(text1, False))
+
+text = "（1） ddd"
+print(is_alabo_number_prefix(text))

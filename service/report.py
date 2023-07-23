@@ -39,6 +39,7 @@ from utils.index import (
     _is_number,
     _safe_join,
     has_english_number,
+    is_alabo_number_prefix,
     is_chinese_number_prefix,
     is_exist,
     is_list_item_same,
@@ -1097,35 +1098,38 @@ def gen_hbzcfzb(file_title, url):
         keys = [
             Financial_Statement.合并资产负债表.value,
             Financial_Statement.合并及公司资产负债表.value,
+            Financial_Statement.合并资产负债表和资产负债表.value,
             Financial_Statement.资产负债表.value
         ]
         # 找出index
         index = _find_index(keys, lambda key: text.endswith(key))
         if index == None:
             return False
+        print("index:",index)
         # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
         # 满足标题的条件：关键字之前的内容要么是要么是、（）
         key_str = keys[index]
         # 获取关键字前缀，并消除前缀的前后的不可见字符
-        prefix = text[0:-len(key_str)].strip()
+        prefix = text[0 : -len(key_str)].strip()
         # 如果前缀为空字符串或者是中文数字序列，则返回True
-        if _is_empty(prefix) or is_chinese_number_prefix(prefix):
+        if (
+            _is_empty(prefix)
+            or is_chinese_number_prefix(prefix, consider_content=False)
+            or is_alabo_number_prefix(prefix, consider_content=False)
+        ):
             return True
         return False
-        
 
     # 在table.json里找目标
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
             if find_target(d):
-                print("在table.json里找到target了！", t)
+                # print("在table.json里找到target了！", t)
                 target = t
                 break
         if target is not None:
             break
-
-    
 
     if target:
         find_count = 0
@@ -1140,7 +1144,7 @@ def gen_hbzcfzb(file_title, url):
             if find_count == len(target["range"]):
                 break
     else:
-        print("在table.json里没有target，开始用content.json寻找！")
+        # print("在table.json里没有target，开始用content.json寻找！")
         # TODO table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
         # 就去content.json里去找
         should_start = False
@@ -1317,10 +1321,7 @@ def get_total_assets(file_title):
     try:
         hbzcfzb_json = json(hbzcfzb_url)
         fields = _map(hbzcfzb_json, lambda item: item[0])
-        key_word = _filter(
-            fields,
-            lambda field: find_total_assets(field)
-        )
+        key_word = _filter(fields, lambda field: find_total_assets(field))
         # TODO 有些总资产由第一页末尾和第二页开头共同组成，解析为
         # [
         #     "负债和所有者权益（或股东",

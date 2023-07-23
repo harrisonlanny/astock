@@ -289,11 +289,35 @@ def large_num_format(large_num: str):
 def is_chinese_number_prefix(text:str, consider_content:bool = True):
     regular_suffix = "" if consider_content else "$"
     # 顿号
-    result = not _is_empty(re.findall(f'^[\u4e00-\u9fa5]+\u3001{regular_suffix}', text))
+    result = not _is_empty(re.findall(f'^[\\u4e00-\\u9fa5]+\\u3001{regular_suffix}', text))
     if result:
         return True
     # 括号（）
-    result = not _is_empty(re.findall(f'^\uff08[\u4e00-\u9fa5]+\uff09\u3001?{regular_suffix}', text))
+    result = not _is_empty(re.findall(f'^\\uff08[\\u4e00-\\u9fa5]+\\uff09\\u3001?{regular_suffix}', text))
+    if result:
+        return True
+    
+    return False
+
+def is_alabo_number_prefix(text: str, consider_content: bool = True):
+    regular_suffix = "" if consider_content else "$"
+    # 顿号、
+    result = not _is_empty(re.findall(f'^[0-9]+\\u3001{regular_suffix}', text))
+    if result:
+        return True
+    
+    # 中文括号（）
+    result = not _is_empty(re.findall(f'^\\uff08[0-9]+\\uff09\\u3001?{regular_suffix}', text))
+    if result:
+        return True
+    
+    # 英文句号 .
+    result = not _is_empty(re.findall(f'^[0-9]+\\u002e{regular_suffix}', text))
+    if result:
+        return True
+    
+    # 英文括号 () (). ()、
+    result = not _is_empty(re.findall(f'^\\u0028[0-9]+\\u0029{regular_suffix}', text))
     if result:
         return True
     
