@@ -45,6 +45,7 @@ from utils.index import (
     is_chinese_number_prefix,
     is_exist,
     is_list_item_same,
+    is_period_prefix,
     json,
     _filter,
     date2str,
@@ -1285,88 +1286,226 @@ def gen_hbzcfzb(file_title, url, consider_table: bool = False):
     return False, reason
 
 
-def gen_hblrb(file_title, url):
+def gen_hblrb(file_title, url, consider_table: bool = False):
+    financial_statement_item = Financial_Statement_DataSource[
+        Financial_Statement.合并利润表.value
+    ]
+
     save_content_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
     )
     save_table_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__table.json"
     )
-    file_all_tables = json2(save_table_path)
+    if consider_table:
+        file_all_tables = json2(save_table_path)
+    else:
+        file_all_tables = []
     content = json2(save_content_path)
 
-    hblrb = None
-    hblrb_rows = []
+    target = None
+    rows = []
+    reason = ""
+
+    def find_target(text: str):
+        # 必要条件
+        keywords = financial_statement_item["keywords"]
+        # 找出index
+        index = _find_index(keywords, lambda key: text.endswith(key))
+        if index == None:
+            # print(f"**{text}**, index为None")
+            return (False, Find_ANNOUNCE_MSG.index为None.value)
+        # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
+        # 满足标题的条件：关键字之前的内容要么是要么是、（）
+        key_str = keywords[index]
+        # 获取关键字前缀，并消除前缀的前后的不可见字符
+        prefix = text[0 : -len(key_str)].strip()
+        # 如果前缀为空字符串或者是中文数字序列，则返回True
+        if (
+            _is_empty(prefix)
+            or is_chinese_number_prefix(prefix, consider_content=False)
+            or is_alabo_number_prefix(prefix, consider_content=False)
+            or is_period_prefix(prefix)
+        ):
+            return (True, "SUCCESS!!")
+        return (
+            False,
+            f"text: {text}, key: {key_str} , {Find_ANNOUNCE_MSG.text_line不符合数字序号或者不为空}",
+        )
+
+    # 在table.json里找目标
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
-            # TODO 有些公司不存在“合并利润表”和“母公司利润表”，仅存在“利润表”
-            if (
-                d.endswith(f"{Financial_Statement.合并利润表.value}")
-                or (f"、{Financial_Statement.合并利润表.value}" in d)
-                or d.endswith(f"{Financial_Statement.合并及公司利润表.value}")
-                or d.endswith(f"{Financial_Statement.利润表.value}")
-            ):
-                hblrb = t
+            if find_target(d):
+                # print("在table.json里找到target了！", t)
+                target = t
                 break
-        if hblrb is not None:
+        if target is not None:
             break
 
-    if hblrb:
+    if target:
         find_count = 0
         for p in content:
             p_values = content[p]
             for item in p_values:
-                if item[0] == "table" and item[1] in hblrb["range"]:
+                if item[0] == "table" and item[1] in target["range"]:
                     find_count += 1
-                    hblrb_rows += item[2]
-                if find_count == len(hblrb["range"]):
+                    rows += item[2]
+                if find_count == len(target["range"]):
                     break
-            if find_count == len(hblrb["range"]):
+            if find_count == len(target["range"]):
                 break
-        json2(f"{url}", hblrb_rows)
-        return True
-    return False
+    else:
+        # print("在table.json里没有target，开始用content.json寻找！")
+        # table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
+        # 就去content.json里去找
+        should_start = False
+        should_end = False
+        for page in content:
+            page_values = content[page]
+            for item in page_values:
+                [type, id, value] = item
+                # start
+                (find_success, find_msg) = find_target(value)
+                # 收集特殊的msg
+                if (
+                    not find_success
+                    and find_msg
+                    and find_msg != Find_ANNOUNCE_MSG.index为None.value
+                ):
+                    reason += find_msg + "\n"
+
+                if type == "text_line" and find_success:
+                    should_start = True
+                # collect data
+                if should_start and not should_end:
+                    # 将value根据空格分成数组
+                    rows.append(value.split(" "))
+                # end
+                if should_start and find_diluted_earnings_per_share(value):
+                    should_end = True
+                    break
+            if should_end:
+                break
+
+    if len(rows) > 5:
+        json2(f"{url}", rows)
+        return True, "SUCCESS"
+    if reason == "":
+        reason = Find_ANNOUNCE_MSG.index为None.value
+    return False, reason
 
 
-def gen_cash_equivalents(file_title, url):
+def gen_cash_equivalents(file_title, url, consider_table: bool = False):
+    financial_statement_item = Financial_Statement_DataSource[
+        Financial_Statement.现金和现金等价物的构成.value
+    ]
+
     save_content_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
     )
     save_table_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__table.json"
     )
-    file_all_tables = json2(save_table_path)
+    if consider_table:
+        file_all_tables = json2(save_table_path)
+    else:
+        file_all_tables = []
     content = json2(save_content_path)
 
-    xjjxjdjw = None
-    xjjxjdjw_rows = []
+    target = None
+    rows = []
+    reason = ""
+
+    def find_target(text: str):
+        # 必要条件
+        keywords = financial_statement_item["keywords"]
+        # 找出index
+        index = _find_index(keywords, lambda key: text.endswith(key))
+        if index == None:
+            # print(f"**{text}**, index为None")
+            return (False, Find_ANNOUNCE_MSG.index为None.value)
+        # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
+        # 满足标题的条件：关键字之前的内容要么是要么是、.（）
+        key_str = keywords[index]
+        # 获取关键字前缀，并消除前缀的前后的不可见字符
+        prefix = text[0 : -len(key_str)].strip()
+        # 如果前缀为空字符串或者是中文数字序列，则返回True
+        if (
+            _is_empty(prefix)
+            or is_chinese_number_prefix(prefix, consider_content=False)
+            or is_alabo_number_prefix(prefix, consider_content=False)
+            or is_period_prefix(prefix)
+        ):
+            return (True, "SUCCESS!!")
+        return (
+            False,
+            f"text: {text}, key: {key_str} , {Find_ANNOUNCE_MSG.text_line不符合数字序号或者不为空}",
+        )
+
+    # 在table.json里找目标
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
-            if d.endswith(f"{Financial_Statement.现金和现金等价物的构成.value}") or (
-                f"、{Financial_Statement.现金和现金等价物的构成.value}" in d
-            ):
-                xjjxjdjw = t
+            if find_target(d):
+                # print("在table.json里找到target了！", t)
+                target = t
                 break
-        if xjjxjdjw is not None:
+        if target is not None:
             break
 
-    if xjjxjdjw:
+    if target:
         find_count = 0
         for p in content:
             p_values = content[p]
             for item in p_values:
-                if item[0] == "table" and item[1] in xjjxjdjw["range"]:
+                if item[0] == "table" and item[1] in target["range"]:
                     find_count += 1
-                    xjjxjdjw_rows += item[2]
-                if find_count == len(xjjxjdjw["range"]):
+                    rows += item[2]
+                if find_count == len(target["range"]):
                     break
-            if find_count == len(xjjxjdjw["range"]):
+            if find_count == len(target["range"]):
                 break
-        json2(f"{url}", xjjxjdjw_rows)
-        return True
-    return False
+    else:
+        # print("在table.json里没有target，开始用content.json寻找！")
+        # table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
+        # 就去content.json里去找
+        should_start = False
+        should_end = False
+        for page in content:
+            page_values = content[page]
+            for item in page_values:
+                [type, id, value] = item
+                # start
+                (find_success, find_msg) = find_target(value)
+                # 收集特殊的msg
+                if (
+                    not find_success
+                    and find_msg
+                    and find_msg != Find_ANNOUNCE_MSG.index为None.value
+                ):
+                    reason += find_msg + "\n"
+
+                if type == "text_line" and find_success:
+                    should_start = True
+                # collect data
+                if should_start and not should_end:
+                    # 将value根据空格分成数组
+                    rows.append(value.split(" "))
+                # end
+                if should_start and find_cash_equivalents(value):
+                    should_end = True
+                    break
+            if should_end:
+                break
+
+    if len(rows) > 5:
+        json2(f"{url}", rows)
+        return True, "SUCCESS"
+    if reason == "":
+        reason = Find_ANNOUNCE_MSG.index为None.value
+    return False, reason
 
 
 def calculate_interest_bearing_liabilities(file_title):
@@ -1427,6 +1566,17 @@ def find_total_assets(text: str):
     # ]
     return "负债" in text and ("所有者权益" in text or "股东权益" in text)
 
+def find_diluted_earnings_per_share(text: str):
+    '''
+    查找“稀释每股收益”（合并利润表结尾）
+    '''
+    return "稀释每股收益" in text 
+
+def find_cash_equivalents(text:str):
+    '''
+    查找“期末现金及现金等价物余额”
+    '''
+    return "期末现金及现金等价物余额" in text
 
 def get_total_assets(file_title):
     hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"

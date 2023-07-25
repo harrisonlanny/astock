@@ -47,7 +47,9 @@ Financial_Statement_DataSource = {
     },
     Financial_Statement.现金和现金等价物的构成.value: {
         "keywords": [
-            "现金和现金等价物的构成"
+            "现金和现金等价物的构成",
+            "现金及现金等价物",
+            "现金及现金等价物的构成"
         ],
         "path": "/static/parse-announcements/xjjxjdjw"
     }

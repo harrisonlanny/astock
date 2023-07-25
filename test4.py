@@ -71,7 +71,7 @@
 # key = "合并资产负债表"
 # print(text[0:-len(key)])
 
-from utils.index import is_alabo_number_prefix, is_chinese_number_prefix
+from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix
 
 
 # text = "二十五、哈哈哈"
@@ -81,10 +81,10 @@ from utils.index import is_alabo_number_prefix, is_chinese_number_prefix
 # text = "（1） ddd"
 # print(is_alabo_number_prefix(text))
 
-obj = {
-        "type": "text_line",
-        "id": None,
-        "data": "hahaha",
-    }
+# obj = {
+#         "type": "text_line",
+#         "id": None,
+#         "data": "hahaha",
+#     }
 
-print(list(obj.values()))
+# print(list(obj.values()))
