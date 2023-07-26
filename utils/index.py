@@ -321,6 +321,16 @@ def is_alabo_number_prefix(text: str, consider_content: bool = True):
     if result:
         return True
     
+    # 阿拉伯数字 6.47.2
+    result = not _is_empty(re.findall(f'\d.\d{regular_suffix}', text))
+    if result:
+        return True
+    
+    # 空格 (4). 
+    result = not _is_empty(re.findall(f'.\s{regular_suffix}', text))
+    if result:
+        return True
+    
     return False
 
 def is_period_prefix(text:str):

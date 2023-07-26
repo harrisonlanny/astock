@@ -1419,30 +1419,35 @@ def gen_cash_equivalents(file_title, url, consider_table: bool = False):
     reason = ""
 
     def find_target(text: str):
-        # 必要条件
-        keywords = financial_statement_item["keywords"]
-        # 找出index
-        index = _find_index(keywords, lambda key: text.endswith(key))
-        if index == None:
-            # print(f"**{text}**, index为None")
-            return (False, Find_ANNOUNCE_MSG.index为None.value)
-        # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
-        # 满足标题的条件：关键字之前的内容要么是要么是、.（）
-        key_str = keywords[index]
-        # 获取关键字前缀，并消除前缀的前后的不可见字符
-        prefix = text[0 : -len(key_str)].strip()
-        # 如果前缀为空字符串或者是中文数字序列，则返回True
-        if (
-            _is_empty(prefix)
-            or is_chinese_number_prefix(prefix, consider_content=False)
-            or is_alabo_number_prefix(prefix, consider_content=False)
-            or is_period_prefix(prefix)
-        ):
-            return (True, "SUCCESS!!")
-        return (
-            False,
-            f"text: {text}, key: {key_str} , {Find_ANNOUNCE_MSG.text_line不符合数字序号或者不为空}",
-        )
+        try: 
+            isinstance(text,str)
+            # 必要条件
+            keywords = financial_statement_item["keywords"]
+            # 找出index
+            index = _find_index(keywords, lambda key: text.endswith(key))
+            if index == None:
+                # print(f"**{text}**, index为None")
+                return (False, Find_ANNOUNCE_MSG.index为None.value)
+            # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
+            # 满足标题的条件：关键字之前的内容要么是要么是、.（）
+            key_str = keywords[index]
+            # 获取关键字前缀，并消除前缀的前后的不可见字符
+            prefix = text[0 : -len(key_str)].strip()
+            # 如果前缀为空字符串或者是中文数字序列，则返回True
+            if (
+                _is_empty(prefix)
+                or is_chinese_number_prefix(prefix, consider_content=False)
+                or is_alabo_number_prefix(prefix, consider_content=True)
+                or is_period_prefix(prefix)
+            ):
+                return (True, "SUCCESS!!")
+            return (
+                False,
+                f"text: {text}, key: {key_str} , {Find_ANNOUNCE_MSG.text_line不符合数字序号或者不为空}",
+            )
+        except:
+            return (False,
+                    f"text: {text} 非string类型！")
 
     # 在table.json里找目标
     for t in file_all_tables:
@@ -1490,7 +1495,7 @@ def gen_cash_equivalents(file_title, url, consider_table: bool = False):
                 if type == "text_line" and find_success:
                     should_start = True
                 # collect data
-                if should_start and not should_end:
+                if should_start and not should_end :
                     # 将value根据空格分成数组
                     rows.append(value.split(" "))
                 # end

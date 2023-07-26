@@ -71,7 +71,8 @@
 # key = "合并资产负债表"
 # print(text[0:-len(key)])
 
-from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix
+import re
+from utils.index import _find_index, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix
 
 
 # text = "二十五、哈哈哈"
@@ -88,3 +89,8 @@ from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_per
 #     }
 
 # print(list(obj.values()))
+
+keywords = ["现金和现金等价物的构成", "现金及现金等价物的构成"]
+text = '证券代码：430047 证券简称：诺思兰德 公告编号：2023-006'
+index = _find_index(keywords, lambda key: text.endswith(key))
+print(index)

@@ -142,8 +142,8 @@ file_title_list = _map(r, lambda item: item["file_title"])
 file_title_list = [
     # "601288__农业银行__农业银行2022年度报告__1216275777",
     "430047__诺思兰德__2022年年度报告__1216626077",
-    "600120__浙江东方__浙江东方金融控股集团股份有限公司2022年年度报告__1216356349",
-    "603616__韩建河山__韩建河山2022年年度报告__1216646009",
+    # "600120__浙江东方__浙江东方金融控股集团股份有限公司2022年年度报告__1216356349",
+    # "603616__韩建河山__韩建河山2022年年度报告__1216646009",
     ]
 # generate_hbzcfzb(file_title_list, use_cache=False)
 
@@ -166,6 +166,6 @@ generate_announcement(
     announcement_type=Financial_Statement.现金和现金等价物的构成,
     file_title_list=file_title_list,
     gen_table=gen_cash_equivalents,
-    use_cache=True,
+    use_cache=False,
     consider_table=False,
 )
