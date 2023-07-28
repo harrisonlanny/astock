@@ -311,23 +311,18 @@ def is_alabo_number_prefix(text: str, consider_content: bool = True):
     if result:
         return True
     
-    # 英文句号 .
-    result = not _is_empty(re.findall(f'^[0-9]+\\u002e{regular_suffix}', text))
+    # 英文句号 . 包括(4).
+    result = not _is_empty(re.findall(f'^[\w\W]+\\u002e{regular_suffix}', text))
     if result:
         return True
     
     # 英文括号 () (). ()、
-    result = not _is_empty(re.findall(f'^\\u0028[0-9]+\\u0029{regular_suffix}', text))
+    result = not _is_empty(re.findall(f'^\\u0028\w+\\u0029{regular_suffix}', text))
     if result:
         return True
     
     # 阿拉伯数字 6.47.2
-    result = not _is_empty(re.findall(f'\d.\d{regular_suffix}', text))
-    if result:
-        return True
-    
-    # 空格 (4). 
-    result = not _is_empty(re.findall(f'.\s{regular_suffix}', text))
+    result = not _is_empty(re.findall(f'^\d.\d{regular_suffix}', text))
     if result:
         return True
     

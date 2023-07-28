@@ -1437,7 +1437,7 @@ def gen_cash_equivalents(file_title, url, consider_table: bool = False):
             if (
                 _is_empty(prefix)
                 or is_chinese_number_prefix(prefix, consider_content=False)
-                or is_alabo_number_prefix(prefix, consider_content=True)
+                or is_alabo_number_prefix(prefix, consider_content=False)
                 or is_period_prefix(prefix)
             ):
                 return (True, "SUCCESS!!")
@@ -1581,7 +1581,7 @@ def find_cash_equivalents(text:str):
     '''
     查找“期末现金及现金等价物余额”
     '''
-    return "期末现金及现金等价物余额" in text
+    return "期末现金及现金等价物余额" in text or "现金及现金等价物余额" in text
 
 def get_total_assets(file_title):
     hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"

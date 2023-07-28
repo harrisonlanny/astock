@@ -72,7 +72,7 @@
 # print(text[0:-len(key)])
 
 import re
-from utils.index import _find_index, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix
+from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix
 
 
 # text = "二十五、哈哈哈"
@@ -90,7 +90,7 @@ from utils.index import _find_index, is_alabo_number_prefix, is_chinese_number_p
 
 # print(list(obj.values()))
 
-keywords = ["现金和现金等价物的构成", "现金及现金等价物的构成"]
-text = '证券代码：430047 证券简称：诺思兰德 公告编号：2023-006'
-index = _find_index(keywords, lambda key: text.endswith(key))
-print(index)
+text = "(4)."
+regular_suffix = "$" 
+result = re.findall(f'^[\w\W]+\\u002e{regular_suffix}', text)
+print(result)
