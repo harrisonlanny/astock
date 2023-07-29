@@ -1694,16 +1694,28 @@ def get_accounts_receivable(file_title):
     """
     # 应收 = 资产负债表所有带“应收”两个字的科目数字总和-银行承兑汇票金额
     hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+    hbzcfzb_json_format = []
     # 1.筛选出合并资产负债表中包含“应收”关键字的字段值，计算其之和
     try:
         hbzcfzb_json = json(hbzcfzb_url)
-        fields = _map(hbzcfzb_json, lambda item: item[0])
+        max_length = max(_map(hbzcfzb_json, lambda item: len(item)))
+        for item in hbzcfzb_json:
+            index = 0 # 起始索引
+            add_list = [] # 长度不一致的补充列表
+            if len(item) < max_length:
+                diff = max_length - len(item)
+                while index < diff:
+                    add_list.append("")
+                    index = index + 1
+                item = item + add_list
+            hbzcfzb_json_format.append(item)
+        fields = _map(hbzcfzb_json_format, lambda item: item[0])
         key_word = _filter(fields, lambda field: "应收" in field)
         # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
         amount_of_bankers_acceptance = 0
         # 3.计算当期应收及应收增长率
         accounts_receivable_info = format_target_table_json_and_growth_rate(
-            key_word, hbzcfzb_json
+            key_word, hbzcfzb_json_format
         )
         try:
             growth_rate = (

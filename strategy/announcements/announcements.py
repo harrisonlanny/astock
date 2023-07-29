@@ -11,6 +11,7 @@ from service.report import (
     gen_cash_equivalents,
     gen_hblrb,
     gen_hbzcfzb,
+    generate_announcement,
     get_accounts_receivable,
     get_announcement_url,
     get_cash_and_cash_equivalents,
@@ -190,14 +191,20 @@ def generate_xjjxjdjw(file_title_list, use_cache: bool = True):
 
 def filter_by_interest_bearing_liabilities(file_title_list):
     # 筛选有息负债符合条件的公司
-    error_file_title_list = generate_hbzcfzb(file_title_list)
+    error_file_title_list = generate_announcement(
+        announcement_type=Financial_Statement.合并资产负债表,
+        file_title_list=file_title_list,
+        gen_table=gen_hbzcfzb,
+        use_cache=False,
+        consider_table=False,
+    )
     error_list = _map(error_file_title_list, lambda item: item["file_title"])
     file_title_list = list(set(file_title_list) - set(error_list))
     companies = []
     for file_title in file_title_list:
         hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
         try:
-            file_content = json(hbzcfzb_json_url)
+            json(hbzcfzb_json_url)
             try:
                 result = caculate_interest_bearing_liabilities_rate(
                     calculate_interest_bearing_liabilities(file_title),
@@ -211,8 +218,6 @@ def filter_by_interest_bearing_liabilities(file_title_list):
         except:
             print(f"{file_title}未找到合并资产负债表")
     print("符合有息负债占比条件的公司有：", companies)
-    # r = len(companies)/len(file_title_list)*100
-    # print(f"符合有息负债占比筛选条件的公司比例为：{r}%")
     print(f"符合有息负债占比筛选条件的公司比例为：{len(companies)/len(file_title_list)*100}%")
 
 
@@ -220,7 +225,13 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
     """
     筛选应收占比符合条件的公司
     """
-    error_file_title_list = generate_hbzcfzb(file_title_list)
+    error_file_title_list = generate_announcement(
+        announcement_type=Financial_Statement.合并资产负债表,
+        file_title_list=file_title_list,
+        gen_table=gen_hbzcfzb,
+        use_cache=True,
+        consider_table=False,
+    )
     error_list = _map(error_file_title_list, lambda item: item["file_title"])
     file_title_list = list(set(file_title_list) - set(error_list))
     target = []
