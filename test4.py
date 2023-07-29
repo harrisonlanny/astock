@@ -94,14 +94,18 @@ from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_per
 # regular_suffix = "$" 
 # result = re.findall(f'^[\w\W]+\\u002e{regular_suffix}', text)
 # print(result)
-max_length = 4
-item = ["应收"]
-index = 0
-add_list = []
-if len(item)< max_length:
-    diff = max_length - len(item)
-    while index < diff:
-        add_list.append("")
-        index = index + 1
-    item = item + add_list
-print(item)
+# max_length = 4
+# item = ["应收"]
+# index = 0
+# add_list = []
+# if len(item)< max_length:
+#     diff = max_length - len(item)
+#     while index < diff:
+#         add_list.append("")
+#         index = index + 1
+#     item = item + add_list
+# print(item)
+a = ["3","4"]
+b = ["1","2"]
+c=a.extend(b)
+print(c)

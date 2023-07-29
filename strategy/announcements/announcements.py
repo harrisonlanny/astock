@@ -111,82 +111,82 @@ file_title_list = [
 
 
 
-def generate_hblrb(file_title_list, use_cache: bool = True):
-    # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
-    for file_title in file_title_list:
-        file_url = get_announcement_url(file_title)
-        parse_pdf(file_url, file_title, use_cache)
+# def generate_hblrb(file_title_list, use_cache: bool = True):
+#     # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
+#     for file_title in file_title_list:
+#         file_url = get_announcement_url(file_title)
+#         parse_pdf(file_url, file_title, use_cache)
 
-    # 2. 遍历所有的file_title_list，根据table.json和content.json来生成合并利润表
-    error_file_title_list = []
-    for file_title in file_title_list:
-        # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
-        hblrb_json_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-        table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
-        content_json_url = (
-            f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
-        )
+#     # 2. 遍历所有的file_title_list，根据table.json和content.json来生成合并利润表
+#     error_file_title_list = []
+#     for file_title in file_title_list:
+#         # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
+#         hblrb_json_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+#         table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
+#         content_json_url = (
+#             f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
+#         )
 
-        # 1. 检查是否存在合并利润表，如果不存在，才进行合成
-        if use_cache and is_exist(get_path(hblrb_json_url)):
-            continue
-        # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
-        # 可以收集异常的数据，并返回
-        all_exists = is_exist(get_path(table_json_url)) and is_exist(
-            get_path(content_json_url)
-        )
-        if use_cache and not all_exists:
-            error_file_title_list.append(
-                {"file_title": file_title, "reason": "缺少table.json或content.json"}
-            )
-            continue
-        # 3. 进行合成
-        gen_success = gen_hblrb(file_title, hblrb_json_url)
-        if not gen_success:
-            error_file_title_list.append(
-                {"file_title": file_title, "reason": "table.json中没找到合并利润表"}
-            )
-    print("合并利润表有问题的file_title_list: ", error_file_title_list)
-    return error_file_title_list
+#         # 1. 检查是否存在合并利润表，如果不存在，才进行合成
+#         if use_cache and is_exist(get_path(hblrb_json_url)):
+#             continue
+#         # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
+#         # 可以收集异常的数据，并返回
+#         all_exists = is_exist(get_path(table_json_url)) and is_exist(
+#             get_path(content_json_url)
+#         )
+#         if use_cache and not all_exists:
+#             error_file_title_list.append(
+#                 {"file_title": file_title, "reason": "缺少table.json或content.json"}
+#             )
+#             continue
+#         # 3. 进行合成
+#         gen_success = gen_hblrb(file_title, hblrb_json_url)
+#         if not gen_success:
+#             error_file_title_list.append(
+#                 {"file_title": file_title, "reason": "table.json中没找到合并利润表"}
+#             )
+#     print("合并利润表有问题的file_title_list: ", error_file_title_list)
+#     return error_file_title_list
 
 
-def generate_xjjxjdjw(file_title_list, use_cache: bool = True):
-    # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
-    for file_title in file_title_list:
-        file_url = get_announcement_url(file_title)
-        parse_pdf(file_url, file_title, use_cache)
+# def generate_xjjxjdjw(file_title_list, use_cache: bool = True):
+    # # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
+    # for file_title in file_title_list:
+    #     file_url = get_announcement_url(file_title)
+    #     parse_pdf(file_url, file_title, use_cache)
 
-    # 2. 遍历所有的file_title_list，根据table.json和content.json来生成现金及现金等价物表
-    error_file_title_list = []
-    for file_title in file_title_list:
-        # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
-        xjjxjdjw_json_url = f"{STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR}/{file_title}__{Financial_Statement.现金和现金等价物的构成.value}.json"
-        table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
-        content_json_url = (
-            f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
-        )
+    # # 2. 遍历所有的file_title_list，根据table.json和content.json来生成现金及现金等价物表
+    # error_file_title_list = []
+    # for file_title in file_title_list:
+    #     # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
+    #     xjjxjdjw_json_url = f"{STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR}/{file_title}__{Financial_Statement.现金和现金等价物的构成.value}.json"
+    #     table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
+    #     content_json_url = (
+    #         f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
+    #     )
 
-        # 1. 检查是否存在现金及现金等价物表，如果不存在，才进行合成
-        if use_cache and is_exist(get_path(xjjxjdjw_json_url)):
-            continue
-        # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
-        # 可以收集异常的数据，并返回
-        all_exists = is_exist(get_path(table_json_url)) and is_exist(
-            get_path(content_json_url)
-        )
-        if use_cache and not all_exists:
-            error_file_title_list.append(
-                {"file_title": file_title, "reason": "缺少table.json或content.json"}
-            )
-            continue
-        # 3. 进行合成
-        gen_success = gen_cash_equivalents(file_title, xjjxjdjw_json_url)
-        if not gen_success:
-            error_file_title_list.append(
-                {"file_title": file_title, "reason": "table.json中没找到现金及现金等价物表"}
-            )
-    print("现金及现金等价物表有问题的file_title_list: ", error_file_title_list)
-    return error_file_title_list
+    #     # 1. 检查是否存在现金及现金等价物表，如果不存在，才进行合成
+    #     if use_cache and is_exist(get_path(xjjxjdjw_json_url)):
+    #         continue
+    #     # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
+    #     # 可以收集异常的数据，并返回
+    #     all_exists = is_exist(get_path(table_json_url)) and is_exist(
+    #         get_path(content_json_url)
+    #     )
+    #     if use_cache and not all_exists:
+    #         error_file_title_list.append(
+    #             {"file_title": file_title, "reason": "缺少table.json或content.json"}
+    #         )
+    #         continue
+    #     # 3. 进行合成
+    #     gen_success = gen_cash_equivalents(file_title, xjjxjdjw_json_url)
+    #     if not gen_success:
+    #         error_file_title_list.append(
+    #             {"file_title": file_title, "reason": "table.json中没找到现金及现金等价物表"}
+    #         )
+    # print("现金及现金等价物表有问题的file_title_list: ", error_file_title_list)
+    # return error_file_title_list
 
 
 def filter_by_interest_bearing_liabilities(file_title_list):
@@ -229,7 +229,7 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
         announcement_type=Financial_Statement.合并资产负债表,
         file_title_list=file_title_list,
         gen_table=gen_hbzcfzb,
-        use_cache=True,
+        use_cache=False,
         consider_table=False,
     )
     error_list = _map(error_file_title_list, lambda item: item["file_title"])
@@ -253,16 +253,25 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
 def filter_by_increase_in_accounts_receivable(file_title_list):
     target = []
     abnormal_count = 0
+    error_file_title_list = generate_announcement(
+        announcement_type=Financial_Statement.合并利润表,
+        file_title_list=file_title_list,
+        gen_table=gen_hblrb,
+        use_cache=False,
+        consider_table=False,
+    )
+    error_list = _map(error_file_title_list, lambda item: item["file_title"])
+    file_title_list = list(set(file_title_list) - set(error_list))
     for file_title in file_title_list:
         try:
             # 1.从合并资产负债表中获取应收款增长率
             accounts_receivable_success = get_accounts_receivable(file_title)
             if accounts_receivable_success:
-                growth_rate_of_account_receivable = accounts_receivable_success[2]
+                growth_rate_of_account_receivable = accounts_receivable_success[1]
             # 2.从合并利润表中获取营业收入增长率
             operating_revenue_success = get_operating_revenue(file_title)
             if operating_revenue_success:
-                growth_rate_of_operating_revenue = operating_revenue_success[2]
+                growth_rate_of_operating_revenue = operating_revenue_success[1]
             # 3.比较应收款增长率和营业收入增长率，若应收款增幅<营业收入增幅，则符合条件
             if accounts_receivable_success and operating_revenue_success:
                 if growth_rate_of_account_receivable < growth_rate_of_operating_revenue:
@@ -277,6 +286,8 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
 def filter_by_receivable_balance(file_title_list):
     target = []
     for file_title in file_title_list:
+        # hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+        # hbzcfzb_url = hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
         companies_info = {}
         # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
         same_industry_propotion = []
@@ -286,9 +297,21 @@ def filter_by_receivable_balance(file_title_list):
             file_title, industry
         )
         if same_industry_companies[0]:
-            generate_hblrb(same_industry_companies[0])
-            generate_hbzcfzb(same_industry_companies[0])
-            for company in same_industry_companies[0]:
+           generate_announcement(
+                announcement_type=Financial_Statement.合并资产负债表,
+                file_title_list=same_industry_companies[0],
+                gen_table=gen_hbzcfzb,
+                use_cache=False,
+                consider_table=False,
+           )
+           generate_announcement(
+                announcement_type=Financial_Statement.合并利润表,
+                file_title_list=same_industry_companies[0],
+                gen_table=gen_hblrb,
+                use_cache=False,
+                consider_table=False,
+           )
+           for company in same_industry_companies[0]:
                 propotion = (
                     receivable_balance_propotion_of_monthly_average_operating_income(
                         company
@@ -296,16 +319,16 @@ def filter_by_receivable_balance(file_title_list):
                 )
                 company_info = {company: propotion}
                 companies_info.update(company_info)
-            for key in companies_info:
+           for key in companies_info:
                 if companies_info[key] == None:
                     companies_info[key] = 0
-            median = get_median(companies_info.values())
-            if companies_info[file_title] < median:
+           median = get_median(companies_info.values())
+           if companies_info[file_title] < median:
                 target.append(file_title)
-            else:
+           else:
                 print(f"{file_title}不符合应收账款/月均营业收入<中位数条件！")
-            print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
-            print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
+           print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
+           print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
 
 
 def filter_by_monetary_funds(file_title_list):

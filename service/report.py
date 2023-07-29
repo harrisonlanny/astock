@@ -1644,9 +1644,21 @@ def get_operating_revenue(file_title):
     获取合并利润表中的营业收入及增长率
     """
     hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+    hblrb_json_format = []
     try:
         hblrb_json = json(hblrb_url)
-        fields = _map(hblrb_json, lambda item: item[0])
+        max_length = max(_map(hblrb_json, lambda item: len(item)))
+        for item in hblrb_json:
+            index = 0 # 起始索引
+            add_list = [] # 长度不一致的补充列表
+            if len(item) < max_length:
+                diff = max_length - len(item)
+                while index < diff:
+                    add_list.append("")
+                    index = index + 1
+                item = item + add_list
+            hblrb_json_format.append(item)
+        fields = _map(hblrb_json_format, lambda item: item[0])
         key_word = _filter(
             fields,
             lambda field: field.replace("\n", "")

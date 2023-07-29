@@ -497,3 +497,19 @@ def concurrency(run, arr:list|tuple,count=2):
 def get_median(iter:list[float]|tuple[float]):
     median_value = statistics.median(iter)
     return median_value
+
+# def supplementing_rows_by_max_length(table_json, max_length):
+#     '''
+#     根据json文件的item最大长度补充每一行列表（使表格对其）
+#     '''
+#     for item in table_json:
+#         index = 0 # 起始索引
+#         add_list = [] # 长度不一致的补充列表
+#         if len(item) < max_length:
+#             diff = max_length - len(item)
+#             while index < diff:
+#                 add_list.append("")
+#                 index = index + 1
+#             item = item + add_list
+#         return item
+

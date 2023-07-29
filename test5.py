@@ -121,10 +121,10 @@ from utils.index import (
 # ]
 # error = _map(error, lambda item: item["file_title"])
 file_title_list = [
-    "601288__农业银行__农业银行2022年度报告__1216275777",
-    "430047__诺思兰德__2022年年度报告__1216626077",
+    # "601288__农业银行__农业银行2022年度报告__1216275777",
+    # "430047__诺思兰德__2022年年度报告__1216626077",
     "600120__浙江东方__浙江东方金融控股集团股份有限公司2022年年度报告__1216356349",
-    "603616__韩建河山__韩建河山2022年年度报告__1216646009",
+    # "603616__韩建河山__韩建河山2022年年度报告__1216646009",
     ]
 
 # test_error_result = [
@@ -146,11 +146,14 @@ file_title_list = [
 
 # parse_pdf_to_content_json()
 # generate_announcement(
-#     announcement_type=Financial_Statement.合并资产负债表,
-#     file_title_list=file_title_list,
-#     gen_table=gen_hbzcfzb,
-#     use_cache=False,
-#     consider_table=False,
+    # announcement_type=Financial_Statement.合并资产负债表,
+    # file_title_list=file_title_list,
+    # gen_table=gen_hbzcfzb,
+    # use_cache=False,
+    # consider_table=False,
 # )
 
-filter_by_proportion_of_accounts_receivable(file_title_list)
+# filter_by_proportion_of_accounts_receivable(file_title_list)
+
+# filter_by_increase_in_accounts_receivable(file_title_list)
+filter_by_receivable_balance(file_title_list)
