@@ -330,10 +330,10 @@ def is_alabo_number_prefix(text: str, consider_content: bool = True):
 
 def is_period_prefix(text:str):
     '''
-    2022年度合并利润表
+    eg：2022年度合并利润表
     '''
     for item in text:
-        if item in ["年","季","度"]:
+        if item in ["年","季","日","度"]:
             return True
     return False 
 

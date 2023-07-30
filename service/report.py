@@ -58,6 +58,7 @@ from utils.index import (
     json2,
     large_num_format,
     has_chinese_number,
+    supplementing_rows_by_max_length,
 )
 from datetime import date
 
@@ -1215,6 +1216,7 @@ def gen_hbzcfzb(file_title, url, consider_table: bool = False):
             _is_empty(prefix)
             or is_chinese_number_prefix(prefix, consider_content=False)
             or is_alabo_number_prefix(prefix, consider_content=False)
+            or is_period_prefix
         ):
             return (True, "SUCCESS!!")
         return (
@@ -1621,21 +1623,37 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
     format_result = []
     for row in target_json:
         if row[0] in key_word:
-            row[-2] = (
-                0
-                if (_is_empty(row[-2]) or row[-2] == "-")
-                else float(large_num_format(row[-2]))
-            )
-            row[-1] = (
-                0
-                if (_is_empty(row[-1]) or row[-1] == "-")
-                else float(large_num_format(row[-1]))
-            )
+            if len(row) >= 4:
+                row[2] = (
+                    0
+                    if (_is_empty(row[2]) or row[2] == "-")
+                    else float(large_num_format(row[2]))
+                )
+                row[3] = (
+                    0
+                    if (_is_empty(row[3]) or row[3] == "-")
+                    else float(large_num_format(row[3]))
+                )
+            else:
+                row[1] = (
+                    0
+                    if (_is_empty(row[1]) or row[1] == "-")
+                    else float(large_num_format(row[1]))
+                )
+                row[2] = (
+                    0
+                    if (_is_empty(row[2]) or row[2] == "-")
+                    else float(large_num_format(row[2]))
+                )
             format_result.append(row)
-        current_target_list = _map(format_result, lambda item: item[-2])
-        last_target_list = _map(format_result, lambda item: item[-1])
-        current_target = sum(current_target_list)
-        last_target = sum(last_target_list)
+    if len(row) >= 4:
+        current_target_list = _map(format_result, lambda item: item[2])
+        last_target_list = _map(format_result, lambda item: item[3])
+    else:
+        current_target_list = _map(format_result, lambda item: item[1])
+        last_target_list = _map(format_result, lambda item: item[2])
+    current_target = sum(current_target_list)
+    last_target = sum(last_target_list)
     return format_result, current_target, last_target
 
 
@@ -1644,20 +1662,9 @@ def get_operating_revenue(file_title):
     获取合并利润表中的营业收入及增长率
     """
     hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-    hblrb_json_format = []
     try:
         hblrb_json = json(hblrb_url)
-        max_length = max(_map(hblrb_json, lambda item: len(item)))
-        for item in hblrb_json:
-            index = 0 # 起始索引
-            add_list = [] # 长度不一致的补充列表
-            if len(item) < max_length:
-                diff = max_length - len(item)
-                while index < diff:
-                    add_list.append("")
-                    index = index + 1
-                item = item + add_list
-            hblrb_json_format.append(item)
+        hblrb_json_format = supplementing_rows_by_max_length(hblrb_json)
         fields = _map(hblrb_json_format, lambda item: item[0])
         key_word = _filter(
             fields,
@@ -1672,7 +1679,7 @@ def get_operating_revenue(file_title):
             in ["其中营业收入", "一营业收入"],
         )
         operating_revenue_info = format_target_table_json_and_growth_rate(
-            key_word, hblrb_json
+            key_word, hblrb_json_format
         )
         try:
             growth_rate = (
@@ -1706,21 +1713,10 @@ def get_accounts_receivable(file_title):
     """
     # 应收 = 资产负债表所有带“应收”两个字的科目数字总和-银行承兑汇票金额
     hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
-    hbzcfzb_json_format = []
     # 1.筛选出合并资产负债表中包含“应收”关键字的字段值，计算其之和
     try:
         hbzcfzb_json = json(hbzcfzb_url)
-        max_length = max(_map(hbzcfzb_json, lambda item: len(item)))
-        for item in hbzcfzb_json:
-            index = 0 # 起始索引
-            add_list = [] # 长度不一致的补充列表
-            if len(item) < max_length:
-                diff = max_length - len(item)
-                while index < diff:
-                    add_list.append("")
-                    index = index + 1
-                item = item + add_list
-            hbzcfzb_json_format.append(item)
+        hbzcfzb_json_format = supplementing_rows_by_max_length(hbzcfzb_json)
         fields = _map(hbzcfzb_json_format, lambda item: item[0])
         key_word = _filter(fields, lambda field: "应收" in field)
         # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法

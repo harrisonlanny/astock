@@ -77,17 +77,21 @@ from utils.index import (
 # file_title_list = _map(r, lambda item: item["file_title"])
 
 file_title_list = [
-    "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
-    "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
-    "688265__南模生物__2022年年度报告__1216671531",# 无利润表
-    "600050__中国联通__中国联合网络通信股份有限公司2022年年度报告全文__1216074125",
-    "601512__中新集团__中新集团2022年年度报告__1216494929",
-    "603176__汇通集团__汇通集团2022年年度报告__1216589243",
-    "688018__乐鑫科技__乐鑫科技2022年年度报告__1216157066",
-    "600211__西藏药业__西藏药业2022年年度报告全文__1216093815",
-    "603191__望变电气__2022年年度报告__1216245898",
-    "601601__中国太保__中国太保2022年年度报告__1216226291",
-    "834021__流金科技__2022年年度报告__1216582112"
+    # "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
+    # "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
+    # "688265__南模生物__2022年年度报告__1216671531",# 无利润表
+    # "600050__中国联通__中国联合网络通信股份有限公司2022年年度报告全文__1216074125",
+    # "601512__中新集团__中新集团2022年年度报告__1216494929",
+    # "603176__汇通集团__汇通集团2022年年度报告__1216589243",
+    # "688018__乐鑫科技__乐鑫科技2022年年度报告__1216157066",
+    # "600211__西藏药业__西藏药业2022年年度报告全文__1216093815",
+    # "603191__望变电气__2022年年度报告__1216245898",
+    "000058__深赛格__2022年年度报告__1216621650",
+    # "600415__小商品城__2022年年度报告__1216380651",
+    # "600790__轻纺城__轻纺城2022年年度报告__1216613001",
+    # "601601__中国太保__中国太保2022年年度报告__1216226291",
+    # "601628__中国人寿__中国人寿2022年年度报告__1216260028",
+    # "834021__流金科技__2022年年度报告__1216582112"
 ]
 
 # file_title_list = [
@@ -156,16 +160,19 @@ file_title_list = [
 #     use_cache=True,
 #     consider_table=False,
 # )
+# generate_announcement(
+#     announcement_type=Financial_Statement.合并利润表,
+#     file_title_list=file_title_list,
+#     gen_table=gen_hblrb,
+#     use_cache=True,
+#     consider_table=False,
+# )
 
 # filter_by_proportion_of_accounts_receivable(file_title_list)
 
 # filter_by_increase_in_accounts_receivable(file_title_list)
 # filter_by_receivable_balance(file_title_list)
-# hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-# gen_hblrb(file_title, hblrb_url)
-file_title = '600050__中国联通__中国联合网络通信股份有限公司2022年年度报告全文__1216074125'
+# file_title = "600790__轻纺城__轻纺城2022年年度报告__1216613001"
 # get_accounts_receivable(file_title)
-hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
-hbzcfzb_json = json(hbzcfzb_url)
-c = supplementing_rows_by_max_length(hbzcfzb_json)
+# c = supplementing_rows_by_max_length(hbzcfzb_json)
 # receivable_balance_propotion_of_monthly_average_operating_income(file_title)

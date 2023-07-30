@@ -286,11 +286,8 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
 def filter_by_receivable_balance(file_title_list):
     target = []
     for file_title in file_title_list:
-        # hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-        # hbzcfzb_url = hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
         companies_info = {}
         # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
-        same_industry_propotion = []
         # 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
         industry = list(get_industry([file_title]).values())
         same_industry_companies = get_companies_in_the_same_industry(
@@ -301,14 +298,14 @@ def filter_by_receivable_balance(file_title_list):
                 announcement_type=Financial_Statement.合并资产负债表,
                 file_title_list=same_industry_companies[0],
                 gen_table=gen_hbzcfzb,
-                use_cache=False,
+                use_cache=True,
                 consider_table=False,
            )
            generate_announcement(
                 announcement_type=Financial_Statement.合并利润表,
                 file_title_list=same_industry_companies[0],
                 gen_table=gen_hblrb,
-                use_cache=False,
+                use_cache=True,
                 consider_table=False,
            )
            for company in same_industry_companies[0]:
