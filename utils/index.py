@@ -498,18 +498,35 @@ def get_median(iter:list[float]|tuple[float]):
     median_value = statistics.median(iter)
     return median_value
 
-# def supplementing_rows_by_max_length(table_json, max_length):
-#     '''
-#     根据json文件的item最大长度补充每一行列表（使表格对其）
-#     '''
-#     for item in table_json:
-#         index = 0 # 起始索引
-#         add_list = [] # 长度不一致的补充列表
-#         if len(item) < max_length:
-#             diff = max_length - len(item)
-#             while index < diff:
-#                 add_list.append("")
-#                 index = index + 1
-#             item = item + add_list
-#         return item
+def find_annotations(table_json):
+    '''
+    查找是否有附注列（标志：附注）
+    '''
+    for row in table_json:
+        if "附注" in row:
+            return True
+    
+
+def supplementing_rows_by_max_length(table_json):
+    '''
+    根据json文件的item最大长度补充每一行列表（使表格对齐）
+    在补充长度后，含附注的行长度与不含附注的行长度不一致----
+        逻辑修改为：如果table内容中有匹配附注格式的，增加附注列后按max_length补充原row
+    '''
+    table_json_format = []
+    max_length = max(_map(table_json, lambda row: len(row)))
+    for item in table_json:
+        index = 0 # 起始索引
+        add_list = [] # 长度不一致的补充列表
+        if find_annotations(table_json):
+            if len(item) < 2: 
+                item.insert(1,"")
+        if len(item) < max_length:
+            diff = max_length - len(item)
+            while index < diff:
+                add_list.append("")
+                index = index + 1
+            item = item + add_list
+        table_json_format.append(item)
+    return table_json_format
 

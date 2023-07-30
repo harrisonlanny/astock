@@ -37,6 +37,7 @@ from utils.index import (
     get_path,
     json,
     large_num_format,
+    supplementing_rows_by_max_length,
 )
 
 # file_title_list = [
@@ -75,19 +76,19 @@ from utils.index import (
 # )
 # file_title_list = _map(r, lambda item: item["file_title"])
 
-# file_title_list = [
-# #     "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
-# #     "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
-# #     "688265__南模生物__2022年年度报告__1216671531"# 无利润表
-# # "600050__中国联通__中国联合网络通信股份有限公司2022年年度报告全文__1216074125",
-# # "601512__中新集团__中新集团2022年年度报告__1216494929",
-# # "603176__汇通集团__汇通集团2022年年度报告__1216589243",
-# # "688018__乐鑫科技__乐鑫科技2022年年度报告__1216157066",
-# # "600211__西藏药业__西藏药业2022年年度报告全文__1216093815",
-# # "603191__望变电气__2022年年度报告__1216245898",
-# "601601__中国太保__中国太保2022年年度报告__1216226291",
-# "834021__流金科技__2022年年度报告__1216582112"
-# ]
+file_title_list = [
+    "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
+    "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
+    "688265__南模生物__2022年年度报告__1216671531",# 无利润表
+    "600050__中国联通__中国联合网络通信股份有限公司2022年年度报告全文__1216074125",
+    "601512__中新集团__中新集团2022年年度报告__1216494929",
+    "603176__汇通集团__汇通集团2022年年度报告__1216589243",
+    "688018__乐鑫科技__乐鑫科技2022年年度报告__1216157066",
+    "600211__西藏药业__西藏药业2022年年度报告全文__1216093815",
+    "603191__望变电气__2022年年度报告__1216245898",
+    "601601__中国太保__中国太保2022年年度报告__1216226291",
+    "834021__流金科技__2022年年度报告__1216582112"
+]
 
 # file_title_list = [
 # "605056__咸亨国际__咸亨国际：2022年年度报告__1216478420",
@@ -120,12 +121,15 @@ from utils.index import (
 #     {"file_title": "002809__红墙股份__2022年年度报告__1216700022", "reason": "合并资产负债表生成失败"},
 # ]
 # error = _map(error, lambda item: item["file_title"])
-file_title_list = [
-    # "601288__农业银行__农业银行2022年度报告__1216275777",
-    # "430047__诺思兰德__2022年年度报告__1216626077",
-    "600120__浙江东方__浙江东方金融控股集团股份有限公司2022年年度报告__1216356349",
-    # "603616__韩建河山__韩建河山2022年年度报告__1216646009",
-    ]
+# file_title_list = [
+#     # "601288__农业银行__农业银行2022年度报告__1216275777",
+#     # "430047__诺思兰德__2022年年度报告__1216626077",
+#     # "600120__浙江东方__浙江东方金融控股集团股份有限公司2022年年度报告__1216356349",
+#     # "603616__韩建河山__韩建河山2022年年度报告__1216646009",
+#     # "600901__江苏金租__江苏金租：2022年年度报告__1216523728", # 无法解析出textline
+#     # "600927__永安期货__永安期货股份有限公司2022年年度报告__1216626323",
+#     # "000415__渤海租赁__2022年年度报告__1216658168",
+#     ]
 
 # test_error_result = [
 #     {
@@ -146,14 +150,22 @@ file_title_list = [
 
 # parse_pdf_to_content_json()
 # generate_announcement(
-    # announcement_type=Financial_Statement.合并资产负债表,
-    # file_title_list=file_title_list,
-    # gen_table=gen_hbzcfzb,
-    # use_cache=False,
-    # consider_table=False,
+#     announcement_type=Financial_Statement.合并资产负债表,
+#     file_title_list=file_title_list,
+#     gen_table=gen_hbzcfzb,
+#     use_cache=True,
+#     consider_table=False,
 # )
 
 # filter_by_proportion_of_accounts_receivable(file_title_list)
 
 # filter_by_increase_in_accounts_receivable(file_title_list)
-filter_by_receivable_balance(file_title_list)
+# filter_by_receivable_balance(file_title_list)
+# hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+# gen_hblrb(file_title, hblrb_url)
+file_title = '600050__中国联通__中国联合网络通信股份有限公司2022年年度报告全文__1216074125'
+# get_accounts_receivable(file_title)
+hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
+hbzcfzb_json = json(hbzcfzb_url)
+c = supplementing_rows_by_max_length(hbzcfzb_json)
+# receivable_balance_propotion_of_monthly_average_operating_income(file_title)
