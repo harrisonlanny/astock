@@ -333,15 +333,21 @@ def filter_by_monetary_funds(file_title_list):
     货币资金大于等于有息负债
     """
     target = []
+    generate_announcement(
+    announcement_type=Financial_Statement.合并资产负债表,
+    file_title_list=file_title_list,
+    gen_table=gen_hbzcfzb,
+    use_cache=True,
+    consider_table=False,
+)
     for file_title in file_title_list:
         hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
         try:
-            file_content = json(hbzcfzb_json_url)
             # 1.获取合并资产负债表中的货币资金
             current_monetary_funds = get_monetary_fund(file_title)
             # 2.获取合并资产负债表中的有息负债
             current_interest_bearing_liabilities = (
-                calculate_interest_bearing_liabilities(file_content)
+                calculate_interest_bearing_liabilities(file_title)
             )
             # 3.将符合条件的公司加入target
             if current_monetary_funds >= current_interest_bearing_liabilities:
@@ -357,10 +363,15 @@ def filter_by_cash_to_debt_ratio(file_title_list):
     从安全性角度出发，筛选 现金债务比=现金及现金等价物/有息负债>1的公司
     """
     target = []
+    generate_announcement(
+    announcement_type=Financial_Statement.现金和现金等价物的构成,
+    file_title_list=file_title_list,
+    gen_table=gen_cash_equivalents,
+    use_cache=True,
+    consider_table=False,
+)
     for file_title in file_title_list:
-        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
         try:
-            file_content = json(hbzcfzb_json_url)
             # 1.获取现金和现金等价物的构成表中的期末现金及现金等价物余额
             current_cash_equivalents = get_cash_and_cash_equivalents(file_title)
             # 2.获取合并资产负债表中的有息负债

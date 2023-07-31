@@ -1533,9 +1533,10 @@ def calculate_interest_bearing_liabilities(file_title):
     interest_bearing_liabilities_current_list_new = []
     try:
         hbzcfzb_json = json(hbzcfzb_url)
-        fields = _map(hbzcfzb_json, lambda item: item[0])
+        hbzcfzb_json_format = supplementing_rows_by_max_length(hbzcfzb_json)
+        fields = _map(hbzcfzb_json_format, lambda item: item[0])
         key_word = _filter(fields, lambda field: field in interest_items)
-        for row in hbzcfzb_json:
+        for row in hbzcfzb_json_format:
             result = _map(row, lambda item: large_num_format(item))
             if result[0] in key_word:
                 interest_bearing_liabilities_current_list.append(result[-2])
@@ -1841,10 +1842,11 @@ def get_cash_and_cash_equivalents(file_title):
     # 1.筛选出现金和现金等价物构成表中包含“期末现金及现金等价物余额”关键字的字段值
     try:
         xjjxjdjw_json = json(xjjxjdjw_url)
-        fields = _map(xjjxjdjw_json, lambda item: item[0])
+        xjjxjdjw_json_format = supplementing_rows_by_max_length(xjjxjdjw_json)
+        fields = _map(xjjxjdjw_json_format, lambda item: item[0])
         key_word = _filter(fields, lambda field: "期末现金及现金等价物余额" in field)
         # 2.获取期末现金及现金等价物余额
-        for rows in xjjxjdjw_json:
+        for rows in xjjxjdjw_json_format:
             if rows[0] in key_word:
                 rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
                 current_cash_equivalents = large_num_format(rows[-2])
