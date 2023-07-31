@@ -1841,6 +1841,7 @@ def get_cash_and_cash_equivalents(file_title):
     xjjxjdjw_url = f"{STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR}/{file_title}__{Financial_Statement.现金和现金等价物的构成.value}.json"
     # 1.筛选出现金和现金等价物构成表中包含“期末现金及现金等价物余额”关键字的字段值
     try:
+        # TODO 优化该方法
         xjjxjdjw_json = json(xjjxjdjw_url)
         xjjxjdjw_json_format = supplementing_rows_by_max_length(xjjxjdjw_json)
         fields = _map(xjjxjdjw_json_format, lambda item: item[0])
