@@ -1176,6 +1176,24 @@ def parse_announcements(start_year, end_year):
 def get_announcement_url(name):
     return get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{name}.pdf")
 
+def find_standard_unqualified_opinions(file_title):
+    save_content_path = (
+        get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
+    )
+    content = json2(save_content_path)
+    for page in content:
+        page_content = content[page]
+        for row in page_content:
+            for item in row:
+                if item is None:
+                    continue
+                else:
+                    if "公允反映了" in item\
+                    or "公允地反映了" in item\
+                    or "标准无保留意见" in item\
+                    or "标准的无保留意见" in item:
+                        return True              
+    return False
 
 def gen_hbzcfzb(file_title, url, consider_table: bool = False):
     financial_statement_item = Financial_Statement_DataSource[

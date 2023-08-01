@@ -90,7 +90,7 @@ from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_per
 
 # print(list(obj.values()))
 
-text = "(4)."
-regular_suffix = "$" 
-result = re.findall(f'^[\w\W]+\\u002e{regular_suffix}', text)
-print(result)
+# text = "(4)."
+# regular_suffix = "$" 
+# result = re.findall(f'^[\w\W]+\\u002e{regular_suffix}', text)
+# print(result)

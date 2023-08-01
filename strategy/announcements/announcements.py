@@ -8,6 +8,7 @@ from service.config import (
 from service.report import (
     caculate_interest_bearing_liabilities_rate,
     calculate_interest_bearing_liabilities,
+    find_standard_unqualified_opinions,
     gen_cash_equivalents,
     gen_hblrb,
     gen_hbzcfzb,
@@ -188,6 +189,18 @@ file_title_list = [
     # print("现金及现金等价物表有问题的file_title_list: ", error_file_title_list)
     # return error_file_title_list
 
+def filter_by_standard_unqualified_opinions(file_title_list):
+    '''
+    筛选符合“标准无保留意见”条件的公司
+    '''
+    target = []
+    for file_title in file_title_list:
+        if find_standard_unqualified_opinions(file_title):
+            target.append(file_title)
+    print(f"不符合“标准无保留意见”条件的公司有：{list(set(file_title_list)-set(target))}")
+    return target
+    # print(f"符合“标准无保留意见”条件的公司有：{target}，所占比例为{len(target)/len(file_title_list)*100}%")
+
 
 def filter_by_interest_bearing_liabilities(file_title_list):
     # 筛选有息负债符合条件的公司
@@ -341,7 +354,6 @@ def filter_by_monetary_funds(file_title_list):
     consider_table=False,
 )
     for file_title in file_title_list:
-        hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
         try:
             # 1.获取合并资产负债表中的货币资金
             current_monetary_funds = get_monetary_fund(file_title)
@@ -385,3 +397,4 @@ def filter_by_cash_to_debt_ratio(file_title_list):
             print(f"{file_title}未找到合并资产负债表")
     print(f"{target}符合现金债务比>1的条件")
     print(f"符合现金债务比>1的公司比例为{len(target)/len(file_title_list)*100}%")
+
