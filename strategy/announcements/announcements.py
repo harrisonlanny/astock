@@ -195,6 +195,7 @@ def filter_by_standard_unqualified_opinions(file_title_list):
     '''
     target = []
     for file_title in file_title_list:
+        print(f"---{file_title}---")
         if find_standard_unqualified_opinions(file_title):
             target.append(file_title)
     print(f"不符合“标准无保留意见”条件的公司有：{list(set(file_title_list)-set(target))}")

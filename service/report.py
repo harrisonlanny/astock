@@ -1177,6 +1177,8 @@ def get_announcement_url(name):
     return get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{name}.pdf")
 
 def find_standard_unqualified_opinions(file_title):
+    file_url = get_announcement_url(file_title)
+    parse_pdf_to_content_json(file_url, file_title)
     save_content_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
     )
@@ -1184,6 +1186,14 @@ def find_standard_unqualified_opinions(file_title):
     for page in content:
         page_content = content[page]
         for row in page_content:
+    #         is_exist = _filter(row, lambda item: "公允反映了" in item)\
+    #                 or _filter(row, lambda item: "公允地反映了" in item)\
+    #                 or _filter(row, lambda item: "标准无保留意见" in item)\
+    #                 or _filter(row, lambda item: "标准的无保留意见" in item)
+    #         if is_exist:
+    #             print(f"{file_title}中存在无标准保留意见关键字")
+    #             return True
+    # return False
             for item in row:
                 if item is None:
                     continue
