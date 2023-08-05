@@ -472,7 +472,49 @@ def concurrency(run, arr:list|tuple,count=2):
         (start_index, end_index)=seg
         t = threading.Thread(
             target=run,
-            args=(arr, start_index, end_index)
+            args=(arr, start_index, end_index,)
+        )
+        tlist.append(t)
+
+    for i,t in enumerate(tlist):
+        t.daemon = True
+        print(f"启动第{i+1}个线程")
+        t.start()
+    
+    for i,t in enumerate(tlist):
+        # print(f"第{i+1}个线程 join()")
+        t.join()
+    
+    end_time = time.time()
+    cost_time = f"{end_time-start_time:.2f}"
+    print(f"cost-time：{cost_time}  concurrency done!! ")
+
+
+def concurrency2(run, arr:list|tuple,count=2):
+    start_time = time.time()
+    length = len(arr)
+    unit = round(length / count)
+    max_index = length - 1
+    index_list = []
+    for value in range(0,count):
+        if len(index_list) == 0:
+            start_index = 0
+        else:
+            last_end_index = index_list[-1][1]
+            start_index = last_end_index + 1
+        if value == count - 1:
+            end_index = max_index
+        else:
+            end_index = start_index + unit - 1
+        index_list.append((start_index, end_index))
+    print("concurrency segmentation",index_list)
+    tlist: list[threading.Thread] = []
+    for i, seg in enumerate(index_list):
+        (start_index, end_index)=seg
+        seg_arr = arr[start_index:end_index+1]
+        t = threading.Thread(
+            target=run,
+            args=(seg_arr,)
         )
         tlist.append(t)
 

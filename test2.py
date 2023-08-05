@@ -13,45 +13,45 @@ from service.report import STATIC_ANNOUNCEMENTS_DIR, get_color_statistic
 from utils.index import get_path, json
 
 
-def json_format_color_result(result):
-    new_result = result.copy()
-    for key in result:
-        if is_iterable(key):
-            value = result[key]
-            new_result.pop(key)
-            new_result[f"{key}"] = value
-    return new_result
-#  and title like '%2022%'
-# json_format_color_result(get_color_statistic(pdf_url))
-r = read_table(
-    table_name="announcements",
-    fields=["file_title"],
-    result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 3",
-)
+# def json_format_color_result(result):
+#     new_result = result.copy()
+#     for key in result:
+#         if is_iterable(key):
+#             value = result[key]
+#             new_result.pop(key)
+#             new_result[f"{key}"] = value
+#     return new_result
+# #  and title like '%2022%'
+# # json_format_color_result(get_color_statistic(pdf_url))
+# r = read_table(
+#     table_name="announcements",
+#     fields=["file_title"],
+#     result_type="dict",
+#     filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 3",
+# )
 
-file_title_list = _map(r, lambda item: item["file_title"])
+# file_title_list = _map(r, lambda item: item["file_title"])
 
 
-result = [None]*len(file_title_list)
-def scan_color(file_title_list, start_index, end_index):
-    arr = file_title_list[start_index:end_index+1]
-    for i, file_title in enumerate(arr):
-        index = start_index + i
-        print(f"{threading.current_thread().name}: {file_title}")
-        pdf_url = get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf")
-        scan_result = parse_pdf(pdf_url, file_title)
-        scan_result['line']['color'] = json_format_color_result(scan_result['line']['color'])
-        scan_result['rect']['color'] = json_format_color_result(scan_result['rect']['color'])
-        result[index] = scan_result
+# result = [None]*len(file_title_list)
+# def scan_color(file_title_list, start_index, end_index):
+#     arr = file_title_list[start_index:end_index+1]
+#     for i, file_title in enumerate(arr):
+#         index = start_index + i
+#         print(f"{threading.current_thread().name}: {file_title}")
+#         pdf_url = get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{file_title}.pdf")
+#         scan_result = parse_pdf(pdf_url, file_title)
+#         scan_result['line']['color'] = json_format_color_result(scan_result['line']['color'])
+#         scan_result['rect']['color'] = json_format_color_result(scan_result['rect']['color'])
+#         result[index] = scan_result
 
-concurrency(
-    run=scan_color,
-    arr=file_title_list,
-    count = 3
-)
+# concurrency(
+#     run=scan_color,
+#     arr=file_title_list,
+#     count = 3
+# )
 # # print("result: ",result)
-json("/scan_color1.json", result)
+# json("/scan_color1.json", result)
 
 
 
@@ -83,4 +83,6 @@ json("/scan_color1.json", result)
 
 
 
-
+result = {
+    "1": "Lanny"
+}

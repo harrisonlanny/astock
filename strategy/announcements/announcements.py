@@ -1,3 +1,4 @@
+import threading
 from service.config import (
     STATIC_ANNOUNCEMENTS_HBLRB_DIR,
     STATIC_ANNOUNCEMENTS_HBZCFZB_DIR,
@@ -194,11 +195,13 @@ def filter_by_standard_unqualified_opinions(file_title_list):
     筛选符合“标准无保留意见”条件的公司
     '''
     target = []
-    for file_title in file_title_list:
-        print(f"---{file_title}---")
+    for index, file_title in enumerate(file_title_list):
+        print(f"{file_title} 【{threading.current_thread().name}:{index + 1}/{len(file_title_list)}】")
+        file_url = get_announcement_url(file_title)
+        parse_pdf_to_content_json(file_url, file_title)
         if find_standard_unqualified_opinions(file_title):
             target.append(file_title)
-    print(f"不符合“标准无保留意见”条件的公司有：{list(set(file_title_list)-set(target))}")
+    # print(f"不符合“标准无保留意见”条件的公司有：{list(set(file_title_list)-set(target))}")
     return target
     # print(f"符合“标准无保留意见”条件的公司有：{target}，所占比例为{len(target)/len(file_title_list)*100}%")
 
@@ -209,13 +212,14 @@ def filter_by_interest_bearing_liabilities(file_title_list):
         announcement_type=Financial_Statement.合并资产负债表,
         file_title_list=file_title_list,
         gen_table=gen_hbzcfzb,
-        use_cache=False,
+        use_cache=True,
         consider_table=False,
     )
-    error_list = _map(error_file_title_list, lambda item: item["file_title"])
+    error_list = _map(error_file_title_list, lambda item: item["文件名"])
     file_title_list = list(set(file_title_list) - set(error_list))
     companies = []
     for file_title in file_title_list:
+        print(f"{file_title}")
         hbzcfzb_json_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
         try:
             json(hbzcfzb_json_url)
@@ -233,7 +237,7 @@ def filter_by_interest_bearing_liabilities(file_title_list):
             print(f"{file_title}未找到合并资产负债表")
     print("符合有息负债占比条件的公司有：", companies)
     print(f"符合有息负债占比筛选条件的公司比例为：{len(companies)/len(file_title_list)*100}%")
-
+    return companies
 
 def filter_by_proportion_of_accounts_receivable(file_title_list):
     """
@@ -243,10 +247,10 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
         announcement_type=Financial_Statement.合并资产负债表,
         file_title_list=file_title_list,
         gen_table=gen_hbzcfzb,
-        use_cache=False,
+        use_cache=True,
         consider_table=False,
     )
-    error_list = _map(error_file_title_list, lambda item: item["file_title"])
+    error_list = _map(error_file_title_list, lambda item: item["文件名"])
     file_title_list = list(set(file_title_list) - set(error_list))
     target = []
     for file_title in file_title_list:
@@ -262,6 +266,7 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
 
     rate = len(target) / len(file_title_list) * 100
     print(f"符合应收占比条件的公司有：{target}，比例为{rate}%")
+    return target
 
 
 def filter_by_increase_in_accounts_receivable(file_title_list):
@@ -271,10 +276,10 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
         announcement_type=Financial_Statement.合并利润表,
         file_title_list=file_title_list,
         gen_table=gen_hblrb,
-        use_cache=False,
+        use_cache=True,
         consider_table=False,
     )
-    error_list = _map(error_file_title_list, lambda item: item["file_title"])
+    error_list = _map(error_file_title_list, lambda item: item["文件名"])
     file_title_list = list(set(file_title_list) - set(error_list))
     for file_title in file_title_list:
         try:
@@ -340,7 +345,7 @@ def filter_by_receivable_balance(file_title_list):
                 print(f"{file_title}不符合应收账款/月均营业收入<中位数条件！")
            print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
            print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
-
+    return target
 
 def filter_by_monetary_funds(file_title_list):
     """
@@ -369,7 +374,7 @@ def filter_by_monetary_funds(file_title_list):
             print(f"{file_title}未生成合并资产负债表")
     print(f"{target}符合货币资金大于等于有息负债的条件")
     print(f"符合货币资金大于等于有息负债条件的公司比例为{len(target)/len(file_title_list)*100}%")
-
+    return target 
 
 def filter_by_cash_to_debt_ratio(file_title_list):
     """
@@ -398,4 +403,4 @@ def filter_by_cash_to_debt_ratio(file_title_list):
             print(f"{file_title}未找到合并资产负债表")
     print(f"{target}符合现金债务比>1的条件")
     print(f"符合现金债务比>1的公司比例为{len(target)/len(file_title_list)*100}%")
-
+    return target

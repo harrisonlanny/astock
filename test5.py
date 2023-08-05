@@ -1,4 +1,6 @@
 import statistics
+import threading
+from time import sleep
 from service.config import (
     STATIC_ANNOUNCEMENTS_HBLRB_DIR,
     STATIC_ANNOUNCEMENTS_HBZCFZB_DIR,
@@ -33,8 +35,11 @@ from strategy.announcements.announcements import (
 # from strategy.announcements.announcements import filter_by_interest_bearing_liabilities
 from utils.index import (
     _filter,
+    _find_index,
     _is_empty,
     _map,
+    concurrency,
+    concurrency2,
     get_median,
     get_path,
     json,
@@ -74,7 +79,7 @@ r = read_table(
     table_name="announcements",
     fields=["file_title"],
     result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title not like '%公告%' and title not like '%修订前%' and title like '%2022%'",
+    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title not like '%公告%' and title not like '%修订前%' and title like '%2021%'",
 )
 file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIMIT 10
 
@@ -128,13 +133,13 @@ file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIM
 # ]
 # error = _map(error, lambda item: item["file_title"])
 # file_title_list = [
-#     # "601288__农业银行__农业银行2022年度报告__1216275777",
-#     # "430047__诺思兰德__2022年年度报告__1216626077",
-#     # "600120__浙江东方__浙江东方金融控股集团股份有限公司2022年年度报告__1216356349",
-#     # "603616__韩建河山__韩建河山2022年年度报告__1216646009",
-#     # "600901__江苏金租__江苏金租：2022年年度报告__1216523728", # 无法解析出textline
-#     # "600927__永安期货__永安期货股份有限公司2022年年度报告__1216626323",
-#     # "000415__渤海租赁__2022年年度报告__1216658168",
+#     "601288__农业银行__农业银行2022年度报告__1216275777",
+#     "430047__诺思兰德__2022年年度报告__1216626077",
+#     "600120__浙江东方__浙江东方金融控股集团股份有限公司2022年年度报告__1216356349",
+#     "603616__韩建河山__韩建河山2022年年度报告__1216646009",
+#     "600901__江苏金租__江苏金租：2022年年度报告__1216523728", # 无法解析出textline
+#     "600927__永安期货__永安期货股份有限公司2022年年度报告__1216626323",
+#     "000415__渤海租赁__2022年年度报告__1216658168",
 #     ]
 
 # test_error_result = [
@@ -181,4 +186,96 @@ file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIM
 # filter_by_cash_to_debt_ratio(file_title_list)
 # filter_by_monetary_funds(file_title_list)
 # find_standard_unqualified_opinions("688003__天准科技__2022年年度报告__1216684125")
-file_title_list_1 = filter_by_standard_unqualified_opinions(file_title_list)
+
+# file_title_list_1 = filter_by_standard_unqualified_opinions(file_title_list)
+
+
+result = []
+def adapter(*kwargs):
+    seg_result = filter_by_standard_unqualified_opinions(*kwargs)
+    global result
+    result += seg_result
+
+concurrency2(
+    run=adapter,
+    arr=file_title_list,
+    count = 6
+)
+print('filter_by_standard_unqualified_opinions_result: ', result)
+json('static/parse-announcements/2021/filter_by_standard_unqualified_opinions.json',result)
+
+result1 = []
+result = json("static/parse-announcements/2021/filter_by_standard_unqualified_opinions.json")
+
+def adapter(*kwargs):
+    seg_result = filter_by_interest_bearing_liabilities(*kwargs)
+    global result1
+    result1 += seg_result
+
+concurrency2(
+    run=adapter,
+    arr=result,
+    count = 6
+)
+print("filter_by_interest_bearing_liabilities_result:", result1)
+json("static/parse-announcements/2021/filter_by_interest_bearing_liabilities.json",result1)
+
+result2 = []
+result1 = json("static/parse-announcements/2021/filter_by_interest_bearing_liabilities.json")
+def adapter(*kwargs):
+    seg_result = filter_by_proportion_of_accounts_receivable(*kwargs)
+    global result2
+    result2 += seg_result
+
+concurrency2(
+    run=adapter,
+    arr=result1,
+    count = 6
+)
+print("filter_by_proportion_of_accounts_receivable_result:", result2)
+json("static/parse-announcements/2021/filter_by_proportion_of_accounts_receivable.json",result2)
+
+result3 = []
+result2 = json("static/parse-announcements/2021/filter_by_proportion_of_accounts_receivable.json")
+def adapter(*kwargs):
+    seg_result = filter_by_increase_in_accounts_receivable(*kwargs)
+    global result3
+    result3 += seg_result
+
+concurrency2(
+    run=adapter,
+    arr=result2,
+    count = 6
+)
+print("filter_by_increase_in_accounts_receivable_result:", result3)
+json("static/parse-announcements/2021/filter_by_increase_in_accounts_receivable.json",result3)
+
+result4 = []
+result3 = json("static/parse-announcements/2021/filter_by_increase_in_accounts_receivable.json")
+def adapter(*kwargs):
+    seg_result = filter_by_monetary_funds(*kwargs)
+    global result4
+    result4 += seg_result
+
+concurrency2(
+    run=adapter,
+    arr=result3,
+    count = 6
+)
+print("filter_by_monetary_funds_result:", result4)
+json("static/parse-announcements/2021/filter_by_monetary_funds.json",result4)
+
+result5 = []
+result4 = json("static/parse-announcements/2021/filter_by_monetary_funds.json")
+def adapter(*kwargs):
+    seg_result = filter_by_cash_to_debt_ratio(*kwargs)
+    global result5
+    result5 += seg_result
+
+concurrency2(
+    run=adapter,
+    arr=result4,
+    count = 6
+)
+print("filter_by_cash_to_debt_ratio_result:", result5)
+json("static/parse-announcements/2021/filter_by_cash_to_debt_ratio.json",result5)

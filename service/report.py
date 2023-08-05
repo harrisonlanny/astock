@@ -1177,8 +1177,8 @@ def get_announcement_url(name):
     return get_path(f"{STATIC_ANNOUNCEMENTS_DIR}/{name}.pdf")
 
 def find_standard_unqualified_opinions(file_title):
-    file_url = get_announcement_url(file_title)
-    parse_pdf_to_content_json(file_url, file_title)
+    # file_url = get_announcement_url(file_title)
+    # parse_pdf_to_content_json(file_url, file_title)
     save_content_path = (
         get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
     )
