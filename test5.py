@@ -190,92 +190,107 @@ file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIM
 # file_title_list_1 = filter_by_standard_unqualified_opinions(file_title_list)
 
 
-result = []
+# result = []
+# def adapter(*kwargs):
+#     seg_result = filter_by_standard_unqualified_opinions(*kwargs)
+#     global result
+#     result += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=file_title_list,
+#     count = 6
+# )
+# print('filter_by_standard_unqualified_opinions_result: ', result)
+# json('static/parse-announcements/2021/filter_by_standard_unqualified_opinions.json',result)
+
+# result1 = []
+# result = json("static/parse-announcements/2021/filter_by_standard_unqualified_opinions.json")
+
+# def adapter(*kwargs):
+#     seg_result = filter_by_interest_bearing_liabilities(*kwargs)
+#     global result1
+#     result1 += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=result,
+#     count = 6
+# )
+# print("filter_by_interest_bearing_liabilities_result:", result1)
+# json("static/parse-announcements/2021/filter_by_interest_bearing_liabilities.json",result1)
+
+# result2 = []
+# result1 = json("static/parse-announcements/2021/filter_by_interest_bearing_liabilities.json")
+# def adapter(*kwargs):
+#     seg_result = filter_by_proportion_of_accounts_receivable(*kwargs)
+#     global result2
+#     result2 += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=result1,
+#     count = 6
+# )
+# print("filter_by_proportion_of_accounts_receivable_result:", result2)
+# json("static/parse-announcements/2021/filter_by_proportion_of_accounts_receivable.json",result2)
+
+# result3 = []
+# result2 = json("static/parse-announcements/2021/filter_by_proportion_of_accounts_receivable.json")
+# def adapter(*kwargs):
+#     seg_result = filter_by_increase_in_accounts_receivable(*kwargs)
+#     global result3
+#     result3 += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=result2,
+#     count = 6
+# )
+# print("filter_by_increase_in_accounts_receivable_result:", result3)
+# json("static/parse-announcements/2021/filter_by_increase_in_accounts_receivable.json",result3)
+
+# result4 = []
+# result3 = json("static/parse-announcements/2021/filter_by_increase_in_accounts_receivable.json")
+# def adapter(*kwargs):
+#     seg_result = filter_by_monetary_funds(*kwargs)
+#     global result4
+#     result4 += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=result3,
+#     count = 6
+# )
+# print("filter_by_monetary_funds_result:", result4)
+# json("static/parse-announcements/2021/filter_by_monetary_funds.json",result4)
+
+# result5 = []
+# result4 = json("static/parse-announcements/2021/filter_by_monetary_funds.json")
+# def adapter(*kwargs):
+#     seg_result = filter_by_cash_to_debt_ratio(*kwargs)
+#     global result5
+#     result5 += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=result4,
+#     count = 6
+# )
+# print("filter_by_cash_to_debt_ratio_result:", result5)
+# json("static/parse-announcements/2021/filter_by_cash_to_debt_ratio.json",result5)
+
+result6 = []
+result5 = json("static/parse-announcements/2022/filter_by_cash_to_debt_ratio.json")
 def adapter(*kwargs):
-    seg_result = filter_by_standard_unqualified_opinions(*kwargs)
-    global result
-    result += seg_result
+    seg_result = filter_by_receivable_balance(*kwargs)
+    global result6
+    result6 += seg_result
 
 concurrency2(
     run=adapter,
-    arr=file_title_list,
+    arr=result5,
     count = 6
 )
-print('filter_by_standard_unqualified_opinions_result: ', result)
-json('static/parse-announcements/2021/filter_by_standard_unqualified_opinions.json',result)
-
-result1 = []
-result = json("static/parse-announcements/2021/filter_by_standard_unqualified_opinions.json")
-
-def adapter(*kwargs):
-    seg_result = filter_by_interest_bearing_liabilities(*kwargs)
-    global result1
-    result1 += seg_result
-
-concurrency2(
-    run=adapter,
-    arr=result,
-    count = 6
-)
-print("filter_by_interest_bearing_liabilities_result:", result1)
-json("static/parse-announcements/2021/filter_by_interest_bearing_liabilities.json",result1)
-
-result2 = []
-result1 = json("static/parse-announcements/2021/filter_by_interest_bearing_liabilities.json")
-def adapter(*kwargs):
-    seg_result = filter_by_proportion_of_accounts_receivable(*kwargs)
-    global result2
-    result2 += seg_result
-
-concurrency2(
-    run=adapter,
-    arr=result1,
-    count = 6
-)
-print("filter_by_proportion_of_accounts_receivable_result:", result2)
-json("static/parse-announcements/2021/filter_by_proportion_of_accounts_receivable.json",result2)
-
-result3 = []
-result2 = json("static/parse-announcements/2021/filter_by_proportion_of_accounts_receivable.json")
-def adapter(*kwargs):
-    seg_result = filter_by_increase_in_accounts_receivable(*kwargs)
-    global result3
-    result3 += seg_result
-
-concurrency2(
-    run=adapter,
-    arr=result2,
-    count = 6
-)
-print("filter_by_increase_in_accounts_receivable_result:", result3)
-json("static/parse-announcements/2021/filter_by_increase_in_accounts_receivable.json",result3)
-
-result4 = []
-result3 = json("static/parse-announcements/2021/filter_by_increase_in_accounts_receivable.json")
-def adapter(*kwargs):
-    seg_result = filter_by_monetary_funds(*kwargs)
-    global result4
-    result4 += seg_result
-
-concurrency2(
-    run=adapter,
-    arr=result3,
-    count = 6
-)
-print("filter_by_monetary_funds_result:", result4)
-json("static/parse-announcements/2021/filter_by_monetary_funds.json",result4)
-
-result5 = []
-result4 = json("static/parse-announcements/2021/filter_by_monetary_funds.json")
-def adapter(*kwargs):
-    seg_result = filter_by_cash_to_debt_ratio(*kwargs)
-    global result5
-    result5 += seg_result
-
-concurrency2(
-    run=adapter,
-    arr=result4,
-    count = 6
-)
-print("filter_by_cash_to_debt_ratio_result:", result5)
-json("static/parse-announcements/2021/filter_by_cash_to_debt_ratio.json",result5)
+print("filter_by_receivable_balance_result:", result6)
+json("static/parse-announcements/2022/filter_by_receivable_balance.json",result6)

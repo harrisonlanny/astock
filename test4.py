@@ -72,7 +72,8 @@
 # print(text[0:-len(key)])
 
 import re
-from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix
+from strategy.announcements.announcements import filter_by_receivable_balance
+from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json
 
 
 # text = "二十五、哈哈哈"
@@ -94,3 +95,7 @@ from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_per
 # regular_suffix = "$" 
 # result = re.findall(f'^[\w\W]+\\u002e{regular_suffix}', text)
 # print(result)
+
+result5 = json("static/parse-announcements/2022/filter_by_cash_to_debt_ratio.json")
+result = filter_by_receivable_balance(result5)
+json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)

@@ -1,4 +1,5 @@
 import threading
+from db.index import read_table
 from service.config import (
     STATIC_ANNOUNCEMENTS_HBLRB_DIR,
     STATIC_ANNOUNCEMENTS_HBZCFZB_DIR,
@@ -28,167 +29,8 @@ from service.report import (
     propotion_of_accounts_receivable,
     receivable_balance_propotion_of_monthly_average_operating_income,
 )
-from utils.index import _map, get_median, get_path, is_exist, json
+from utils.index import _filter, _map, get_median, get_path, is_exist, json
 
-# name = "000534__万泽股份__2022年年度报告__1215991366"
-# pdf_url = get_announcement_url(name)
-# parse_pdf(pdf_url, name)
-
-# 这里的20条随机，是当成所有的年报pdf来看的
-# 当parse_pdf结束后，只应该有content.json 和table.json
-# 后面所有的分析与提表，都基于上面两个json
-#
-
-# r = read_table(
-#     table_name="announcements",
-#     fields=["file_title"],
-#     result_type="dict",
-#     filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title like '%2022%' ORDER BY RAND() LIMIT 100",
-# )
-# file_title_list = _map(r, lambda item: item["file_title"])
-
-
-# 其他包含“合并资产负债表”的textline有干扰
-# file_title_list = [
-#     "300503__昊志机电__2022年年度报告__1216659965"
-# ]
-
-# maybe the same table 识别有误
-# file_title_list = [
-#     "688609__九联科技__广东九联科技股份有限公司2022年年度报告__1216647734",
-#     "688553__汇宇制药__四川汇宇制药股份有限公司2022年年度报告__1216336296",
-#     "601966__玲珑轮胎__山东玲珑轮胎股份有限公司2022年年度报告__1216692817",
-#     "603070__万控智造__万控智造：2022年年度报告__1216454871",
-#     "603256__宏和科技__宏和科技2022年年度报告__1216645622",
-#     "600683__京投发展__京投发展股份有限公司2022年年度报告__1216235519",
-#     "688053__思科瑞__成都思科瑞微电子股份有限公司2022年年度报告__1216362695",
-#     "605162__新中港__浙江新中港热电股份有限公司2022年年度报告__1216616607",
-#     "688029__南微医学__南微医学科技股份有限公司2022年年度报告__1216596450",
-#     "600894__广日股份__广州广日股份有限公司2022年年度报告__1216354281",
-#     "688009__中国通号__2022年年度报告__1216203728",
-#     "603017__中衡设计__2022年年度报告__1216556176",
-#     "601100__恒立液压__江苏恒立液压股份有限公司2022年年度报告__1216561779",
-#     "601956__东贝集团__湖北东贝机电集团股份有限公司2022年年度报告__1216221059",
-#     "688351__微电生理__2022年年度报告__1216245176",
-#     "000816__智慧农业__2022年年度报告__1216692013", # 续表另有标题
-#     "601117__中国化学__中国化学2022年年度报告__1216234431" # 续表另有标题
-# ]
-
-# 表格格式导致合并资产负债表识别不正确
-# file_title_list = [
-#     "688538__和辉光电__上海和辉光电股份有限公司2022年年度报告__1216623370",
-#     "002500__山西证券__2022年年度报告__1216656433",
-#     "000811__冰轮环境__2022年年度报告__1216390232",
-#     "600928__西安银行__西安银行股份有限公司2022年年度报告__1216664133",
-#     "002493__荣盛石化__2022年年度报告__1216478209",
-#     "600558__大西洋__大西洋2022年年度报告__1216343924",
-#     "688137__近岸蛋白__688137_2022年_年度报告__1216630973",
-#     "002342__巨力索具__2022年年度报告__1216615314",
-#     "838171__邦德股份__2022年年度报告__1216371491" # 表格边框颜色不一致，有的蓝色，有的黑色，取的黑色为主色，取不到蓝色的合并资产负债表
-# ]
-
-
-file_title_list = [
-    "600481__双良节能__双良节能系统股份有限公司2022年年度报告__1216560014",
-    "003005__竞业达__2022年年度报告__1216617405",
-    "301098__金埔园林__2022年年度报告__1216558940",
-    "002500__山西证券__2022年年度报告__1216656433",
-    "002282__博深股份__2022年年度报告__1216648090",
-    "603985__恒润股份__江阴市恒润重工股份有限公司2022年年度报告__1216419056",
-    "002581__未名医药__2022年度报告（更正后）__1217066287",
-    "688227__品高股份__2022年年度报告__1216711726",
-    "601788__光大证券__光大证券股份有限公司2022年年度报告__1216279948",
-    "003040__楚天龙__2022年年度报告__1216275830",
-    "300668__杰恩设计__2022年年度报告__1216517939",
-    "600278__东方创业__东方创业2022年度报告__1216701140",
-    "831305__海希通讯__2022年年度报告（更正后）__1216861207",
-    "300097__智云股份__2022年年度报告（更新后）__1216921699",
-    "603167__渤海轮渡__渤海轮渡集团股份有限公司2022年年度报告__1216441667",
-    "688510__航亚科技__无锡航亚科技股份有限公司2022年年度报告__1216582882",
-    "688288__鸿泉物联__鸿泉物联：2022年年度报告__1216687349",
-    "600500__中化国际__中化国际2022年年度报告__1216663256",
-    "603003__龙宇股份__龙宇股份2022年年度报告__1216645157",
-    "688538__和辉光电__上海和辉光电股份有限公司2022年年度报告__1216623370",
-]
-
-
-
-# def generate_hblrb(file_title_list, use_cache: bool = True):
-#     # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
-#     for file_title in file_title_list:
-#         file_url = get_announcement_url(file_title)
-#         parse_pdf(file_url, file_title, use_cache)
-
-#     # 2. 遍历所有的file_title_list，根据table.json和content.json来生成合并利润表
-#     error_file_title_list = []
-#     for file_title in file_title_list:
-#         # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
-#         hblrb_json_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
-#         table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
-#         content_json_url = (
-#             f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
-#         )
-
-#         # 1. 检查是否存在合并利润表，如果不存在，才进行合成
-#         if use_cache and is_exist(get_path(hblrb_json_url)):
-#             continue
-#         # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
-#         # 可以收集异常的数据，并返回
-#         all_exists = is_exist(get_path(table_json_url)) and is_exist(
-#             get_path(content_json_url)
-#         )
-#         if use_cache and not all_exists:
-#             error_file_title_list.append(
-#                 {"file_title": file_title, "reason": "缺少table.json或content.json"}
-#             )
-#             continue
-#         # 3. 进行合成
-#         gen_success = gen_hblrb(file_title, hblrb_json_url)
-#         if not gen_success:
-#             error_file_title_list.append(
-#                 {"file_title": file_title, "reason": "table.json中没找到合并利润表"}
-#             )
-#     print("合并利润表有问题的file_title_list: ", error_file_title_list)
-#     return error_file_title_list
-
-
-# def generate_xjjxjdjw(file_title_list, use_cache: bool = True):
-    # # 1. 遍历所有的file_title_list,并parse_pdf (已经parse过就不会再parse!!)
-    # for file_title in file_title_list:
-    #     file_url = get_announcement_url(file_title)
-    #     parse_pdf(file_url, file_title, use_cache)
-
-    # # 2. 遍历所有的file_title_list，根据table.json和content.json来生成现金及现金等价物表
-    # error_file_title_list = []
-    # for file_title in file_title_list:
-    #     # 缺乏必要的json，而无法合成利润表等明细表的file_title_list
-    #     xjjxjdjw_json_url = f"{STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR}/{file_title}__{Financial_Statement.现金和现金等价物的构成.value}.json"
-    #     table_json_url = f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__table.json"
-    #     content_json_url = (
-    #         f"{STATIC_ANNOUNCEMENTS_PARSE_DIR}/{file_title}__content.json"
-    #     )
-
-    #     # 1. 检查是否存在现金及现金等价物表，如果不存在，才进行合成
-    #     if use_cache and is_exist(get_path(xjjxjdjw_json_url)):
-    #         continue
-    #     # 2. 如果需要合成，检查必要的合成元素 table.json和content.json是否存在，如果存在 才进行合成，如果不存在
-    #     # 可以收集异常的数据，并返回
-    #     all_exists = is_exist(get_path(table_json_url)) and is_exist(
-    #         get_path(content_json_url)
-    #     )
-    #     if use_cache and not all_exists:
-    #         error_file_title_list.append(
-    #             {"file_title": file_title, "reason": "缺少table.json或content.json"}
-    #         )
-    #         continue
-    #     # 3. 进行合成
-    #     gen_success = gen_cash_equivalents(file_title, xjjxjdjw_json_url)
-    #     if not gen_success:
-    #         error_file_title_list.append(
-    #             {"file_title": file_title, "reason": "table.json中没找到现金及现金等价物表"}
-    #         )
-    # print("现金及现金等价物表有问题的file_title_list: ", error_file_title_list)
-    # return error_file_title_list
 
 def filter_by_standard_unqualified_opinions(file_title_list):
     '''
@@ -304,48 +146,110 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
 
 def filter_by_receivable_balance(file_title_list):
     target = []
-    for file_title in file_title_list:
-        companies_info = {}
-        # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
-        # 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
-        industry = list(get_industry([file_title]).values())
-        same_industry_companies = get_companies_in_the_same_industry(
-            file_title, industry
-        )
-        if same_industry_companies[0]:
-           generate_announcement(
-                announcement_type=Financial_Statement.合并资产负债表,
-                file_title_list=same_industry_companies[0],
-                gen_table=gen_hbzcfzb,
-                use_cache=True,
-                consider_table=False,
-           )
-           generate_announcement(
+    # 1.按行业计算应收账款/月均营业收入中位数
+    all_industries = _filter(_map(read_table(
+            table_name="stock_basic",
+            fields=["distinct industry"],
+            result_type="dict"
+        ), lambda item: item["distinct industry"]), lambda item: item is not None)
+    for industry in all_industries:
+        companies = _map(read_table(
+            table_name="stock_basic",
+            fields=["name"],
+            result_type="dict",
+            filter_str=f"where industry = '{industry}'"
+        ), lambda item: item["name"])
+
+        industry_file_title_list = []
+        industry_receivable_balance_propotion = []
+        industry_propotion_info_dict = {}
+        for company in companies:
+            file_title = _map(read_table(
+                table_name="announcements",
+                fields=["file_title"],
+                result_type="dict",
+                filter_str=f"where name = '{company}' and title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title not like '%公告%' and title not like '%修订前%' and title like '%2022%'"
+                ), lambda item: item["file_title"])
+            if file_title:
+                industry_file_title_list.append(file_title[0])
+        
+            generate_announcement(
+            announcement_type=Financial_Statement.合并资产负债表,
+            file_title_list=industry_file_title_list,
+            gen_table=gen_hbzcfzb,
+            use_cache=True,
+            consider_table=False,
+    )
+            generate_announcement(
                 announcement_type=Financial_Statement.合并利润表,
-                file_title_list=same_industry_companies[0],
+                file_title_list=industry_file_title_list,
                 gen_table=gen_hblrb,
                 use_cache=True,
                 consider_table=False,
-           )
-           for company in same_industry_companies[0]:
-                propotion = (
-                    receivable_balance_propotion_of_monthly_average_operating_income(
-                        company
-                    )
-                )
-                company_info = {company: propotion}
-                companies_info.update(company_info)
-           for key in companies_info:
-                if companies_info[key] == None:
-                    companies_info[key] = 0
-           median = get_median(companies_info.values())
-           if companies_info[file_title] < median:
-                target.append(file_title)
-           else:
-                print(f"{file_title}不符合应收账款/月均营业收入<中位数条件！")
-           print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
-           print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
+            )
+            if file_title:
+                propotion = receivable_balance_propotion_of_monthly_average_operating_income(file_title[0])
+            industry_receivable_balance_propotion.append(propotion)
+            industry_propotion_info = {
+                industry: industry_receivable_balance_propotion
+            }
+            industry_propotion_info_dict.update(industry_propotion_info)
+    # 2.比较当前file与行业中位数关系，符合条件的加入target
+    for file_title in file_title_list:
+        industry = _map(read_table(
+            table_name="stock_basic",
+            fields=["industry"],
+            result_type="dict",
+            filter_str=f"where file_title = '{file_title}'"
+        ), lambda item: item["industry"])
+        industry_median = get_median(industry_propotion_info_dict["industry"])
+        current_rate = receivable_balance_propotion_of_monthly_average_operating_income(file_title)
+        if current_rate < industry_median:
+            target.appent(file_title)
     return target
+    # target = []
+    # for file_title in file_title_list:
+    #     companies_info = {}
+    #     # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
+    #     # 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
+    #     industry = list(get_industry([file_title]).values())
+    #     same_industry_companies = get_companies_in_the_same_industry(
+    #         file_title, industry
+    #     )
+    #     if same_industry_companies[0]:
+    #        generate_announcement(
+    #             announcement_type=Financial_Statement.合并资产负债表,
+    #             file_title_list=same_industry_companies[0],
+    #             gen_table=gen_hbzcfzb,
+    #             use_cache=True,
+    #             consider_table=False,
+    #        )
+    #        generate_announcement(
+    #             announcement_type=Financial_Statement.合并利润表,
+    #             file_title_list=same_industry_companies[0],
+    #             gen_table=gen_hblrb,
+    #             use_cache=True,
+    #             consider_table=False,
+    #        )
+    #        for company in same_industry_companies[0]:
+    #             propotion = (
+    #                 receivable_balance_propotion_of_monthly_average_operating_income(
+    #                     company
+    #                 )
+    #             )
+    #             company_info = {company: propotion}
+    #             companies_info.update(company_info)
+    #        for key in companies_info:
+    #             if companies_info[key] == None:
+    #                 companies_info[key] = 0
+    #        median = get_median(companies_info.values())
+    #        if companies_info[file_title] < median:
+    #             target.append(file_title)
+    #        else:
+    #             print(f"{file_title}不符合应收账款/月均营业收入<中位数条件！")
+    #        print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
+    #        print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
+    # return target
 
 def filter_by_monetary_funds(file_title_list):
     """

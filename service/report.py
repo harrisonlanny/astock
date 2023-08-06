@@ -1842,6 +1842,7 @@ def receivable_balance_propotion_of_monthly_average_operating_income(file_title)
         return propotion_of_receivable_balance
     except:
         print(f"{file_title}无法计算应收账款余额/月均营业收入！")
+        return 0
 
 
 def get_monetary_fund(file_title):
