@@ -72,8 +72,11 @@
 # print(text[0:-len(key)])
 
 import re
+from service.config import Financial_Statement
+from db.index import read_table
+from service.report import gen_hblrb, gen_hbzcfzb, generate_announcement, receivable_balance_propotion_of_monthly_average_operating_income
 from strategy.announcements.announcements import filter_by_receivable_balance
-from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json
+from utils.index import _filter, _map, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json
 
 
 # text = "二十五、哈哈哈"
@@ -99,3 +102,53 @@ from utils.index import is_alabo_number_prefix, is_chinese_number_prefix, is_per
 result5 = json("static/parse-announcements/2022/filter_by_cash_to_debt_ratio.json")
 result = filter_by_receivable_balance(result5)
 json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)
+
+# all_industries = _filter(_map(read_table(
+#             table_name="stock_basic",
+#             fields=["distinct industry"],
+#             result_type="dict"
+#         ), lambda item: item["distinct industry"]), lambda item: item is not None)
+    
+# industry_propotion_info_dict = {}
+# for industry in all_industries[-2:]:
+#     companies = _map(read_table(
+#         table_name="stock_basic",
+#         fields=["name"],
+#         result_type="dict",
+#         filter_str=f"where industry = '{industry}'"
+#     ), lambda item: item["name"])[:2]
+
+#     industry_file_title_list = []
+#     industry_receivable_balance_propotion = []
+        
+#     for company in companies:
+#         file_title = _map(read_table(
+#             table_name="announcements",
+#             fields=["file_title"],
+#             result_type="dict",
+#             filter_str=f"where name = '{company}' and title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title not like '%公告%' and title not like '%修订前%' and title like '%2022%'"
+#             ), lambda item: item["file_title"])
+#         if file_title:
+#             industry_file_title_list.append(file_title[0])
+    
+#         generate_announcement(
+#         announcement_type=Financial_Statement.合并资产负债表,
+#         file_title_list=industry_file_title_list,
+#         gen_table=gen_hbzcfzb,
+#         use_cache=True,
+#         consider_table=False,
+# )
+#         generate_announcement(
+#             announcement_type=Financial_Statement.合并利润表,
+#             file_title_list=industry_file_title_list,
+#             gen_table=gen_hblrb,
+#             use_cache=True,
+#             consider_table=False,
+#         )
+#         if file_title:
+#             propotion = receivable_balance_propotion_of_monthly_average_operating_income(file_title[0])
+#         industry_receivable_balance_propotion.append(propotion)
+#         industry_propotion_info = {
+#             industry: industry_receivable_balance_propotion
+#         }
+#         industry_propotion_info_dict.update(industry_propotion_info)

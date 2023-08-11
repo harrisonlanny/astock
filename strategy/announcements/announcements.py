@@ -152,6 +152,8 @@ def filter_by_receivable_balance(file_title_list):
             fields=["distinct industry"],
             result_type="dict"
         ), lambda item: item["distinct industry"]), lambda item: item is not None)
+    
+    industry_propotion_info_dict = {}
     for industry in all_industries:
         companies = _map(read_table(
             table_name="stock_basic",
@@ -162,7 +164,7 @@ def filter_by_receivable_balance(file_title_list):
 
         industry_file_title_list = []
         industry_receivable_balance_propotion = []
-        industry_propotion_info_dict = {}
+        
         for company in companies:
             file_title = _map(read_table(
                 table_name="announcements",
@@ -200,7 +202,7 @@ def filter_by_receivable_balance(file_title_list):
             table_name="stock_basic",
             fields=["industry"],
             result_type="dict",
-            filter_str=f"where file_title = '{file_title}'"
+            filter_str=f"where symbol = '{file_title[:6]}'"
         ), lambda item: item["industry"])
         industry_median = get_median(industry_propotion_info_dict["industry"])
         current_rate = receivable_balance_propotion_of_monthly_average_operating_income(file_title)
