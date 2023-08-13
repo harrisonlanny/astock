@@ -76,7 +76,7 @@ from service.config import Financial_Statement
 from db.index import read_table
 from service.report import gen_hblrb, gen_hbzcfzb, generate_announcement, receivable_balance_propotion_of_monthly_average_operating_income
 from strategy.announcements.announcements import filter_by_receivable_balance
-from utils.index import _filter, _map, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json
+from utils.index import _filter, _map, get_median, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json
 
 
 # text = "二十五、哈哈哈"
@@ -110,7 +110,9 @@ json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)
 #         ), lambda item: item["distinct industry"]), lambda item: item is not None)
     
 # industry_propotion_info_dict = {}
-# for industry in all_industries[-2:]:
+# target = []
+# for index,industry in enumerate(all_industries[98:100]):
+#     print(f"行业进度:{index+1}/{len(all_industries[98:100])}")
 #     companies = _map(read_table(
 #         table_name="stock_basic",
 #         fields=["name"],
@@ -121,7 +123,8 @@ json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)
 #     industry_file_title_list = []
 #     industry_receivable_balance_propotion = []
         
-#     for company in companies:
+#     for index,company in enumerate(companies):
+#         print(f"公司进度：{index+1}/{len(companies)}")
 #         file_title = _map(read_table(
 #             table_name="announcements",
 #             fields=["file_title"],
@@ -152,3 +155,7 @@ json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)
 #             industry: industry_receivable_balance_propotion
 #         }
 #         industry_propotion_info_dict.update(industry_propotion_info)
+#     industry_median = get_median(industry_propotion_info_dict[f"{industry}"])
+#     current_rate = receivable_balance_propotion_of_monthly_average_operating_income(file_title[0])
+#     if current_rate < industry_median:
+#         target.append(file_title)

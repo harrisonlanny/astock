@@ -295,4 +295,3 @@ concurrency2(
 print("filter_by_receivable_balance_result:", result6)
 json("static/parse-announcements/2022/filter_by_receivable_balance.json",result6)
 
-#601512__中新集团__中新集团2022年年度报告__1216494929

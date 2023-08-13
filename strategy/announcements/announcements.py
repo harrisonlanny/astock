@@ -147,14 +147,16 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
 def filter_by_receivable_balance(file_title_list):
     target = []
     # 1.按行业计算应收账款/月均营业收入中位数
-    all_industries = _filter(_map(read_table(
+    all_industries = _map(read_table(
             table_name="stock_basic",
             fields=["distinct industry"],
             result_type="dict"
-        ), lambda item: item["distinct industry"]), lambda item: item is not None)
+        ), lambda item: item["distinct industry"])
+        # , _filter(lambda item: item is not None)
     
     industry_propotion_info_dict = {}
-    for industry in all_industries:
+    for index, industry in enumerate(all_industries):
+        print(f"行业进度:{index+1}/{len(all_industries)}")
         companies = _map(read_table(
             table_name="stock_basic",
             fields=["name"],
@@ -165,7 +167,8 @@ def filter_by_receivable_balance(file_title_list):
         industry_file_title_list = []
         industry_receivable_balance_propotion = []
         
-        for company in companies:
+        for index,company in enumerate(companies):
+            print(f"公司进度：{index+1}/{len(companies)}")
             file_title = _map(read_table(
                 table_name="announcements",
                 fields=["file_title"],
@@ -203,11 +206,14 @@ def filter_by_receivable_balance(file_title_list):
             fields=["industry"],
             result_type="dict",
             filter_str=f"where symbol = '{file_title[:6]}'"
-        ), lambda item: item["industry"])
-        industry_median = get_median(industry_propotion_info_dict["industry"])
+        ), lambda item: item["industry"])[0]
+        if industry is not None:
+            industry_median = get_median(industry_propotion_info_dict[f"{industry}"])
+        else:
+            industry_median = 0
         current_rate = receivable_balance_propotion_of_monthly_average_operating_income(file_title)
         if current_rate < industry_median:
-            target.appent(file_title)
+            target.append(file_title)
     return target
     # target = []
     # for file_title in file_title_list:
