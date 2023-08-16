@@ -17,6 +17,7 @@ from service.config import (
     STATIC_ANNOUNCEMENTS_HBZCFZB_DIR,
     STATIC_ANNOUNCEMENTS_PARSE_DIR,
     STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR,
+    STATIC_ANNOUNCEMENTS_ZYYW_DIR,
     Announcement_Category,
     Announcement_Category_Options,
     Financial_Statement,
@@ -1542,6 +1543,121 @@ def gen_cash_equivalents(file_title, url, consider_table: bool = False):
         reason = Find_ANNOUNCE_MSG.index为None.value
     return False, reason
 
+def gen_zyyw(file_title, url, consider_table: bool = False):
+    financial_statement_item = Financial_Statement_DataSource[
+        Financial_Statement.营业收入和营业成本.value
+    ]
+
+    save_content_path = (
+        get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__content.json"
+    )
+    save_table_path = (
+        get_path(STATIC_ANNOUNCEMENTS_PARSE_DIR) + "/" + file_title + "__table.json"
+    )
+    if consider_table:
+        file_all_tables = json2(save_table_path)
+    else:
+        file_all_tables = []
+    content = json2(save_content_path)
+
+    target = None
+    rows = []
+    reason = ""
+
+    def find_target(text: str):
+        try: 
+            isinstance(text,str)
+            # 必要条件
+            keywords = financial_statement_item["keywords"]
+            # 找出index
+            index = _find_index(keywords, lambda key: text.endswith(key))
+            if index == None:
+                # print(f"**{text}**, index为None")
+                return (False, Find_ANNOUNCE_MSG.index为None.value)
+            # text一定得是标题，而不是刚好一句话的结尾刚好被分成了一行的末尾
+            # 满足标题的条件：关键字之前的内容要么是要么是、.（）
+            key_str = keywords[index]
+            # 获取关键字前缀，并消除前缀的前后的不可见字符
+            prefix = text[0 : -len(key_str)].strip()
+            # 如果前缀为空字符串或者是中文数字序列，则返回True
+            if (
+                _is_empty(prefix)
+                or is_chinese_number_prefix(prefix, consider_content=False)
+                or is_alabo_number_prefix(prefix, consider_content=False)
+                or is_period_prefix(prefix)
+            ):
+                return (True, "SUCCESS!!")
+            return (
+                False,
+                f"text: {text}, key: {key_str} , {Find_ANNOUNCE_MSG.text_line不符合数字序号或者不为空}",
+            )
+        except:
+            return (False,
+                    f"text: {text} 非string类型！")
+
+    # 在table.json里找目标
+    for t in file_all_tables:
+        top_desc = t["desc"]["top"]
+        for d in top_desc:
+            if find_target(d):
+                # print("在table.json里找到target了！", t)
+                target = t
+                break
+        if target is not None:
+            break
+
+    if target:
+        find_count = 0
+        for p in content:
+            p_values = content[p]
+            for item in p_values:
+                if item[0] == "table" and item[1] in target["range"]:
+                    find_count += 1
+                    rows += item[2]
+                if find_count == len(target["range"]):
+                    break
+            if find_count == len(target["range"]):
+                break
+    else:
+        # print("在table.json里没有target，开始用content.json寻找！")
+        # table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
+        # 就去content.json里去找
+        should_start = False
+        should_end = False
+        for page in content:
+            page_values = content[page]
+            for item in page_values:
+                [type, id, value] = item
+                # start
+                (find_success, find_msg) = find_target(value)
+                # 收集特殊的msg
+                if (
+                    not find_success
+                    and find_msg
+                    and find_msg != Find_ANNOUNCE_MSG.index为None.value
+                ):
+                    reason += find_msg + "\n"
+
+                if type == "text_line" and find_success:
+                    should_start = True
+                # collect data
+                if should_start and not should_end :
+                    # 将value根据空格分成数组
+                    rows.append(value.split(" "))
+                # end
+                if should_start and find_zyyw(value):
+                    should_end = True
+                    break
+            if should_end:
+                break
+
+    if len(rows) > 5:
+        json2(f"{url}", rows)
+        return True, "SUCCESS"
+    if reason == "":
+        reason = Find_ANNOUNCE_MSG.index为None.value
+    return False, reason
+
 
 def calculate_interest_bearing_liabilities(file_title):
     """
@@ -1613,6 +1729,12 @@ def find_cash_equivalents(text:str):
     查找“期末现金及现金等价物余额”
     '''
     return "期末现金及现金等价物余额" in text or "现金及现金等价物余额" in text
+
+def find_zyyw(text:str):
+    '''
+    查找“主营业务”
+    '''
+    return "主营业务" in text 
 
 def get_total_assets(file_title):
     hbzcfzb_url = f"{STATIC_ANNOUNCEMENTS_HBZCFZB_DIR}/{file_title}__{Financial_Statement.合并资产负债表.value}.json"
@@ -1887,3 +2009,35 @@ def get_cash_and_cash_equivalents(file_title):
     except:
         print(f"{file_title}的现金和现金等价物构成表未找到「期末现金及现金等价物余额」项目")
         return 0
+
+def get_main_business_income_and_cost(file_title):
+    '''
+    获取【营业收入和营业成本】表中主营业务收入及成本
+    '''
+    zyyw_url = f"{STATIC_ANNOUNCEMENTS_ZYYW_DIR}/{file_title}__{Financial_Statement.营业收入和营业成本.value}.json"
+    # 1.筛选出营业收入和营业成本表中包含“主营业务”关键字的字段值
+    try:
+        zyyw_json = json(zyyw_url)
+        zyyw_json_format = supplementing_rows_by_max_length(zyyw_json)
+        fields = _map(zyyw_json_format, lambda item: item[0])
+        key_word = _filter(fields, lambda field: "主营业务" in field)
+        # 2.获取主营业务收入及成本
+        for rows in zyyw_json_format:
+            if rows[0] in key_word:
+                main_income = rows[1]
+                main_cost = rows[2]
+                print(
+                    f"{file_title}的营业收入和营业成本表中，当期主营收入为{main_income}，当期主营成本为{main_cost}"
+                )
+                return main_income, main_cost
+    except:
+        print(f"{file_title}的营业收入和营业成本表未找到「主营业务」相关项目")
+        return 0
+
+def caculate_gross_margin(file_title):
+    '''
+    计算毛利率
+    '''
+    main_income, main_cost = get_main_business_income_and_cost(file_title)
+    gross_margin = (large_num_format(main_income) - large_num_format(main_cost))/large_num_format(main_income) 
+    return gross_margin

@@ -74,8 +74,8 @@
 import re
 from service.config import Financial_Statement
 from db.index import read_table
-from service.report import gen_hblrb, gen_hbzcfzb, generate_announcement, receivable_balance_propotion_of_monthly_average_operating_income
-from strategy.announcements.announcements import filter_by_receivable_balance
+from service.report import gen_hblrb, gen_hbzcfzb, gen_zyyw, generate_announcement, get_main_business_income_and_cost, receivable_balance_propotion_of_monthly_average_operating_income
+from strategy.announcements.announcements import filter_by_gross_margin, filter_by_receivable_balance
 from utils.index import _filter, _map, get_median, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json
 
 
@@ -99,9 +99,9 @@ from utils.index import _filter, _map, get_median, is_alabo_number_prefix, is_ch
 # result = re.findall(f'^[\w\W]+\\u002e{regular_suffix}', text)
 # print(result)
 
-result5 = json("static/parse-announcements/2022/filter_by_cash_to_debt_ratio.json")
-result = filter_by_receivable_balance(result5)
-json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)
+# result5 = json("static/parse-announcements/2022/filter_by_cash_to_debt_ratio.json")
+# result = filter_by_receivable_balance(result5)
+# json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)
 
 # all_industries = _filter(_map(read_table(
 #             table_name="stock_basic",
@@ -159,3 +159,7 @@ json("static/parse-announcements/2022/filter_by_receivable_balance.json",result)
 #     current_rate = receivable_balance_propotion_of_monthly_average_operating_income(file_title[0])
 #     if current_rate < industry_median:
 #         target.append(file_title)
+file_title_list = [
+    "300467__迅游科技__2022年年度报告__1216582282"
+]
+filter_by_gross_margin(file_title_list)

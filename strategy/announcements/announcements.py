@@ -8,12 +8,14 @@ from service.config import (
     Financial_Statement,
 )
 from service.report import (
+    caculate_gross_margin,
     caculate_interest_bearing_liabilities_rate,
     calculate_interest_bearing_liabilities,
     find_standard_unqualified_opinions,
     gen_cash_equivalents,
     gen_hblrb,
     gen_hbzcfzb,
+    gen_zyyw,
     generate_announcement,
     get_accounts_receivable,
     get_announcement_url,
@@ -215,49 +217,7 @@ def filter_by_receivable_balance(file_title_list):
         if current_rate < industry_median:
             target.append(file_title)
     return target
-    # target = []
-    # for file_title in file_title_list:
-    #     companies_info = {}
-    #     # 应收账款余额/月均营业收入，越小越好（与同行业公司比较，处于中位数以下）
-    #     # 1.遍历，计算传入的公司的应收账款/月均营业收入，获取每个公司所在的行业
-    #     industry = list(get_industry([file_title]).values())
-    #     same_industry_companies = get_companies_in_the_same_industry(
-    #         file_title, industry
-    #     )
-    #     if same_industry_companies[0]:
-    #        generate_announcement(
-    #             announcement_type=Financial_Statement.合并资产负债表,
-    #             file_title_list=same_industry_companies[0],
-    #             gen_table=gen_hbzcfzb,
-    #             use_cache=True,
-    #             consider_table=False,
-    #        )
-    #        generate_announcement(
-    #             announcement_type=Financial_Statement.合并利润表,
-    #             file_title_list=same_industry_companies[0],
-    #             gen_table=gen_hblrb,
-    #             use_cache=True,
-    #             consider_table=False,
-    #        )
-    #        for company in same_industry_companies[0]:
-    #             propotion = (
-    #                 receivable_balance_propotion_of_monthly_average_operating_income(
-    #                     company
-    #                 )
-    #             )
-    #             company_info = {company: propotion}
-    #             companies_info.update(company_info)
-    #        for key in companies_info:
-    #             if companies_info[key] == None:
-    #                 companies_info[key] = 0
-    #        median = get_median(companies_info.values())
-    #        if companies_info[file_title] < median:
-    #             target.append(file_title)
-    #        else:
-    #             print(f"{file_title}不符合应收账款/月均营业收入<中位数条件！")
-    #        print(f"符合应收账款/月均营业收入<中位数条件的公司有：{target}")
-    #        print(f"符合应收账款/月均营业收入<中位数条件的公司比例为{len(target)/len(file_title_list)*100}%")
-    # return target
+
 
 def filter_by_monetary_funds(file_title_list):
     """
@@ -312,7 +272,30 @@ def filter_by_cash_to_debt_ratio(file_title_list):
             if current_cash_equivalents >= current_interest_bearing_liabilities:
                 target.append(file_title)
         except:
-            print(f"{file_title}未找到合并资产负债表")
+            print(f"{file_title}未找到现金及现金等价物表")
     print(f"{target}符合现金债务比>1的条件")
     print(f"符合现金债务比>1的公司比例为{len(target)/len(file_title_list)*100}%")
+    return target
+
+def filter_by_gross_margin(file_title_list):
+    """
+    筛选毛利率大于40%的公司
+    """
+    target = []
+    generate_announcement(
+    announcement_type=Financial_Statement.营业收入和营业成本,
+    file_title_list=file_title_list,
+    gen_table=gen_zyyw,
+    use_cache=True,
+    consider_table=False,
+)
+    for file_title in file_title_list:
+        try:
+            gross_margin = caculate_gross_margin(file_title)
+            if gross_margin >= 0.4:
+                target.append(file_title)
+        except:
+            print(f"{file_title}未找到主营业务表")
+    print(f"{target}符合毛利率>40%的条件")
+    print(f"符合毛利率>40%的公司比例为{len(target)/len(file_title_list)*100}%")
     return target

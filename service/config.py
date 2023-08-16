@@ -26,6 +26,7 @@ class Financial_Statement(Enum):
     合并资产负债表 = "合并资产负债表"
     合并利润表 = "合并利润表"
     现金和现金等价物的构成 = "现金和现金等价物的构成"
+    营业收入和营业成本 = "营业收入和营业成本"
 
 Financial_Statement_DataSource = {
     Financial_Statement.合并资产负债表.value: {
@@ -54,6 +55,13 @@ Financial_Statement_DataSource = {
             "现金和现金等价物"
         ],
         "path": "/static/parse-announcements/xjjxjdjw"
+    },
+    Financial_Statement.营业收入和营业成本.value: {
+        "keywords": [
+            "营业收入和营业成本",
+            "营业收入和营业成本情况"
+        ],
+        "path": "/static/parse-announcements/zyyw"
     }
 }
 
@@ -67,6 +75,7 @@ STATIC_ANNOUNCEMENTS_PARSE_DIR = "/static/parse-announcements/base"
 STATIC_ANNOUNCEMENTS_HBZCFZB_DIR = "/static/parse-announcements/hbzcfzb"
 STATIC_ANNOUNCEMENTS_HBLRB_DIR = "/static/parse-announcements/hblrb"
 STATIC_ANNOUNCEMENTS_XJJXJDJW_DIR="/static/parse-announcements/xjjxjdjw"
+STATIC_ANNOUNCEMENTS_ZYYW_DIR = "/static/parse-announcements/zyyw"
 
 JU_CHAO_PROTOCOL = "http://"
 JU_CHAO_HOST = "www.cninfo.com.cn"

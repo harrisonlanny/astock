@@ -24,6 +24,7 @@ from service.report import (
 )
 from strategy.announcements.announcements import (
     filter_by_cash_to_debt_ratio,
+    filter_by_gross_margin,
     filter_by_increase_in_accounts_receivable,
     filter_by_interest_bearing_liabilities,
     filter_by_monetary_funds,
@@ -281,9 +282,9 @@ file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIM
 # json("static/parse-announcements/2021/filter_by_cash_to_debt_ratio.json",result5)
 
 result6 = []
-result5 = json("static/parse-announcements/2022/filter_by_cash_to_debt_ratio.json")
+result5 = json("static/parse-announcements/2022/filter_by_receivable_balance.json")
 def adapter(*kwargs):
-    seg_result = filter_by_receivable_balance(*kwargs)
+    seg_result = filter_by_gross_margin(*kwargs)
     global result6
     result6 += seg_result
 
@@ -292,6 +293,6 @@ concurrency2(
     arr=result5,
     count = 6
 )
-print("filter_by_receivable_balance_result:", result6)
-json("static/parse-announcements/2022/filter_by_receivable_balance.json",result6)
+print("filter_by_gross_margin_result:", result6)
+json("static/parse-announcements/2022/filter_by_gross_margin.json",result6)
 
