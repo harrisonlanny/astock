@@ -74,7 +74,7 @@
 import re
 from service.config import Financial_Statement
 from db.index import read_table
-from service.report import caculate_expenses, gen_hblrb, gen_hbzcfzb, gen_zyyw, generate_announcement, get_main_business_income_and_cost, receivable_balance_propotion_of_monthly_average_operating_income
+from service.report import caculate_expenses, gen_hblrb, gen_hbzcfzb, gen_zyyw, generate_announcement, get_main_business_income_and_cost, get_management_expense, receivable_balance_propotion_of_monthly_average_operating_income
 from strategy.announcements.announcements import filter_by_gross_margin, filter_by_receivable_balance
 from utils.index import _filter, _map, get_median, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json, large_num_format
 
@@ -104,6 +104,4 @@ from utils.index import _filter, _map, get_median, is_alabo_number_prefix, is_ch
 # json("static/parse-announcements/2021/filter_by_receivable_balance.json",result)
 
 file_title = "002410__广联达__2021年年度报告__1212707869"
-
-result = caculate_expenses(file_title)
-print(result)
+get_management_expense(file_title)

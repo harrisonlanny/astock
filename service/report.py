@@ -2077,3 +2077,31 @@ def caculate_expenses(file_title):
         return expense
     except:
         print(f"{file_title}无法计算合并利润表中的费用")
+
+def get_management_expense(file_title):
+    """
+    获取合并利润表中的管理费用及增长率
+    """
+    hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+    try:
+        hblrb_json = json(hblrb_url)
+        hblrb_json_format = supplementing_rows_by_max_length(hblrb_json)
+        fields = _map(hblrb_json_format, lambda item: item[0])
+        key_word = _filter(fields, lambda field: field in ["管理费用"])
+        management_expense_info = format_target_table_json_and_growth_rate(
+            key_word, hblrb_json_format
+        )
+        try:
+            growth_rate = (
+                (management_expense_info[1] - management_expense_info[2])
+                / management_expense_info[2]
+                * 100
+            )
+            print(
+                f"{file_title}的当期管理费用为{management_expense_info[1]}，管理费用增长率为{growth_rate}%"
+            )
+            return management_expense_info[1], growth_rate  # 返回当期管理费用和管理费用增长率
+        except:
+            print(f"{file_title}无法计算管理费用增长率")
+    except:
+        print(f"{file_title}无法获取合并利润表数据")
