@@ -2041,3 +2041,39 @@ def caculate_gross_margin(file_title):
     main_income, main_cost = get_main_business_income_and_cost(file_title)
     gross_margin = (large_num_format(main_income) - large_num_format(main_cost))/large_num_format(main_income) 
     return gross_margin
+
+def caculate_expenses(file_title):
+    '''
+    计算费用（合并利润表）
+    '''
+    hblrb_url = f"{STATIC_ANNOUNCEMENTS_HBLRB_DIR}/{file_title}__{Financial_Statement.合并利润表.value}.json"
+    try:
+        hblrb_json = json(hblrb_url)
+        hblrb_json_format = supplementing_rows_by_max_length(hblrb_json)
+        fields = _map(hblrb_json_format, lambda item: item[0])
+        # 1.找到财务费用、销售费用、管理费用
+        key_word_cw = _filter(fields, lambda field: field == "财务费用")
+        key_word_xs = _filter(fields, lambda field: field == "销售费用")
+        key_word_gl = _filter(fields, lambda field: field == "管理费用")
+        for rows in hblrb_json_format:
+            if rows[0] in key_word_cw:
+                rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
+                expense_cw = large_num_format(rows[-2]) 
+                continue
+            if rows[0] in key_word_gl:
+                rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
+                expense_gl = large_num_format(rows[-2]) 
+                continue
+            if rows[0] in key_word_xs:
+                rows[-2] = 0 if (_is_empty(rows[-2]) or rows[-2] == "-") else rows[-2]
+                expense_xs = large_num_format(rows[-2]) 
+                continue
+        # 2.如果利润表财务费用>0，费用 = 销售费用+管理费用+财务费用
+        if expense_cw > 0:
+            expense = expense_cw + expense_xs + expense_gl
+        # 3.如果利润表财务费用<=0，费用 = 销售费用+管理费用
+        else:
+            expense = expense_xs + expense_gl
+        return expense
+    except:
+        print(f"{file_title}无法计算合并利润表中的费用")

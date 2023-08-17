@@ -278,6 +278,9 @@ def large_num_format(large_num: str):
     regular = r'^\d{1,3},(\d{3},)*(\d{3})(.\d+)?$|^[1-9]\d{1,2}$'
     if large_num is None:
         return None
+    elif large_num.startswith("-") and re.findall(regular, large_num.replace('-','')):
+        new_large_num = large_num.replace('，', '').replace(',', '')
+        return float(new_large_num)
     elif re.findall(regular, large_num):
         new_large_num = large_num.replace('，', '').replace(',', '')
         return float(new_large_num)
