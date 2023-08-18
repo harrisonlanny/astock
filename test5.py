@@ -25,10 +25,12 @@ from service.report import (
 from strategy.announcements.announcements import (
     filter_by_cash_to_debt_ratio,
     filter_by_gross_margin,
+    filter_by_growth_rate_of_management_expense,
     filter_by_increase_in_accounts_receivable,
     filter_by_interest_bearing_liabilities,
     filter_by_monetary_funds,
     filter_by_proportion_of_accounts_receivable,
+    filter_by_ratio_of_expense_and_gross,
     filter_by_receivable_balance,
     filter_by_standard_unqualified_opinions,
 )
@@ -76,14 +78,13 @@ file_title_list = [
 #     "603003__龙宇股份__龙宇股份2022年年度报告__1216645157",
 #     "000636__风华高科__2022年年度报告__1216238318"
  ]
-r = read_table(
-    table_name="announcements",
-    fields=["file_title"],
-    result_type="dict",
-    filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title not like '%公告%' and title not like '%修订前%' and title like '%2021%'",
-)
-file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIMIT 10
-
+# r = read_table(
+#     table_name="announcements",
+#     fields=["file_title"],
+#     result_type="dict",
+#     filter_str="where title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title not like '%公告%' and title not like '%修订前%' and title like '%2022%'",
+# )
+# file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIMIT 10
 # file_title_list = [
 #     "601328__交通银行__交通银行2022年度报告__1216276220",  # 表格无边框
 #     "601881__中国银河__中国银河：2022年年度报告__1216263010",  # 表格无边框
@@ -281,21 +282,52 @@ file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIM
 # print("filter_by_cash_to_debt_ratio_result:", result5)
 # json("static/parse-announcements/2021/filter_by_cash_to_debt_ratio.json",result5)
 
-result6 = []
-result5 = json("static/parse-announcements/2021/filter_by_cash_to_debt_ratio.json")
-def adapter(*kwargs):
-    seg_result = filter_by_gross_margin(*kwargs)
-    global result6
-    result6 += seg_result
+# result6 = []
+# result5 = json("static/parse-announcements/2021/filter_by_cash_to_debt_ratio.json")
+# def adapter(*kwargs):
+#     seg_result = filter_by_gross_margin(*kwargs)
+#     global result6
+#     result6 += seg_result
 
-concurrency2(
-    run=adapter,
-    arr=result5,
-    count = 6
-)
-print("filter_by_gross_margin_result:", result6)
-json("static/parse-announcements/2021/filter_by_gross_margin.json",result6)
+# concurrency2(
+#     run=adapter,
+#     arr=result5,
+#     count = 6
+# )
+# print("filter_by_gross_margin_result:", result6)
+# json("static/parse-announcements/2021/filter_by_gross_margin.json",result6)
 
-result5 = json("static/parse-announcements/2021/filter_by_gross_margin.json")
-result = filter_by_receivable_balance(result5)
-json("static/parse-announcements/2021/filter_by_receivable_balance.json",result)
+
+# result5 = json("static/parse-announcements/2021/filter_by_gross_margin.json")
+# result = filter_by_receivable_balance(result5)
+# json("static/parse-announcements/2021/filter_by_receivable_balance.json",result)
+
+# result7 = []
+# result6 = json("static/parse-announcements/2022/filter_by_receivable_balance.json")
+# def adapter(*kwargs):
+#     seg_result = filter_by_growth_rate_of_management_expense(*kwargs)
+#     global result7
+#     result7 += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=result6,
+#     count = 6
+# )
+# print("filter_by_growth_rate_of_management_expense_result:", result7)
+# json("static/parse-announcements/2022/filter_by_growth_rate_of_management_expense.json",result7)
+
+# result8 = []
+# result7 = json("static/parse-announcements/2021/filter_by_growth_rate_of_management_expense.json")
+# def adapter(*kwargs):
+#     seg_result = filter_by_ratio_of_expense_and_gross(*kwargs)
+#     global result8
+#     result8 += seg_result
+
+# concurrency2(
+#     run=adapter,
+#     arr=file_title_list,
+#     count = 6
+# )
+# print("filter_by_ratio_of_expense_and_gross_result:", result8)
+# json("static/parse-announcements/2021/filter_by_ratio_of_expense_and_gross.json",result8)

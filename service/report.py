@@ -1651,7 +1651,7 @@ def gen_zyyw(file_title, url, consider_table: bool = False):
             if should_end:
                 break
 
-    if len(rows) > 5:
+    if len(rows) >= 5:
         json2(f"{url}", rows)
         return True, "SUCCESS"
     if reason == "":
@@ -2105,3 +2105,12 @@ def get_management_expense(file_title):
             print(f"{file_title}无法计算管理费用增长率")
     except:
         print(f"{file_title}无法获取合并利润表数据")
+
+def caculate_ratio_of_expense_and_gross(file_title):
+    '''
+    计算费用/毛利润
+    '''
+    expense = caculate_expenses(file_title)
+    gross_margin = caculate_gross_margin(file_title)
+    ratio = expense / gross_margin
+    return ratio

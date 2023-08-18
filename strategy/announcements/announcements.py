@@ -10,6 +10,7 @@ from service.config import (
 from service.report import (
     caculate_gross_margin,
     caculate_interest_bearing_liabilities_rate,
+    caculate_ratio_of_expense_and_gross,
     calculate_interest_bearing_liabilities,
     find_standard_unqualified_opinions,
     gen_cash_equivalents,
@@ -22,6 +23,7 @@ from service.report import (
     get_cash_and_cash_equivalents,
     get_companies_in_the_same_industry,
     get_industry,
+    get_management_expense,
     get_monetary_fund,
     get_operating_revenue,
     get_total_assets,
@@ -31,7 +33,7 @@ from service.report import (
     propotion_of_accounts_receivable,
     receivable_balance_propotion_of_monthly_average_operating_income,
 )
-from utils.index import _filter, _map, get_median, get_path, is_exist, json
+from utils.index import _filter, _map, get_median, get_path, is_exist, json, json2
 
 
 def filter_by_standard_unqualified_opinions(file_title_list):
@@ -60,6 +62,7 @@ def filter_by_interest_bearing_liabilities(file_title_list):
         consider_table=False,
     )
     error_list = _map(error_file_title_list, lambda item: item["文件名"])
+    json('static/parse-announcements/2022/error/interest_bearing_liabilities.json', error_file_title_list)
     file_title_list = list(set(file_title_list) - set(error_list))
     companies = []
     for file_title in file_title_list:
@@ -124,6 +127,7 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
         consider_table=False,
     )
     error_list = _map(error_file_title_list, lambda item: item["文件名"])
+    json('static/parse-announcements/2022/error/increase_in_accounts_receivable.json', error_file_title_list)
     file_title_list = list(set(file_title_list) - set(error_list))
     for file_title in file_title_list:
         try:
@@ -298,4 +302,56 @@ def filter_by_gross_margin(file_title_list):
             print(f"{file_title}未找到主营业务表")
     print(f"{target}符合毛利率>40%的条件")
     print(f"符合毛利率>40%的公司比例为{len(target)/len(file_title_list)*100}%")
+    return target
+
+def filter_by_growth_rate_of_management_expense(file_title_list):
+    """
+    筛选管理费用增幅<=营业收入增幅的公司
+    """
+    target = []
+    generate_announcement(
+    announcement_type=Financial_Statement.合并利润表,
+    file_title_list=file_title_list,
+    gen_table=gen_hblrb,
+    use_cache=True,
+    consider_table=False,
+)
+    for file_title in file_title_list:
+        try:
+            management_expense_growth = get_management_expense(file_title)[1]
+            operating_revenue_growth = get_operating_revenue(file_title)[1]
+            if management_expense_growth <= operating_revenue_growth:            
+                target.append(file_title)
+        except:
+            print(f"{file_title}未找到合并利润表")
+    print(f"{target}符合管理费用增幅<=营业收入增幅的条件")
+    print(f"符合管理费用增幅<=营业收入增幅的公司比例为{len(target)/len(file_title_list)*100}%")
+    return target
+
+def filter_by_ratio_of_expense_and_gross(file_title_list):
+    target = []
+    generate_announcement(
+    announcement_type=Financial_Statement.营业收入和营业成本,
+    file_title_list=file_title_list,
+    gen_table=gen_zyyw,
+    use_cache=True,
+    consider_table=False,
+)
+    generate_announcement(
+    announcement_type=Financial_Statement.合并利润表,
+    file_title_list=file_title_list,
+    gen_table=gen_hblrb,
+    use_cache=True,
+    consider_table=False,
+)
+    for file_title in file_title_list:
+        try:
+            ratio = caculate_ratio_of_expense_and_gross(file_title)
+            if ratio <=0.7:
+                target.append(file_title)
+                print(f"{file_title}费用/毛利润有竞争力！")
+        except:
+            print(f"{file_title}无法计算费用/毛利润比值！")
+    print(f"{target}符合费用/毛利润<70%的条件")
+    print(f"符合费用/毛利润<70%的公司比例为{len(target)/len(file_title_list)*100}%")
     return target

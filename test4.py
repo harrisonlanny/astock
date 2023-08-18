@@ -75,7 +75,7 @@ import re
 from service.config import Financial_Statement
 from db.index import read_table
 from service.report import caculate_expenses, gen_hblrb, gen_hbzcfzb, gen_zyyw, generate_announcement, get_main_business_income_and_cost, get_management_expense, receivable_balance_propotion_of_monthly_average_operating_income
-from strategy.announcements.announcements import filter_by_gross_margin, filter_by_receivable_balance
+from strategy.announcements.announcements import filter_by_gross_margin, filter_by_growth_rate_of_management_expense, filter_by_increase_in_accounts_receivable, filter_by_interest_bearing_liabilities, filter_by_ratio_of_expense_and_gross, filter_by_receivable_balance
 from utils.index import _filter, _map, get_median, is_alabo_number_prefix, is_chinese_number_prefix, is_period_prefix, json, large_num_format
 
 
@@ -103,5 +103,20 @@ from utils.index import _filter, _map, get_median, is_alabo_number_prefix, is_ch
 # result = filter_by_receivable_balance(result5)
 # json("static/parse-announcements/2021/filter_by_receivable_balance.json",result)
 
-file_title = "002410__广联达__2021年年度报告__1212707869"
-get_management_expense(file_title)
+# file_title_list = ["605056__咸亨国际__咸亨国际：2022年年度报告__1216478420"]
+# file_title = "605056__咸亨国际__咸亨国际：2022年年度报告__1216478420"
+# filter_by_gross_margin(file_title_list)
+# r = read_table(
+#     table_name="announcements",
+#     fields=["file_title"],
+#     result_type="dict",
+#     filter_str="where title not like '%H股%' and title not like '%意见%' and title not like '%英文%' and title not like '%取消%' and title not like '%摘要%' and title not like '%公告%' and title not like '%修订前%' and title like '%2022%'",
+# )
+# file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIMIT 10
+
+# filter_by_interest_bearing_liabilities(file_title_list)
+# result1 = json('static/parse-announcements/2022/error/interest_bearing_liabilities.json')
+# print(len(result1))
+# filter_by_increase_in_accounts_receivable(file_title_list)
+result2 = json('static/parse-announcements/2022/error/increase_in_accounts_receivable.json')
+print(len(result2))
