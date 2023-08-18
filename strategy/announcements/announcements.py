@@ -127,7 +127,7 @@ def filter_by_increase_in_accounts_receivable(file_title_list):
         consider_table=False,
     )
     error_list = _map(error_file_title_list, lambda item: item["文件名"])
-    json('static/parse-announcements/2022/error/increase_in_accounts_receivable.json', error_file_title_list)
+    # json('static/parse-announcements/2022/error/increase_in_accounts_receivable.json', error_file_title_list)
     file_title_list = list(set(file_title_list) - set(error_list))
     for file_title in file_title_list:
         try:

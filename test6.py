@@ -1,88 +1,89 @@
 import fitz
 import pdfplumber
+from strategy.announcements.announcements import filter_by_increase_in_accounts_receivable
 
 from utils.index import _map
 
-texts = []
-pdf_url = "test.pdf"
-doc = fitz.open(pdf_url) # open a document
-pdf = pdfplumber.open(pdf_url)
-# for page in doc: # iterate the document pages
-#     # texts.append(page.get_text())
+# texts = []
+# pdf_url = "test.pdf"
+# doc = fitz.open(pdf_url) # open a document
+# pdf = pdfplumber.open(pdf_url)
+# # for page in doc: # iterate the document pages
+# #     # texts.append(page.get_text())
 
-# print(doc[0])
-# count = 0
-# for index, page in enumerate(doc):
-#     ppage = pdf.pages[index]
-#     for chars in page.get_texttrace():
-#         text = ''
-#         for char in chars['chars']:
-#             text += chr(char[0])
-#         count+=1
-#         bbox = chars['bbox']
-#         pix = page.get_pixmap(clip=bbox)
-#         # print('unicolor: ', pix.is_unicolor)
-#         print(f"【**{text}**】", 'topusage: ', pix.color_topusage()[0])
-#         objects = ppage.crop(bbox=bbox).objects
-#         print('crop rect count: ', len(objects['rect']), 'crop chars: ', _map(objects['char'], lambda item: item['text']))
-#         print("\n")
+# # print(doc[0])
+# # count = 0
+# # for index, page in enumerate(doc):
+# #     ppage = pdf.pages[index]
+# #     for chars in page.get_texttrace():
+# #         text = ''
+# #         for char in chars['chars']:
+# #             text += chr(char[0])
+# #         count+=1
+# #         bbox = chars['bbox']
+# #         pix = page.get_pixmap(clip=bbox)
+# #         # print('unicolor: ', pix.is_unicolor)
+# #         print(f"【**{text}**】", 'topusage: ', pix.color_topusage()[0])
+# #         objects = ppage.crop(bbox=bbox).objects
+# #         print('crop rect count: ', len(objects['rect']), 'crop chars: ', _map(objects['char'], lambda item: item['text']))
+# #         print("\n")
 
 
-for index, page in enumerate(pdf.pages):
-    fixz_page = doc[index]
+# for index, page in enumerate(pdf.pages):
+#     fixz_page = doc[index]
 
-    def keep_visible_char(obj):
-        type = obj['object_type']
-        top = obj["top"]
-        bottom = obj["bottom"]
-        x0 = obj["x0"]
-        x1 = obj["x1"]
-        bbox = (x0, top, x1, bottom)
+#     def keep_visible_char(obj):
+#         type = obj['object_type']
+#         top = obj["top"]
+#         bottom = obj["bottom"]
+#         x0 = obj["x0"]
+#         x1 = obj["x1"]
+#         bbox = (x0, top, x1, bottom)
 
-        if type == 'char':
-            text = obj['text']
-            pix = fixz_page.get_pixmap(clip=bbox)
-            topusage = pix.color_topusage()[0]
-            # page.crop(bbox=bbox)
-            objects = page.crop(bbox=bbox).objects
-            # rects = objects['rect']
-            # chars = objects['char']
-            # chars_text = _map(chars, lambda item: item['text'])
+#         if type == 'char':
+#             text = obj['text']
+#             pix = fixz_page.get_pixmap(clip=bbox)
+#             topusage = pix.color_topusage()[0]
+#             # page.crop(bbox=bbox)
+#             objects = page.crop(bbox=bbox).objects
+#             # rects = objects['rect']
+#             # chars = objects['char']
+#             # chars_text = _map(chars, lambda item: item['text'])
 
-            print(f"【{text}】", f"topuseage: {topusage}")
-            # print(f"rect count: {len(rects)}", f"char count: {chars_text}")
+#             print(f"【{text}】", f"topuseage: {topusage}")
+#             # print(f"rect count: {len(rects)}", f"char count: {chars_text}")
 
-        return True
+#         return True
 
-    # 过滤掉不可见的文本
-    # page = page.filter(keep_visible_char)
-    # page.find_tables()
-    # objects = page.objects
+#     # 过滤掉不可见的文本
+#     # page = page.filter(keep_visible_char)
+#     # page.find_tables()
+#     # objects = page.objects
 
-    objs = page.objects
+#     objs = page.objects
 
-    for type in objs:
-        objects = objs[type]
-        if type == 'char':
-            for obj in objects:
-                text = obj['text']
-                top = obj["top"]
-                bottom = obj["bottom"]
-                x0 = obj["x0"]
-                x1 = obj["x1"]
-                w = x1 - x0
-                h = bottom - top
-                bbox = (x0, top, x1, bottom)
-                pix = fixz_page.get_pixmap(clip=bbox)
-                topusage = pix.color_topusage()[0]
-                print(f"【{text}】", f"topuseage: {topusage}")
-                if w > 0 and h > 0:
-                    crop_objects = page.crop(bbox=bbox).objects
-                    rects = crop_objects['rect']
-                    chars = crop_objects['char']
-                    texts = _map(chars, lambda char: char['text'])
-                    print('crop rect count: ', len(rects), 'crop char count: ', len(chars))
-                    print('crop chars: ', texts)
+#     for type in objs:
+#         objects = objs[type]
+#         if type == 'char':
+#             for obj in objects:
+#                 text = obj['text']
+#                 top = obj["top"]
+#                 bottom = obj["bottom"]
+#                 x0 = obj["x0"]
+#                 x1 = obj["x1"]
+#                 w = x1 - x0
+#                 h = bottom - top
+#                 bbox = (x0, top, x1, bottom)
+#                 pix = fixz_page.get_pixmap(clip=bbox)
+#                 topusage = pix.color_topusage()[0]
+#                 print(f"【{text}】", f"topuseage: {topusage}")
+#                 if w > 0 and h > 0:
+#                     crop_objects = page.crop(bbox=bbox).objects
+#                     rects = crop_objects['rect']
+#                     chars = crop_objects['char']
+#                     texts = _map(chars, lambda char: char['text'])
+#                     print('crop rect count: ', len(rects), 'crop char count: ', len(chars))
+#                     print('crop chars: ', texts)
 
         
 
@@ -103,3 +104,14 @@ for index, page in enumerate(pdf.pages):
 # text = '第(cid:1212)节 (cid:1948)(cid:2600)简(cid:1275)和(cid:1131)要(cid:17234)务指标 ................................................................................................. 5'
 # format = "第二节 公司简介和主要财务指标"
 # print(chr(int(17234)))
+file_title_list = [
+    # "000021__深科技__2022年年度报告__1216497188",
+    # "000750__国海证券__2022年年度报告__1216658986",
+    # "000066__中国长城__2022年年度报告__1216700847",
+    # "000776__广发证券__2022年年度报告__1216280247",
+    # "000915__华特达因__2022年年度报告__1216092932",
+    # "001227__兰州银行__2022年年度报告__1216741872",
+    # "002799__环球印务__2022年年度报告__1216700574",
+    "002807__江阴银行__2022年年度报告__1216234641"
+] 
+filter_by_increase_in_accounts_receivable(file_title_list)

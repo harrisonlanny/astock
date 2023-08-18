@@ -42,7 +42,9 @@ Financial_Statement_DataSource = {
         "keywords": [
             "合并利润表",
             "合并及公司利润表",
-            "利润表",
+            "合并及母公司利润表",
+            "合并及银行利润表",
+            "利润表"
         ],
         "path": "/static/parse-announcements/hblrb"
     },

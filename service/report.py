@@ -1228,6 +1228,7 @@ def gen_hbzcfzb(file_title, url, consider_table: bool = False):
     reason = ""
 
     def find_target(text: str):
+        text = text.replace(" ","").replace("单位：元","").replace("（除特别注明外，金额单位均为人民币千元）","")
         # 必要条件
         keywords = financial_statement_item["keywords"]
         # 找出index
@@ -1339,6 +1340,7 @@ def gen_hblrb(file_title, url, consider_table: bool = False):
     reason = ""
 
     def find_target(text: str):
+        text = text.replace(" ","").replace("单位：元","").replace("（除特别注明外，金额单位均为人民币千元）","")
         # 必要条件
         keywords = financial_statement_item["keywords"]
         # 找出index
@@ -1565,6 +1567,7 @@ def gen_zyyw(file_title, url, consider_table: bool = False):
     reason = ""
 
     def find_target(text: str):
+        text = text.replace(" ","").replace("单位：元","").replace("（除特别注明外，金额单位均为人民币千元）","")
         try: 
             isinstance(text,str)
             # 必要条件
@@ -1774,35 +1777,53 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
     format_result = []
     for row in target_json:
         if row[0] in key_word:
-            if len(row) >= 4:
+            # 1.6列，含附注列的index=2和index=4的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
+            if len(row) ==6 and _is_empty(row[-1]):
                 row[2] = (
                     0
                     if (_is_empty(row[2]) or row[2] == "-")
                     else float(large_num_format(row[2]))
                 )
-                row[3] = (
+                row[4] = (
                     0
-                    if (_is_empty(row[3]) or row[3] == "-")
-                    else float(large_num_format(row[3]))
+                    if (_is_empty(row[4]) or row[4] == "-")
+                    else float(large_num_format(row[4]))
                 )
-            else:
-                row[1] = (
-                    0
-                    if (_is_empty(row[1]) or row[1] == "-")
-                    else float(large_num_format(row[1]))
-                )
-                row[2] = (
-                    0
-                    if (_is_empty(row[2]) or row[2] == "-")
-                    else float(large_num_format(row[2]))
-                )
+            # if len(row) >= 4:
+            #     row[2] = (
+            #         0
+            #         if (_is_empty(row[2]) or row[2] == "-")
+            #         else float(large_num_format(row[2]))
+            #     )
+            #     row[3] = (
+            #         0
+            #         if (_is_empty(row[3]) or row[3] == "-")
+            #         else float(large_num_format(row[3]))
+            #     )
+            # else:
+                # row[1] = (
+                #     0
+                #     if (_is_empty(row[1]) or row[1] == "-")
+                #     else float(large_num_format(row[1]))
+                # )
+                # row[2] = (
+                #     0
+                #     if (_is_empty(row[2]) or row[2] == "-")
+                #     else float(large_num_format(row[2]))
+                # )
             format_result.append(row)
-    if len(row) >= 4:
+    if len(row) == 6 and _is_empty(row[-1]):
         current_target_list = _map(format_result, lambda item: item[2])
-        last_target_list = _map(format_result, lambda item: item[3])
+        last_target_list = _map(format_result, lambda item: item[4])
     else:
         current_target_list = _map(format_result, lambda item: item[1])
         last_target_list = _map(format_result, lambda item: item[2])
+    # if len(row) >= 4:
+    #     current_target_list = _map(format_result, lambda item: item[2])
+    #     last_target_list = _map(format_result, lambda item: item[3])
+    # else:
+    #     current_target_list = _map(format_result, lambda item: item[1])
+    #     last_target_list = _map(format_result, lambda item: item[2])
     current_target = sum(current_target_list)
     last_target = sum(last_target_list)
     return format_result, current_target, last_target
@@ -1827,7 +1848,7 @@ def get_operating_revenue(file_title):
             .replace("：", "")
             .replace(":", "")
             .replace("、", "")
-            in ["其中营业收入", "一营业收入"],
+            in ["其中营业收入", "一营业收入", "一营业总收入"],
         )
         operating_revenue_info = format_target_table_json_and_growth_rate(
             key_word, hblrb_json_format
