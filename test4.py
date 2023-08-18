@@ -120,38 +120,3 @@ from utils.index import _filter, _is_empty, _map, find_annotations, get_median, 
 # filter_by_increase_in_accounts_receivable(file_title_list)
 # result2 = json('static/parse-announcements/2022/error/increase_in_accounts_receivable.json')
 # print(len(result2))
-
-json_ini = [
-    ['合并资产负债表'], 
-    ['2022年12月31日'], 
-    ['（除特别注明外，金额单位均为人民币千元）'], 
-    ['项目', '附注七', '期末余额', '上年年末余额'], 
-    ['资产：'], 
-    ['现金及存放中央银行款项', '1', '8,628,153', '8,634,871'], 
-    ['存放同业款项', '2', '1,472,716', '1,602,753'], 
-    ['拆出资金', '3', '231,701', '414,815'], 
-    ['衍生金融资产', '4', '380,604', '487,760'], 
-    ['买入返售金融资产', '-', '-'], 
-    ['发放贷款和垫款', '5', '98,711,057', '87,706,952'], 
-    ['金融投资：', '6', '55,645,227', '50,842,239'], 
-    ['交易性金融资产', '6（1）', '10,595,221', '8,279,591'], 
-    ['债权投资', '6（2）', '27,955,018', '24,690,921']
-    ]
-
-table_json_format = []
-max_length = 4
-for item in json_ini:
-    index = 0 # 起始索引
-    add_list = [] # 长度不一致的补充列表
-    # 如果找到附注：在第二列加空字符串
-    if len(item)<2:
-        item.insert(1,"")
-    if find_annotations(json_ini) and len(item)<max_length:
-        item.insert(1,"")
-    if len(item) < max_length:
-        diff = max_length - len(item)
-        while index < diff:
-            add_list.append("")
-            index = index + 1
-        item = item + add_list
-    table_json_format.append(item)

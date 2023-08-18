@@ -565,16 +565,16 @@ def supplementing_rows_by_max_length(table_json):
         index = 0 # 起始索引
         add_list = [] # 长度不一致的补充列表
         # 如果找到附注：在第二列加空字符串
-    if len(item)<2:
-        item.insert(1,"")
-    if find_annotations(json_ini) and len(item)<max_length:
-        item.insert(1,"")
-    if len(item) < max_length:
-        diff = max_length - len(item)
-        while index < diff:
-            add_list.append("")
-            index = index + 1
-        item = item + add_list
-    table_json_format.append(item)
+        if len(item)<2:
+            item.insert(1,"")
+        if find_annotations(table_json) and len(item)<max_length:
+            item.insert(1,"")
+        if len(item) < max_length:
+            diff = max_length - len(item)
+            while index < diff:
+                add_list.append("")
+                index = index + 1
+            item = item + add_list
+        table_json_format.append(item)
     return table_json_format
 
