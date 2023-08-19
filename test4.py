@@ -120,3 +120,8 @@ from utils.index import _filter, _is_empty, _map, find_annotations, get_median, 
 # filter_by_increase_in_accounts_receivable(file_title_list)
 # result2 = json('static/parse-announcements/2022/error/increase_in_accounts_receivable.json')
 # print(len(result2))
+a = ["项","目","aaa"]
+# print(len(a[0]+a[1]))
+b = [("").join(a[:2])]+a[2:]
+print(b)
+print(len(b))

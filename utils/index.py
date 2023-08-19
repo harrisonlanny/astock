@@ -558,8 +558,15 @@ def supplementing_rows_by_max_length(table_json):
     根据json文件的item最大长度补充每一行列表（使表格对齐）
     在补充长度后，含附注的行长度与不含附注的行长度不一致----
         逻辑修改为：如果table内容中有匹配附注格式的，增加附注列后按max_length补充原row
+    
+    特殊情况：有些公司的“项目”被拆分为“项   目”，在row中是两个元素
     '''
     table_json_format = []
+    for index,row in enumerate(table_json):
+        # 将“项 目”重新拼接为“项目”后更新该行
+        if row[0] == "项" and row[1] == "目":
+            row = [("").join(row[:2])]+row[2:]
+            table_json[index] = row
     max_length = max(_map(table_json, lambda row: len(row)))
     for item in table_json:
         index = 0 # 起始索引
