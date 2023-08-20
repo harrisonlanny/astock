@@ -1791,7 +1791,7 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
                     else float(large_num_format(row[-1]))
                 )
             # 3.6列，含附注列的index=2和index=4的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
-            if len(row) ==6 and _is_empty(row[-1]):
+            elif len(row) ==6 and _is_empty(row[-1]):
                 row[2] = (
                     0
                     if (_is_empty(row[2]) or row[2] == "-")
@@ -1803,7 +1803,7 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
                     else float(large_num_format(row[4]))
                 )
             # 4.6列，含附注列的index=2和index=3的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
-            if len(row) ==6 and not _is_empty(row[-1]):
+            elif len(row) ==6 and not _is_empty(row[-1]):
                 row[2] = (
                     0
                     if (_is_empty(row[2]) or row[2] == "-")

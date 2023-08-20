@@ -575,7 +575,7 @@ def supplementing_rows_by_max_length(table_json):
             row = [("").join(row)]
             table_json[index] = row
         for item in row:
-            if ("董事长" in item) or ("编制单位" in item):
+            if "董事长" in item:
                 del table_json[index]
     max_length = max(_map(table_json, lambda row: len(row)))
     for item in table_json:
