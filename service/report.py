@@ -1775,6 +1775,14 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
     将符合关键字字段的table值由str转化为float,并求出当期金额总和及增长率
     """
     format_result = []
+    def count_occurance_of_element(table:list, key):
+        '''
+        判断表格的每一行中是否存在出现两次的指定元素
+        '''
+        for lst in table:
+            if lst.count(key) == 2:
+                return True
+        return False
     for row in target_json:
         if row[0] in key_word:
             # 1.3列，不含附注列的index=1和index=2的为当期值、上期值
@@ -1790,8 +1798,8 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
                     if (_is_empty(row[-1]) or row[-1] == "-")
                     else float(large_num_format(row[-1]))
                 )
-            # 3.6列，含附注列的index=2和index=4的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
-            elif len(row) ==6 and _is_empty(row[-1]):
+            # 3.6列，含附注列的index=2和index=4的为当期值、上期值（当期（本集团、本公司）、上期（本集团、本公司）在一起，样本少，待补充）
+            elif len(row) ==6 and count_occurance_of_element(target_json,"本集团"):
                 row[2] = (
                     0
                     if (_is_empty(row[2]) or row[2] == "-")
@@ -1802,8 +1810,8 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
                     if (_is_empty(row[4]) or row[4] == "-")
                     else float(large_num_format(row[4]))
                 )
-            # 4.6列，含附注列的index=2和index=3的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
-            elif len(row) ==6 and not _is_empty(row[-1]):
+            # 4.6列，含附注列的index=2和index=3的为当期值、上期值（本集团（当期、上期）、本公司（当期、上期）在一起，前者为“合并”）
+            elif len(row) ==6 and not count_occurance_of_element(target_json,"本集团"):
                 row[2] = (
                     0
                     if (_is_empty(row[2]) or row[2] == "-")
@@ -1829,7 +1837,7 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
     if len(format_result[0]) == 3 or len(format_result[0]) == 4:
         current_target_list = _map(format_result, lambda item: item[-2])
         last_target_list = _map(format_result, lambda item: item[-1])
-    elif len(format_result[0]) == 6 and _is_empty(format_result[0][-1]):
+    elif len(format_result[0]) == 6 and count_occurance_of_element(target_json,"本集团"):
         current_target_list = _map(format_result, lambda item: item[2])
         last_target_list = _map(format_result, lambda item: item[4])
     else:

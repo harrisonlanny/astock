@@ -116,7 +116,5 @@ file_title_list = [
     "000822__山东海化__2022年年度报告__1216201007",
     "600016__民生银行__中国民生银行2022年年度报告__1216238250"
 ] 
-# file_title_list = [
-#     "000021__深科技__2022年年度报告__1216497188",
-# ] 
+
 filter_by_increase_in_accounts_receivable(file_title_list)

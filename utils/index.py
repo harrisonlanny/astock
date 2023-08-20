@@ -585,7 +585,7 @@ def supplementing_rows_by_max_length(table_json):
         if len(item)<2:
             item.insert(1,"")
         if find_annotations(table_json) and len(item)<max_length:
-            item.insert(1,"")
+            item.insert(len(item),"")
         if len(item) < max_length:
             diff = max_length - len(item)
             while index < diff:
