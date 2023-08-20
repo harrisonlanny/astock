@@ -559,7 +559,11 @@ def supplementing_rows_by_max_length(table_json):
     在补充长度后，含附注的行长度与不含附注的行长度不一致----
         逻辑修改为：如果table内容中有匹配附注格式的，增加附注列后按max_length补充原row
     
-    特殊情况：有些公司的“项目”被拆分为“项   目”，在row中是两个元素
+    特殊情况：1.有些公司的“项目”被拆分为“项   目”，在row中是两个元素
+            2.['合', '并', '利', '润', '表']
+            3.['合', '并', '资', '产', '负', '债', '表']
+            4.['董事长:谢庆林', '法定代表人：徐建堂', '主管会计工作负责人:宋金娣', '会计机构负责人:王', '宏']超长
+            5.['编制单位：山东海化股份有限公司', '2022年12', '月31日', '单位：元']
     '''
     table_json_format = []
     for index,row in enumerate(table_json):
@@ -567,6 +571,12 @@ def supplementing_rows_by_max_length(table_json):
         if row[0] == "项" and row[1] == "目":
             row = [("").join(row[:2])]+row[2:]
             table_json[index] = row
+        if "合并利润表" in ("").join(row) or "合并资产负债表" in ("").join(row):
+            row = [("").join(row)]
+            table_json[index] = row
+        for item in row:
+            if ("董事长" in item) or ("编制单位" in item):
+                del table_json[index]
     max_length = max(_map(table_json, lambda row: len(row)))
     for item in table_json:
         index = 0 # 起始索引

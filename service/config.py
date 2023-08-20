@@ -32,6 +32,7 @@ Financial_Statement_DataSource = {
     Financial_Statement.合并资产负债表.value: {
         "keywords": [
             "合并资产负债表",
+            "合并及母公司资产负债表",
             "合并及公司资产负债表",
             "合并资产负债表和资产负债表",
             "资产负债表",
@@ -44,6 +45,7 @@ Financial_Statement_DataSource = {
             "合并及公司利润表",
             "合并及母公司利润表",
             "合并及银行利润表",
+            "合并利润表和利润表",
             "利润表"
         ],
         "path": "/static/parse-announcements/hblrb"

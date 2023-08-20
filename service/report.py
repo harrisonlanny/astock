@@ -1777,7 +1777,20 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
     format_result = []
     for row in target_json:
         if row[0] in key_word:
-            # 1.6列，含附注列的index=2和index=4的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
+            # 1.3列，不含附注列的index=1和index=2的为当期值、上期值
+            # 2.4列，含附注列的index=2和index=3的为当期值、上期值
+            if len(row) == 3 or len(row) == 4:
+                row[-2] = (
+                    0
+                    if (_is_empty(row[-2]) or row[-2] == "-")
+                    else float(large_num_format(row[-2]))
+                )
+                row[-1] = (
+                    0
+                    if (_is_empty(row[-1]) or row[-1] == "-")
+                    else float(large_num_format(row[-1]))
+                )
+            # 3.6列，含附注列的index=2和index=4的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
             if len(row) ==6 and _is_empty(row[-1]):
                 row[2] = (
                     0
@@ -1789,41 +1802,40 @@ def format_target_table_json_and_growth_rate(key_word: list, target_json):
                     if (_is_empty(row[4]) or row[4] == "-")
                     else float(large_num_format(row[4]))
                 )
-            # if len(row) >= 4:
-            #     row[2] = (
-            #         0
-            #         if (_is_empty(row[2]) or row[2] == "-")
-            #         else float(large_num_format(row[2]))
-            #     )
-            #     row[3] = (
-            #         0
-            #         if (_is_empty(row[3]) or row[3] == "-")
-            #         else float(large_num_format(row[3]))
-            #     )
-            # else:
-                # row[1] = (
-                #     0
-                #     if (_is_empty(row[1]) or row[1] == "-")
-                #     else float(large_num_format(row[1]))
-                # )
-                # row[2] = (
-                #     0
-                #     if (_is_empty(row[2]) or row[2] == "-")
-                #     else float(large_num_format(row[2]))
-                # )
+            # 4.6列，含附注列的index=2和index=3的为当期值、上期值（本集团、本公司在一起，前者为“合并”）
+            if len(row) ==6 and not _is_empty(row[-1]):
+                row[2] = (
+                    0
+                    if (_is_empty(row[2]) or row[2] == "-")
+                    else float(large_num_format(row[2]))
+                )
+                row[3] = (
+                    0
+                    if (_is_empty(row[3]) or row[3] == "-")
+                    else float(large_num_format(row[3]))
+                )
+            else:
+                row[2] = (
+                    0
+                    if (_is_empty(row[2]) or row[2] == "-")
+                    else float(large_num_format(row[2]))
+                )
+                row[3] = (
+                    0
+                    if (_is_empty(row[3]) or row[3] == "-")
+                    else float(large_num_format(row[3]))
+                )
             format_result.append(row)
-    if len(row) == 6 and _is_empty(row[-1]):
+    if len(format_result[0]) == 3 or len(format_result[0]) == 4:
+        current_target_list = _map(format_result, lambda item: item[-2])
+        last_target_list = _map(format_result, lambda item: item[-1])
+    elif len(format_result[0]) == 6 and _is_empty(format_result[0][-1]):
         current_target_list = _map(format_result, lambda item: item[2])
         last_target_list = _map(format_result, lambda item: item[4])
     else:
-        current_target_list = _map(format_result, lambda item: item[1])
-        last_target_list = _map(format_result, lambda item: item[2])
-    # if len(row) >= 4:
-    #     current_target_list = _map(format_result, lambda item: item[2])
-    #     last_target_list = _map(format_result, lambda item: item[3])
-    # else:
-    #     current_target_list = _map(format_result, lambda item: item[1])
-    #     last_target_list = _map(format_result, lambda item: item[2])
+        current_target_list = _map(format_result, lambda item: item[2])
+        last_target_list = _map(format_result, lambda item: item[3])
+
     current_target = sum(current_target_list)
     last_target = sum(last_target_list)
     return format_result, current_target, last_target
@@ -1848,23 +1860,26 @@ def get_operating_revenue(file_title):
             .replace("：", "")
             .replace(":", "")
             .replace("、", "")
-            in ["其中营业收入", "一营业收入", "一营业总收入"],
+            in ["其中营业收入", "一营业收入", "一营业总收入", "营业收入合计", "营业收入"],
         )
-        operating_revenue_info = format_target_table_json_and_growth_rate(
-            key_word, hblrb_json_format
-        )
-        try:
-            growth_rate = (
-                (operating_revenue_info[1] - operating_revenue_info[2])
-                / operating_revenue_info[2]
-                * 100
+        if not _is_empty(key_word):
+            operating_revenue_info = format_target_table_json_and_growth_rate(
+                key_word, hblrb_json_format
             )
-            print(
-                f"{file_title}的当期营业收入为{operating_revenue_info[1]}，营业收入增长率为{growth_rate}%"
-            )
-            return operating_revenue_info[1], growth_rate  # 返回当期营业收入和营业收入增长率
-        except:
-            print(f"{file_title}无法计算营业收入增长率")
+            try:
+                growth_rate = (
+                    (operating_revenue_info[1] - operating_revenue_info[2])
+                    / operating_revenue_info[2]
+                    * 100
+                )
+                print(
+                    f"{file_title}的当期营业收入为{operating_revenue_info[1]}，营业收入增长率为{growth_rate}%"
+                )
+                return operating_revenue_info[1], growth_rate  # 返回当期营业收入和营业收入增长率
+            except:
+                print(f"{file_title}无法计算营业收入增长率")
+        else:
+            print(f"{file_title}无法获取营业收入")
     except:
         print(f"{file_title}无法获取合并利润表数据")
 
@@ -1894,22 +1909,25 @@ def get_accounts_receivable(file_title):
         # 2.通过子表查找银行承兑汇票金额： 由于不是每个公司都有此项目（比例较小），可暂时放宽条件，仅设定默认值，后续再根据测试结果完善该方法
         amount_of_bankers_acceptance = 0
         # 3.计算当期应收及应收增长率
-        accounts_receivable_info = format_target_table_json_and_growth_rate(
-            key_word, hbzcfzb_json_format
-        )
-        try:
-            growth_rate = (
-                (accounts_receivable_info[1] - accounts_receivable_info[2])
-                / accounts_receivable_info[2]
-                * 100
+        if not _is_empty(key_word):
+            accounts_receivable_info = format_target_table_json_and_growth_rate(
+                key_word, hbzcfzb_json_format
             )
-            print(
-                f"{file_title}的当期应收款为{accounts_receivable_info[1]},增长率为{growth_rate}%"
-            )
-            return accounts_receivable_info[1], growth_rate
+            try:
+                growth_rate = (
+                    (accounts_receivable_info[1] - accounts_receivable_info[2])
+                    / accounts_receivable_info[2]
+                    * 100
+                )
+                print(
+                    f"{file_title}的当期应收款为{accounts_receivable_info[1]},增长率为{growth_rate}%"
+                )
+                return accounts_receivable_info[1], growth_rate
 
-        except:
-            print(f"{file_title}无法计算应收款增长率")
+            except:
+                print(f"{file_title}无法计算应收款增长率")
+        else:
+            print(f"{file_title}中不包含应收项目")
     except:
         print(f"{file_title}无法获取合并资产负债表数据")
 

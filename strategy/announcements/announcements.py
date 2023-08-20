@@ -119,13 +119,19 @@ def filter_by_proportion_of_accounts_receivable(file_title_list):
 def filter_by_increase_in_accounts_receivable(file_title_list):
     target = []
     abnormal_count = 0
-    error_file_title_list = generate_announcement(
+    error_file_title_list = \
+    generate_announcement(
         announcement_type=Financial_Statement.合并利润表,
         file_title_list=file_title_list,
         gen_table=gen_hblrb,
         use_cache=True,
-        consider_table=False,
-    )
+        consider_table=False,).extend(
+        generate_announcement(
+        announcement_type=Financial_Statement.合并资产负债表,
+        file_title_list=file_title_list,
+        gen_table=gen_hbzcfzb,
+        use_cache=True,
+        consider_table=False,))
     error_list = _map(error_file_title_list, lambda item: item["文件名"])
     # json('static/parse-announcements/2022/error/increase_in_accounts_receivable.json', error_file_title_list)
     file_title_list = list(set(file_title_list) - set(error_list))
