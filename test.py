@@ -6,7 +6,7 @@ from enum import Enum
 import requests
 from pdfplumber.table import Table
 
-from db.index import update_table_fields, update_table
+from db.index import column_row_match, update_table_fields, update_table
 from service.report import STATIC_ANNOUNCEMENTS_DIR, download_announcement, download_year_announcements
 from utils.index import _map, large_num_format, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
@@ -58,7 +58,6 @@ import pandas as pd
 #     content = page.extract_text_simple(x_tolerance=3, y_tolerance=3)
 #     if kw1 in content or kw2 in content:
 #         print(1)
-
 
 
 
@@ -181,7 +180,7 @@ def caculate_interest_bearing_liabilities_rate(interest_bearing_liabilities, tot
 # download_year_announcements()
 
 # update_table_fields('announcements', add_field_defines=[
-#     "`disabled` TINYINT(1) DEFAULT 0"
+#     "`standard_unqualified_opinions` BOOL DEFAULT NULL"
 # ])
 
 # update_table("announcements", ['`disabled`'], [0], f"WHERE `symbol`='000721'")
