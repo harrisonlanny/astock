@@ -1677,7 +1677,9 @@ def calculate_interest_bearing_liabilities(file_title):
         "长期融资租赁负债",
     ]
     interest_bearing_liabilities_current_list = []
+    interest_bearing_liabilities_last_list = []
     interest_bearing_liabilities_current_list_new = []
+    interest_bearing_liabilities_last_list_new = []
     try:
         hbzcfzb_json = json(hbzcfzb_url)
         hbzcfzb_json_format = supplementing_rows_by_max_length(hbzcfzb_json)
@@ -1687,19 +1689,35 @@ def calculate_interest_bearing_liabilities(file_title):
             result = _map(row, lambda item: large_num_format(item))
             if result[0] in key_word:
                 interest_bearing_liabilities_current_list.append(result[-2])
+                interest_bearing_liabilities_last_list.append(result[-1])
         for item in interest_bearing_liabilities_current_list:
             item = 0 if (_is_empty(item) or item == "-") else item
             interest_bearing_liabilities_current_list_new.append(item)
+        for item in interest_bearing_liabilities_last_list:
+            item = 0 if (_is_empty(item) or item == "-") else item
+            interest_bearing_liabilities_last_list_new.append(item)
         interest_bearing_liabilities_current_list_new = _map(
             interest_bearing_liabilities_current_list_new, lambda x: float(x)
+        )
+        interest_bearing_liabilities_last_list_new = _map(
+            interest_bearing_liabilities_last_list_new, lambda x: float(x)
         )
         interest_bearing_liabilities_current = sum(
             interest_bearing_liabilities_current_list_new
         )
+        interest_bearing_liabilities_last = sum(
+            interest_bearing_liabilities_last_list_new
+        )
         print(f"{file_title}的当期有息负债金额为{interest_bearing_liabilities_current}")
-        return interest_bearing_liabilities_current
+        update_table(
+                    table_name="announcements",
+                    column_name_list=["current_interest_bearing_liabilities","last_interest_bearing_liabilities"],
+                    row=[interest_bearing_liabilities_current,interest_bearing_liabilities_last],
+                    conditions=f"where file_title = '{file_title}'")
+        return interest_bearing_liabilities_current,interest_bearing_liabilities_last
     except:
         print(f"{file_title}未找到合并资产负债表")
+        return False
 
 
 def find_total_assets(text: str):

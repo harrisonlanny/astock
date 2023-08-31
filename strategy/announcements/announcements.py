@@ -62,7 +62,7 @@ def filter_by_interest_bearing_liabilities(file_title_list):
         consider_table=False,
     )
     error_list = _map(error_file_title_list, lambda item: item["文件名"])
-    json('static/parse-announcements/2022/error/interest_bearing_liabilities.json', error_file_title_list)
+    # json('static/parse-announcements/2022/error/interest_bearing_liabilities.json', error_file_title_list)
     file_title_list = list(set(file_title_list) - set(error_list))
     companies = []
     for file_title in file_title_list:

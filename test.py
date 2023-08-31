@@ -180,7 +180,10 @@ def caculate_interest_bearing_liabilities_rate(interest_bearing_liabilities, tot
 # download_year_announcements()
 
 # update_table_fields('announcements', add_field_defines=[
-#     "`standard_unqualified_opinions` BOOL DEFAULT NULL"
+#     "`current_interest_bearing_liabilities` DOUBLE(15,4)",
+#     "`last_interest_bearing_liabilities` DOUBLE(15,4)"
 # ])
 
 # update_table("announcements", ['`disabled`'], [0], f"WHERE `symbol`='000721'")
+a = 1
+print(isinstance(a,bool))
