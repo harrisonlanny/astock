@@ -780,32 +780,33 @@ def parse_pdf(pdf_url, pdf_name, use_cache: bool = True):
 
                 current_page_struct.append(page_obj("text_line", text_line))
 
-            # 全页面颜色扫描
-            for page_index, page in enumerate(pdf.pages):
-                print(
-                    f"color_scan --{pdf_name}  {page_index + 1}/{len(pdf.pages)}--",
-                    "\n",
-                )
-                page = page.filter(color_distribution)
-                page.find_tables()
-            # 将color格式由dict改为逆序的二维数组[[color, count]]
-            for type in ["line", "rect"]:
-                for color_type in ["stroking_color", "non_stroking_color"]:
-                    color_dict = color_info[type][color_type]
-                    color_arr = get_color_list(color_dict)
-                    color_info[type][color_type] = color_arr
-            print("color_info: ", color_info)
-            analysis_color = analysis_color_info(color_info)
-            # return color_info, analysis_color
-            # json("/demo1.json", color_info)
-            # json("/demo2.json", analysis_color)
+            # # 全页面颜色扫描
+            # for page_index, page in enumerate(pdf.pages):
+            #     print(
+            #         f"color_scan --{pdf_name}  {page_index + 1}/{len(pdf.pages)}--",
+            #         "\n",
+            #     )
+            #     # 孙正 暂时屏蔽
+            #     page = page.filter(color_distribution)
+            #     page.find_tables()
+            # # 将color格式由dict改为逆序的二维数组[[color, count]]
+            # for type in ["line", "rect"]:
+            #     for color_type in ["stroking_color", "non_stroking_color"]:
+            #         color_dict = color_info[type][color_type]
+            #         color_arr = get_color_list(color_dict)
+            #         color_info[type][color_type] = color_arr
+            # print("color_info: ", color_info)
+            # analysis_color = analysis_color_info(color_info)
+            # # return color_info, analysis_color
+            # # json("/demo1.json", color_info)
+            # # json("/demo2.json", analysis_color)
 
             # 数据提取
             for page_index, page in enumerate(_pages):
                 print(f"--{pdf_name}  {page_index + 1}/{len(_pages)}--", "\n")
                 # Filter out hidden lines.
-                fitz_page = fitz_pdf[page_index]
-                page = page.filter(keep_visible_lines)
+                # fitz_page = fitz_pdf[page_index]
+                # page = page.filter(keep_visible_lines)
                 tables = page.find_tables()
                 # print(len(tables))
                 # if len(tables):
@@ -1062,7 +1063,7 @@ def generate_announcement(
             )
             continue
         # 3. 进行合成
-        (gen_success, gen_msg) = gen_table(file_title, target_json_url)
+        (gen_success, gen_msg) = gen_table(file_title, target_json_url, consider_table)
         if not gen_success:
             error_file_title_list.append(
                 {
@@ -1233,6 +1234,7 @@ def gen_hbzcfzb(file_title, url, consider_table: bool = False):
         keywords = financial_statement_item["keywords"]
         # 找出index
         index = _find_index(keywords, lambda key: text.endswith(key))
+        # print('res: ', text, index)
         if index == None:
             # print(f"**{text}**, index为None")
             return (False, Find_ANNOUNCE_MSG.index为None.value)
@@ -1253,13 +1255,13 @@ def gen_hbzcfzb(file_title, url, consider_table: bool = False):
             False,
             f"text: {text}, key: {key_str} , {Find_ANNOUNCE_MSG.text_line不符合数字序号或者不为空}",
         )
-
+    print('tables.json: ', file_all_tables)
     # 在table.json里找目标
     for t in file_all_tables:
         top_desc = t["desc"]["top"]
         for d in top_desc:
-            if find_target(d):
-                # print("在table.json里找到target了！", t)
+            if find_target(d)[0]:
+                print("在table.json里找到target了！", d)
                 target = t
                 break
         if target is not None:
@@ -1277,38 +1279,39 @@ def gen_hbzcfzb(file_title, url, consider_table: bool = False):
                     break
             if find_count == len(target["range"]):
                 break
-    else:
-        # print("在table.json里没有target，开始用content.json寻找！")
-        # table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
-        # 就去content.json里去找
-        should_start = False
-        should_end = False
-        for page in content:
-            page_values = content[page]
-            for item in page_values:
-                [type, id, value] = item
-                # start
-                (find_success, find_msg) = find_target(value)
-                # 收集特殊的msg
-                if (
-                    not find_success
-                    and find_msg
-                    and find_msg != Find_ANNOUNCE_MSG.index为None.value
-                ):
-                    reason += find_msg + "\n"
+    # else:
+    #     # print("在table.json里没有target，开始用content.json寻找！")
+    #     # table.json里没找到关键字的话（table无边框导致没有识别成table 或者有table但是desc_top没有关键字）
+    #     # 就去content.json里去找
+    #     should_start = False
+    #     should_end = False
+    #     for page in content:
+    #         page_values = content[page]
+    #         for item in page_values:
+    #             [type, id, value] = item
+    #             # start
+    #             print('item: ', item)
+    #             (find_success, find_msg) = find_target(value)
+    #             # 收集特殊的msg
+    #             if (
+    #                 not find_success
+    #                 and find_msg
+    #                 and find_msg != Find_ANNOUNCE_MSG.index为None.value
+    #             ):
+    #                 reason += find_msg + "\n"
 
-                if type == "text_line" and find_success:
-                    should_start = True
-                # collect data
-                if should_start and not should_end:
-                    # 将value根据空格分成数组
-                    rows.append(value.split(" "))
-                # end
-                if should_start and find_total_assets(value):
-                    should_end = True
-                    break
-            if should_end:
-                break
+    #             if type == "text_line" and find_success:
+    #                 should_start = True
+    #             # collect data
+    #             if should_start and not should_end:
+    #                 # 将value根据空格分成数组
+    #                 rows.append(value.split(" "))
+    #             # end
+    #             if should_start and find_total_assets(value):
+    #                 should_end = True
+    #                 break
+    #         if should_end:
+    #             break
 
     if len(rows) > 5:
         json2(f"{url}", rows)
@@ -1783,9 +1786,15 @@ def get_total_assets(file_title):
                     if (_is_empty(row[1]) or row[1] == "-")
                     else float(large_num_format(row[1]))
                 )
+                update_table(
+                            table_name="announcements",
+                            column_name_list=["total_asset"],
+                            row=[row[-2]],
+                            conditions=f"where file_title = '{file_title}'")
                 return row[-2]
     except:
-        print(f"{file_title}无法获取资产负债表")
+        print(f"{file_title}无法获取总资产")
+        return file_title
 
 
 def format_target_table_json_and_growth_rate(key_word: list, target_json):

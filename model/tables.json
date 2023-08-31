@@ -46,7 +46,9 @@
       "url VARCHAR(80)",
       "disabled TINYINT(1) DEFAULT 0",
       "standard_unqualified_opinions BOOLEAN",
-      "interest_bearing_liabilities DOUBLE(15,4)"
+      "current_interest_bearing_liabilities DOUBLE(15,4)",
+      "last_interest_bearing_liabilities DOUBLE(15,4)",
+      "total_asset DOUBLE(15,4)"
     ]
   }
 }

@@ -7,6 +7,7 @@ from service.report import (
     find_standard_unqualified_opinions,
     gen_hbzcfzb,
     generate_announcement,
+    get_total_assets,
 )
 from strategy.announcements.announcements import (
     filter_by_increase_in_accounts_receivable,
@@ -127,36 +128,36 @@ from utils.index import _is_empty, _map
 # ]
 
 # filter_by_increase_in_accounts_receivable(file_title_list)
-file_title = "605277__新亚电子__新亚电子股份有限公司2020年年度报告__1209701897"
-calculate_interest_bearing_liabilities(file_title)
-# r = read_table(
-#     table_name="announcements",
-#     fields=["file_title"],
-#     result_type="dict",
-#     filter_str=
-#     '''
-#     where title not like '%H股%'
-#     and title not like '%意见%'
-#     and title not like '%英文%'
-#     and title not like '%取消%'
-#     and title not like '%摘要%'
-#     and title not like '%公告%'
-#     and title not like '%修订前%'
-#     and title not like '%更新前%'
-#     and
-#     (title like '%2022%'
-#     or title like '%2021%'
-#     or title like '%2020%')
-#     ''',
-# )
-# file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIMIT 10
-# error_list = []
-# for file_title in file_title_list:
-#     result = calculate_interest_bearing_liabilities(file_title)
-#     if isinstance(result,str):
-#         error_list.append(result)
-# print("错误列表：",error_list)
-# print(len(error_list))
+# file_title = "000066__中国长城__2022年年度报告__1216700847"
+# get_total_assets(file_title)
+r = read_table(
+    table_name="announcements",
+    fields=["file_title"],
+    result_type="dict",
+    filter_str=
+    '''
+    where title not like '%H股%'
+    and title not like '%意见%'
+    and title not like '%英文%'
+    and title not like '%取消%'
+    and title not like '%摘要%'
+    and title not like '%公告%'
+    and title not like '%修订前%'
+    and title not like '%更新前%'
+    and
+    (title like '%2022%'
+    or title like '%2021%'
+    or title like '%2020%')
+    ''',
+)
+file_title_list = _map(r, lambda item: item["file_title"]) # ORDER BY RAND() LIMIT 10
+error_list = []
+for file_title in file_title_list:
+    result = get_total_assets(file_title)
+    if isinstance(result,str):
+        error_list.append(result)
+print("错误列表：",error_list)
+print(len(error_list))
 
 # generate_announcement(
 #     announcement_type=Financial_Statement.合并资产负债表,

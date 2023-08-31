@@ -5,9 +5,10 @@ from enum import Enum
 
 import requests
 from pdfplumber.table import Table
+from service.config import Financial_Statement
 
 from db.index import column_row_match, update_table_fields, update_table
-from service.report import STATIC_ANNOUNCEMENTS_DIR, download_announcement, download_year_announcements
+from service.report import STATIC_ANNOUNCEMENTS_DIR, download_announcement, download_year_announcements, gen_hbzcfzb, generate_announcement
 from utils.index import _map, large_num_format, parse_dataframe, print_dataframe, _map2, list2dict, add_date, add_date_str, str2date, \
     get_current_date, replace_nan_from_dataframe, _is_nan, get_path, _is_empty, get_dict_key_by_index, txt, mul_str, \
     has_chinese_number, _find, json, _dir
@@ -180,10 +181,18 @@ def caculate_interest_bearing_liabilities_rate(interest_bearing_liabilities, tot
 # download_year_announcements()
 
 # update_table_fields('announcements', add_field_defines=[
-#     "`current_interest_bearing_liabilities` DOUBLE(15,4)",
-#     "`last_interest_bearing_liabilities` DOUBLE(15,4)"
+#     "`total_asset` DOUBLE(15,4)"
 # ])
 
 # update_table("announcements", ['`disabled`'], [0], f"WHERE `symbol`='000721'")
-a = 1
-print(isinstance(a,bool))
+
+file_title_list = [
+    "873122__中纺标__2022年年度报告__1216654270"
+]
+generate_announcement(
+    announcement_type=Financial_Statement.合并资产负债表,
+    file_title_list=file_title_list,
+    gen_table=gen_hbzcfzb,
+    use_cache=False,
+    consider_table=True,
+)
