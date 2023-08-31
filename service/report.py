@@ -1716,8 +1716,8 @@ def calculate_interest_bearing_liabilities(file_title):
                     conditions=f"where file_title = '{file_title}'")
         return interest_bearing_liabilities_current,interest_bearing_liabilities_last
     except:
-        print(f"{file_title}未找到合并资产负债表")
-        return False
+        print(f"{file_title}未找到有息负债项")
+        return 0
 
 
 def find_total_assets(text: str):
